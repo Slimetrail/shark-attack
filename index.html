@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b5f8a"><meta name="mobile-web-app-capable" content="yes">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'">
+<title>Shark Attack</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png">
+<style>
+html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;font-family:system-ui,"Segoe UI",Roboto,sans-serif}
+#c{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.ui{position:fixed;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;pointer-events:none}
+.ui.hide,.hide{display:none!important}
+.btn{pointer-events:auto;min-width:48px;min-height:48px;border:4px solid #082a3d;border-radius:18px;background:#ffcc33;color:#082a3d;font:900 26px system-ui,sans-serif;padding:10px 28px;box-shadow:0 6px 0 #082a3d;margin:8px;cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #082a3d}
+.big{font-size:34px;padding:16px 44px}
+.sm{font-size:18px;padding:8px 14px;background:#e8f7ff}
+#titleUi{padding-bottom:calc(env(safe-area-inset-bottom) + 6vh)}
+.row{display:flex;gap:6px}
+#overUi,#credUi{justify-content:center}
+.card{pointer-events:auto;background:#e8f7ff;border:5px solid #082a3d;border-radius:24px;padding:18px 20px;margin:12px;max-width:440px;color:#082a3d;text-align:center;box-shadow:0 8px 0 #082a3d}
+.card h2{margin:4px 0 8px;font-size:30px}.card p{margin:6px 0;font-size:16px;line-height:1.35}
+#final{font-size:64px;font-weight:900;color:#e2463c;margin:4px 0}
+#credUi .card{text-align:left;max-height:78vh;overflow:auto}#credUi .card p{font-size:14px}
+#tap{justify-content:center;pointer-events:auto;background:rgba(6,50,74,.55)}
+#tap div{color:#fff;font:900 34px system-ui,sans-serif;text-shadow:0 4px 0 #082a3d;animation:p 1.2s infinite alternate}
+@keyframes p{to{transform:scale(1.08)}}
+#note{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 4px);text-align:center;color:#cfefff;font-size:12px;pointer-events:none}
+#pickUi{justify-content:center}.pickcard{padding:12px;max-height:92vh;overflow:auto}
+.pick{pointer-events:auto;display:flex;align-items:center;gap:8px;width:100%;min-height:96px;margin:8px 0;padding:8px;border:4px solid #082a3d;border-radius:18px;background:#fff;color:#082a3d;text-align:left;font:inherit;box-shadow:0 5px 0 #082a3d;cursor:pointer}
+.pick.sel{background:#fff6cc}.pv{flex:none}.pinfo{flex:1;display:flex;flex-direction:column;gap:3px}.pinfo b{font-size:21px}.pdesc{font-size:14px;line-height:1.25}
+.bar{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800}.bar i{font-style:normal;width:46px}.bar em{display:block;height:10px;border-radius:5px;background:#ff9f1c;border:2px solid #082a3d;max-width:calc(100% - 56px)}
+#reason.gulp{font-size:52px;color:#e2463c;text-shadow:0 3px 0 #082a3d}
+#rot{position:fixed;inset:0;background:#06324a;color:#fff;font:800 24px system-ui;display:none;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:9}
+@media (orientation:landscape) and (max-height:500px){#pickUi{justify-content:center}.pickcard{padding:12px;max-height:92vh;overflow:auto}
+.pick{pointer-events:auto;display:flex;align-items:center;gap:8px;width:100%;min-height:96px;margin:8px 0;padding:8px;border:4px solid #082a3d;border-radius:18px;background:#fff;color:#082a3d;text-align:left;font:inherit;box-shadow:0 5px 0 #082a3d;cursor:pointer}
+.pick.sel{background:#fff6cc}.pv{flex:none}.pinfo{flex:1;display:flex;flex-direction:column;gap:3px}.pinfo b{font-size:21px}.pdesc{font-size:14px;line-height:1.25}
+.bar{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800}.bar i{font-style:normal;width:46px}.bar em{display:block;height:10px;border-radius:5px;background:#ff9f1c;border:2px solid #082a3d;max-width:calc(100% - 56px)}
+#reason.gulp{font-size:52px;color:#e2463c;text-shadow:0 3px 0 #082a3d}
+#rot{display:flex}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="titleUi" class="ui hide"><button id="start" class="btn big">Start</button><div class="row"><button id="snd" class="btn sm">🔊 Sound on</button><button id="calm" class="btn sm">🌊 Shake on</button><button id="cred" class="btn sm">Credits</button></div></div>
+<div id="overUi" class="ui hide"><div class="card"><h2 id="reason">Time's up!</h2><div>Your score</div><div id="final">0</div><p id="bestTxt">Best: 0</p><button id="again" class="btn big">Play again</button><br><button id="home" class="btn sm">Home</button><p id="roundNote" style="font-size:12px;opacity:.75"></p></div></div>
+<div id="pickUi" class="ui hide"><div class="card pickcard"><h2>Pick your shark</h2><div id="pickList"></div><button id="pickBack" class="btn sm">Back</button></div></div>
+<div id="credUi" class="ui hide"><div class="card"><h2>Credits</h2>
+<p><b>Title music:</b> “La Cathédrale engloutie” (Préludes, Book I, No. 10), composed by Claude Debussy (public domain). Performed by <b>Ivan Ilić</b>, recorded April 2006, Paris. Licensed under <b>Creative Commons Attribution 3.0 Unported (CC BY 3.0)</b> — creativecommons.org/licenses/by/3.0/<br>Source: Wikimedia Commons, “File:La Cathédrale engloutie - Claude Debussy - performed by Ivan Ilic.ogg” — commons.wikimedia.org/wiki/File:La_Cathédrale_engloutie_-_Claude_Debussy_-_performed_by_Ivan_Ilic.ogg<br><i>Changes made:</i> trimmed to the first 88 seconds, fade-in and fade-out added, mixed to mono, re-encoded as 64 kbps Ogg Vorbis, looped in the game. The performer does not endorse this game.</p>
+<p><b>Game music:</b> “Reflets dans l'eau” by Claude Debussy (public domain), 8-bit chiptune arrangement by Slopcore Studio (reference recording: Giorgi Latso). <i>Coming soon — license to be confirmed.</i> Until then a simple original placeholder tune plays.</p>
+<p><b>Art, sound effects and code:</b> original, made for this game. Sound effects (chomp, bubbles, gulp, splash…) are synthesized live in the browser — no sound files.</p>
+<p>A personal game for Jeremy. No ads, no tracking, works offline.</p>
+<button id="credBack" class="btn sm">Back</button></div></div>
+<div id="tap" class="ui hide"><div>Tap to start</div></div>
+<div id="note" class="hide"></div>
+<div id="rot">🦈 Please turn your phone upright</div>
+<script src="game.js?v=1"></script>
+</body></html>
