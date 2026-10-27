@@ -13,16 +13,16 @@ BOT=r'''(wig)=>{const S=__sa,s=S.shark,W=innerWidth,H=innerHeight;let mode="hunt
   for(const d of S.divers)if(d.grace<=0){const dx=s.x-d.x,dy=s.y-d.y,q=Math.hypot(dx,dy);if(q<H*.3){ax+=dx/q*1.5;ay+=dy/q*1.5}}
   if(Math.hypot(ax,ay)>.4){T.dir=Math.atan2(ay,ax);T.drive=1;return}
   const sf=S.surf.filter(q=>q.zip<=0&&q.x>40&&q.x<W-40);
-  if(sf.length&&!s.air){if(mode==="hunt"&&s.y<S.BED-H*.25&&Math.random()<dt*.6)mode="dive";
-   if(mode==="dive"){T.dir=Math.PI/2+(s.x<W/2?-.6:.6);T.drive=1;if(s.y>S.BED-L*.6)mode="rise"}
+  if(sf.length&&!s.air){if(mode==="hunt"&&s.y<S.SURF+H*.8&&Math.random()<dt*.6)mode="dive";
+   if(mode==="dive"){T.dir=Math.PI/2+(s.x<W/2?-.6:.6);T.drive=1;if(s.y>S.SURF+H*1.05)mode="rise"}
    if(mode==="rise"){const q=sf.reduce((a,b)=>Math.abs(b.x-s.x)<Math.abs(a.x-s.x)?b:a);T.dir=Math.atan2(S.SURF-40-s.y,(q.x+q.vx*.5-s.x)*.35);T.drive=1;if(s.y<S.SURF+L)mode="hunt";return}
    if(mode==="dive")return}
   let best=null,bd=1e9;for(const f of S.fish)if(S.rel(f)<0&&f.x>0&&f.x<W){const d=Math.hypot(f.x-s.x,f.y-s.y);if(d<bd){bd=d;best=f}}
-  if(best){T.dir=Math.atan2(best.y-s.y,best.x-s.x);T.drive=.8}else{T.dir=Math.atan2((S.SURF+S.BED)/2-s.y,W/2-s.x);T.drive=.5}}}}'''
+  if(best){T.dir=Math.atan2(best.y-s.y,best.x-s.x);T.drive=.8}else{T.dir=Math.atan2(S.SURF+H*.45-s.y,W/2-s.x);T.drive=.5}}}}'''
 res={}
 try:
  with sync_playwright() as p:
-  b=p.chromium.launch();cx=b.new_context(viewport={'width':412,'height':915},bypass_csp=True,service_workers='block');pg=cx.new_page()
+  b=p.chromium.launch();cx=b.new_context(viewport={'width':915,'height':412},bypass_csp=True,service_workers='block');pg=cx.new_page()
   pg.goto(f'http://127.0.0.1:{PORT}/');pg.wait_for_timeout(300)
   for wig,label in [(4,'good(wig4)'),(1.5,'weak(wig1.5)')]:
    for t in ['white','hammer','tiger']:

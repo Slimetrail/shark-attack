@@ -13,7 +13,7 @@ def ev(pg,js): return pg.evaluate(js)
 try:
  with sync_playwright() as p:
   b=p.chromium.launch()
-  cx=b.new_context(viewport={'width':412,'height':915},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True,service_workers='block');pg=cx.new_page();errs=[]
+  cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True,service_workers='block');pg=cx.new_page();errs=[]
   pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:m.type=='error' and errs.append(m.text))
   pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);pg.click('#start');pg.wait_for_timeout(300)
   check(pg.is_visible('#mode_timed') and pg.is_visible('#mode_endless'),'pick screen shows Timed and Endless buttons')

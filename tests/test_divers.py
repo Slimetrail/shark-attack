@@ -12,11 +12,11 @@ def check(c,m):
     else: fails.append(m)
 def ev(pg,js): return pg.evaluate(js)
 def fresh(b,t='white'):
-    cx=b.new_context(viewport={'width':412,'height':915},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True);pg=cx.new_page();errs=[]
+    cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True);pg=cx.new_page();errs=[]
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:m.type=='error' and errs.append(m.text))
     pg.goto(URL+'?round=300');pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
     pg.click('#start');pg.wait_for_timeout(150);pg.click(f'.pick[data-type={t}]');pg.wait_for_timeout(250);calm(pg);return cx,pg,errs
-def calm(pg): ev(pg,'()=>{__sa.clearFood();const s=__sa.shark;s.x=innerWidth/2;s.y=(__sa.SURF+__sa.BED)/2;s.spd=0;s.ang=0;__sa.touch.on=false}')
+def calm(pg): ev(pg,'()=>{__sa.clearFood();const s=__sa.shark;s.x=innerWidth/2;s.y=__sa.SURF+innerHeight*.45;s.spd=0;s.ang=0;__sa.touch.on=false}')
 def stunWith(pg,force):  # net hit through the real path, with the ambush roll forced
     ev(pg,f'()=>{{__sa.setAmbushForce({force});__sa.netHit(null)}}')
 try:
@@ -34,10 +34,10 @@ try:
   ev(pg,'()=>{const d=__sa.divers[0];d.x=__sa.shark.x-innerHeight*.25;d.y=__sa.shark.y;d.grace=99;d.st="wander";d.ang=Math.PI/2}');pg.wait_for_timeout(300)
   check(ev(pg,'__sa.divers[0].st')=='chase','diver within detect range chases');pg.wait_for_timeout(600);pg.screenshot(path=f'{SHOTS}/diver-chasing.png')
   # out of range -> gives up after ~3 s
-  ev(pg,'()=>{const d=__sa.divers[0];d.x=-40;d.y=__sa.BED-30;const s=__sa.shark;s.x=innerWidth-60;s.y=__sa.SURF+40}');pg.wait_for_timeout(1500)
+  ev(pg,'()=>{const d=__sa.divers[0];d.x=-40;d.y=__sa.SURF+innerHeight*1.1;const s=__sa.shark;s.x=innerWidth-60;s.y=__sa.SURF+40}');pg.wait_for_timeout(1500)
   ev(pg,'__sa.divers[0].st="chase";__sa.divers[0].lost=0');st1='chase';st2=None
   for i in range(18):
-    ev(pg,'()=>{const d=__sa.divers[0];d.x=-40;d.y=__sa.BED-30;const s=__sa.shark;s.x=innerWidth-60;s.y=__sa.SURF+40;s.spd=0}');pg.wait_for_timeout(200)
+    ev(pg,'()=>{const d=__sa.divers[0];d.x=-40;d.y=__sa.SURF+innerHeight*1.1;const s=__sa.shark;s.x=innerWidth-60;s.y=__sa.SURF+40;s.spd=0}');pg.wait_for_timeout(200)
     if i==8: st2=ev(pg,'__sa.divers[0].st')
   st1=st1 if st2=='chase' else 'x'
   check(st1=='chase' and ev(pg,'__sa.divers[0].st')=='wander','diver keeps chasing briefly, gives up after ~3 s out of range')
@@ -56,15 +56,15 @@ try:
   # ambush: never reaches before warning time; unescaped -> Gulp!
   calm(pg);ev(pg,'__sa.netHit(null)');pg.wait_for_timeout(1100);calm(pg);t0=ev(pg,'performance.now()');stunWith(pg,'true')
   check(ev(pg,'__sa.amb.on') and ev(pg,'__sa.amb.L')>ev(pg,'__sa.shark.L')*1.4,'hit 2 (forced roll) brings one ambusher, clearly bigger than the shark')
-  pg.wait_for_timeout(450);pg.screenshot(path=f'{SHOTS}/stun-ambush-warning.png');pg.wait_for_timeout(350);pg.screenshot(path=f'{SHOTS}/ambusher-entering.png')
+  pg.wait_for_timeout(200);pg.screenshot(path=f'{SHOTS}/stun-ambush-warning.png');pg.wait_for_timeout(350);pg.screenshot(path=f'{SHOTS}/ambusher-entering.png')
   while ev(pg,'__sa.state')=='play' and ev(pg,'performance.now()')-t0<1150: pg.wait_for_timeout(40)
   check(ev(pg,'__sa.state')=='play' and ev(pg,'__sa.amb.reachT')<0,'ambusher has not reached the shark before 1.15 s')
   ev(pg,'__sa.netHit(null)') if False else None
   pg.wait_for_function('__sa.state!=="play"',timeout=2000);rt=ev(pg,'__sa.amb.reachT');print('reachT',rt);check(pg.inner_text('#reason')=='Gulp!' and ev(pg,'__sa.amb.ate') and rt>=1.2,'unescaped stunned shark is eaten -> Gulp! screen')
   # escape by wiggling (real pointer events)
   pg.click('#again');pg.wait_for_timeout(200);calm(pg);ev(pg,'__sa.netHit(null)');pg.wait_for_timeout(1100);calm(pg);stunWith(pg,'true')
-  pg.mouse.move(150,600);pg.mouse.down()
-  for i in range(8): pg.mouse.move(280 if i%2==0 else 150,600,steps=3);pg.wait_for_timeout(30)
+  pg.mouse.move(150,250);pg.mouse.down()
+  for i in range(8): pg.mouse.move(280 if i%2==0 else 150,250,steps=3);pg.wait_for_timeout(30)
   pg.mouse.up();check(ev(pg,'__sa.shark.stun')==0 and ev(pg,'__sa.struggles')>=3,f"wiggling breaks free ({ev(pg,'__sa.struggles')} struggles)")
   pg.wait_for_timeout(1500);check(ev(pg,'__sa.state')=='play' and ev(pg,'__sa.amb.phase')=='leave','escaped shark is not eaten; ambusher swims off')
   check(ev(pg,'__sa.netHit(null)') is None and ev(pg,'__sa.state')=='over' and pg.inner_text('#reason')=='Caught!','hit 3 ends with Caught! (round already over, no ambush needed)')

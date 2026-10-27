@@ -1,4 +1,4 @@
-# Shark Attack tests (Playwright, headless Chromium, portrait phones). Run: python3 tests/test_shark.py
+# Shark Attack tests (Playwright, headless Chromium, landscape phones). Run: python3 tests/test_shark.py
 import subprocess,time,sys,os,math
 from playwright.sync_api import sync_playwright
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=int(os.environ.get('SA_PORT','8872'))
@@ -22,7 +22,7 @@ def to_title(pg): pg.click('#tap');pg.wait_for_function('window.__saTitleDone===
 def play(pg,t='white'): pg.click('#start');pg.wait_for_timeout(150);pg.click(f'.pick[data-type={t}]');pg.wait_for_timeout(250)
 def ev(pg,js): return pg.evaluate(js)
 def stage(pg,y_frac=.6,ang=0,spd=None):
-    ev(pg,f'()=>{{__sa.clearFood();const s=__sa.shark;s.air=false;s.cool=0;s.run=0;s.x=innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*{y_frac};s.ang={ang};s.spd={spd if spd is not None else "__sa.maxSpeed()*.2"};__sa.touch.on=false;__sa.touch.drive=0}}')
+    ev(pg,f'()=>{{__sa.clearFood();const s=__sa.shark;s.air=false;s.cool=0;s.run=0;s.x=innerWidth/2;s.y=__sa.SURF+innerHeight*.9*{y_frac};s.ang={ang};s.spd={spd if spd is not None else "__sa.maxSpeed()*.2"};__sa.touch.on=false;__sa.touch.drive=0}}')
 def slide(pg,x0,y0,x1,y1,steps,ms=30,release=True,press=True):
     if press: pg.mouse.move(x0,y0);pg.mouse.down()
     for i in range(1,steps+1): pg.mouse.move(x0+(x1-x0)*i/steps,y0+(y1-y0)*i/steps);pg.wait_for_timeout(ms)
@@ -31,7 +31,7 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
   # ---------- main flow on S26 Ultra size ----------
-  W,H=412,915
+  W,H=915,412
   cx,pg,errs,outside=newpage(b,W,H,3.5)
   ev(pg,"localStorage.clear()");pg.reload();pg.wait_for_timeout(300)
   check(pg.locator('#jump').count()==0 and 'jump' not in pg.content().lower().split('<script')[0],'no Jump button in the DOM')
@@ -48,26 +48,26 @@ try:
   check(ev(pg,'__sa.state')=='play' and ev(pg,'localStorage.sharkAttack_type')=='hammer','picking a shark starts play and saves the type')
   check(ev(pg,"__sa.trait('turn')")==1.3 and ev(pg,"__sa.trait('catchR')")==1.35 and ev(pg,"__sa.trait('leap')")==.9,'hammerhead traits applied (turn 1.3, catch 1.35, leap 0.9)')
   # direction controls facing
-  stage(pg,.5,0);slide(pg,300,400,120,400,10);pg.wait_for_timeout(250);a=ev(pg,'__sa.shark.ang')
+  stage(pg,.5,0);slide(pg,500,200,320,200,10);pg.wait_for_timeout(250);a=ev(pg,'__sa.shark.ang')
   check(abs(abs(math.atan2(math.sin(a),math.cos(a)))-math.pi)<.5,f'slide left -> shark faces/swims left (ang {a:.2f})')
-  stage(pg,.7,0);slide(pg,200,700,200,450,10);pg.wait_for_timeout(150);a=ev(pg,'__sa.shark.ang')
+  stage(pg,.7,0);slide(pg,300,370,300,120,10);pg.wait_for_timeout(150);a=ev(pg,'__sa.shark.ang')
   check(abs(math.atan2(math.sin(a),math.cos(a))+math.pi/2)<.5,f'slide up -> shark swims up (ang {a:.2f})')
-  stage(pg,.3,0);slide(pg,200,300,200,500,10);pg.wait_for_timeout(150);a=ev(pg,'__sa.shark.ang')
+  stage(pg,.3,0);slide(pg,300,80,300,330,10);pg.wait_for_timeout(150);a=ev(pg,'__sa.shark.ang')
   check(abs(math.atan2(math.sin(a),math.cos(a))-math.pi/2)<.5,f'slide down -> shark swims down (ang {a:.2f})')
   # speed scales with slide distance
-  stage(pg,.5,0);slide(pg,100,450,140,450,4,release=False);pg.wait_for_timeout(500);s_short=ev(pg,'__sa.shark.spd');pg.mouse.up()
-  stage(pg,.5,0);slide(pg,40,450,380,450,12,release=False);pg.wait_for_timeout(500);s_long=ev(pg,'__sa.shark.spd');pg.mouse.up()
+  stage(pg,.5,0);slide(pg,100,200,140,200,4,release=False);pg.wait_for_timeout(500);s_short=ev(pg,'__sa.shark.spd');pg.mouse.up()
+  stage(pg,.5,0);slide(pg,40,200,380,200,12,release=False);pg.wait_for_timeout(500);s_long=ev(pg,'__sa.shark.spd');pg.mouse.up()
   check(s_long>s_short*1.4,f'speed scales with drag distance (short {s_short:.0f} px/s, long {s_long:.0f} px/s)')
   # eased acceleration (not instant)
-  stage(pg,.5,0);slide(pg,40,450,380,450,3,ms=10,release=False);s1=ev(pg,'__sa.shark.spd');pg.wait_for_timeout(700);s2=ev(pg,'__sa.shark.spd');pg.mouse.up()
+  stage(pg,.5,0);slide(pg,40,200,380,200,3,ms=10,release=False);s1=ev(pg,'__sa.shark.spd');pg.wait_for_timeout(700);s2=ev(pg,'__sa.shark.spd');pg.mouse.up()
   check(s2>s1*1.3,f'speed eases up over time, not instantly ({s1:.0f} -> {s2:.0f})')
   pg.wait_for_timeout(1500);check(ev(pg,'__sa.shark.spd')>10,'shark keeps drifting slowly after finger lifts')
   # real gesture: slide down a long way, then up -> launch
   stage(pg,.15,math.pi/2);ev(pg,'__sa.shark.x=innerWidth*.5')
-  slide(pg,206,250,206,860,24,ms=30,release=False)
+  slide(pg,300,30,300,395,24,ms=30,release=False)
   launched=False
   for i in range(45):
-    pg.mouse.move(206,860-i*16);pg.wait_for_timeout(30)
+    pg.mouse.move(300,395-i*9);pg.wait_for_timeout(30)
     if ev(pg,'__sa.shark.air'): launched=True;break
   pg.mouse.up();ll=ev(pg,'window.__saLastLaunch')
   check(launched,f'slide down (build speed) then up -> shark breaks the surface and leaps {ll}')
@@ -103,13 +103,13 @@ try:
   check(all(abs(d)<=80 for d,_,_ in res) and any(a for _,a,_ in res) and all(off<=45+20 for d,a,off in res if a),f'beat assist: airtime nudged <=80 ms, assisted landings on the beat (nudge ms, assisted, land offset ms) {res}')
   # fish growth + chomp sfx hook
   stage(pg,.5,0);ev(pg,'__sa.setLevel(0)');L0=ev(pg,'__sa.shark.Lt');v0=ev(pg,'__sa.maxSpeed()');c0=ev(pg,'__sa.sfxCount.chomp')
-  for i in range(8): ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(60)
+  for i in range(20): ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(60)
   check(ev(pg,'__sa.sfxCount.chomp')>=c0+6,'eating a fish triggers the chomp sound hook')
-  check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.shark.Lt')>L0 and ev(pg,'__sa.maxSpeed()')>v0,'eating fish grows the shark a size step and speeds it up')
+  check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.shark.Lt')>L0 and ev(pg,'__sa.maxSpeed()')>v0,'eating ~16 small fish grows the shark one size step (slowed v6 growth) and speeds it up')
   ev(pg,'__sa.feed(9999)');check(ev(pg,'__sa.shark.lvl')==ev(pg,'__sa.MAX_LEVEL'),'size capped at MAX_LEVEL')
   # bubbles on fast crossing with cooldown
   def go_fast():
-    ev(pg,'()=>{const s=__sa.shark;s.spd=__sa.maxSpeed()*.4;s.y=(__sa.SURF+__sa.BED)/2;s.x=innerWidth/2;s.ang=0;Object.assign(__sa.touch,{on:true,dir:0,drive:1,lastMove:performance.now()+9e9})}')
+    ev(pg,'()=>{const s=__sa.shark;s.spd=__sa.maxSpeed()*.4;s.y=__sa.SURF+innerHeight*.45;s.x=innerWidth/2;s.ang=0;Object.assign(__sa.touch,{on:true,dir:0,drive:1,lastMove:performance.now()+9e9})}')
     pg.wait_for_function('__sa.shark.spd>__sa.maxSpeed()*.75',timeout=3000);ev(pg,'__sa.touch.on=false;__sa.shark.ang=Math.PI')
   stage(pg,.5,0);pg.wait_for_timeout(1600);b0=ev(pg,'__sa.sfxCount.bubbles');go_fast();b1=ev(pg,'__sa.sfxCount.bubbles');go_fast();b2=ev(pg,'__sa.sfxCount.bubbles');pg.wait_for_timeout(1600);go_fast();b3=ev(pg,'__sa.sfxCount.bubbles')
   check(b1==b0+1 and b2==b1 and b3==b2+1,f'bubbles once per fast crossing, cooldown respected ({b0},{b1},{b2},{b3})')
@@ -132,7 +132,7 @@ try:
   # mute silences all three
   ev(pg,'__sa.timeLeft=0');pg.wait_for_timeout(200);pg.click('#home');pg.wait_for_timeout(200);pg.click('#snd');play(pg,'hammer')
   p0=ev(pg,'__sa.sfxCount.played');stage(pg,.5,0);ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(100);pg.wait_for_timeout(1600);go_fast()
-  ev(pg,'()=>{const s=__sa.shark;s.spd=0;s.ang=0;s.y=(__sa.SURF+__sa.BED)/2;__sa.setLevel(0);__sa.placeFishAt(3,s.x+110,s.y,-160)}');pg.wait_for_function("__sa.state==='over'",timeout=3000)
+  ev(pg,'()=>{const s=__sa.shark;s.spd=0;s.ang=0;s.y=__sa.SURF+innerHeight*.45;__sa.setLevel(0);__sa.placeFishAt(3,s.x+110,s.y,-160)}');pg.wait_for_function("__sa.state==='over'",timeout=3000)
   check(ev(pg,'__sa.sfxCount.played')==p0 and ev(pg,'__sa.sfxCount.chomp')>0,'mute silences chomp, bubbles and gulp (hooks fire, nothing sounds)')
   pg.click('#home');pg.wait_for_timeout(200);pg.click('#snd')
   # perf
@@ -147,21 +147,21 @@ try:
   cx.close()
   # ---------- each shark at each size ----------
   Ls={}
-  for w,h,dpr,tag in [(412,915,3.5,'412x915'),(390,844,3,'390x844'),(360,740,3,'360x740')]:
+  for w,h,dpr,tag in [(915,412,3.5,'915x412'),(844,390,3,'844x390'),(740,360,3,'740x360')]:
     for t in ['white','hammer','tiger']:
       cx,pg,errs,outside=newpage(b,w,h,dpr);to_title(pg);play(pg,t)
       Ls[(tag,t)]=ev(pg,'__sa.shark.Lt');tr=ev(pg,f"['size','speed','acc','turn','catchR','leap','grow'].every(k=>__sa.trait(k)===__sa.TYPES['{t}'][k])")
       check(tr,f'{tag} {t}: its traits table is applied')
-      ev(pg,'()=>{const s=__sa.shark;s.x=innerWidth*.45;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.45;s.ang=-.25}');pg.wait_for_timeout(700)
+      ev(pg,'()=>{const s=__sa.shark;s.x=innerWidth*.45;s.y=__sa.SURF+innerHeight*.9*.45;s.ang=-.25}');pg.wait_for_timeout(700)
       hud=ev(pg,'__sa.state')=='play';check(hud and not real(errs),f'{tag} {t}: plays without errors')
-      if tag=='412x915' or t=='white': pg.screenshot(path=f'{SHOTS}/play-{t}-{tag}.png')
+      if tag=='915x412' or t=='white': pg.screenshot(path=f'{SHOTS}/play-{t}-{tag}.png')
       cx.close()
-  check(Ls[('412x915','white')]>Ls[('412x915','hammer')]>Ls[('412x915','tiger')],f'start sizes: great white > hammerhead > tiger {[round(Ls[("412x915",t)]) for t in ["white","hammer","tiger"]]}')
+  check(Ls[('915x412','white')]>Ls[('915x412','hammer')]>Ls[('915x412','tiger')],f'start sizes: great white > hammerhead > tiger {[round(Ls[("915x412",t)]) for t in ["white","hammer","tiger"]]}')
   # flattened when TYPES_MECHANICAL is false (?flat)
-  cx,pg,errs,outside=newpage(b,412,915,3.5,'?flat');to_title(pg);play(pg,'tiger')
+  cx,pg,errs,outside=newpage(b,915,412,3.5,'?flat');to_title(pg);play(pg,'tiger')
   check(all(ev(pg,f"__sa.trait('{k}')")==1 for k in ['size','speed','acc','turn','catchR','leap','grow']),'TYPES_MECHANICAL=false flattens all traits to 1');cx.close()
   # ---------- round end, best, persistence, credits, offline ----------
-  cx,pg,errs,outside=newpage(b,412,915,3.5,'?round=3')
+  cx,pg,errs,outside=newpage(b,915,412,3.5,'?round=3')
   ev(pg,"localStorage.removeItem('sharkAttack_best')");to_title(pg);check(pg.locator('.pick').count()==0,'(pick screen not shown until Start)')
   play(pg,'tiger');stage(pg,.5,0);ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(100);sc=ev(pg,'__sa.score')
   pg.wait_for_function("__sa.state==='over'",timeout=6000)
@@ -176,24 +176,24 @@ try:
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v5' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v5')
-  check('audio/gameplay-chiptune.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v5").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
+  check('sharkattack-v6' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v6')
+  check('audio/gameplay-chiptune.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v6").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
   pg.wait_for_function('__sa.chip',timeout=8000);pg.wait_for_timeout(300)
   check(ev(pg,'__sa.chipPlaying') and not ev(pg,'__sa.placeholder'),'offline: real chiptune plays from cache (placeholder not used)')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()
   # chiptune online: decodes to a 72 s seamless buffer loop; fallback when the file fails
-  cx,pg,errs,outside=newpage(b,412,915,2);to_title(pg);pg.wait_for_function('__sa.chip',timeout=8000);play(pg,'white');pg.wait_for_timeout(300)
+  cx,pg,errs,outside=newpage(b,915,412,2);to_title(pg);pg.wait_for_function('__sa.chip',timeout=8000);play(pg,'white');pg.wait_for_timeout(300)
   info=ev(pg,'({p:__sa.chipPlaying,ph:__sa.placeholder,bpm:__sa.BEAT.CHIPTUNE_BPM,bl:__sa.beatLen(),vol:__sa.MUSIC_VOL.game})')
   check(info['p'] and not info['ph'] and abs(info['bl']-.75)<1e-9,f'gameplay uses the real chiptune (buffer loop), beat assist at {info["bpm"]} BPM eighths {info}')
   ev(pg,'__sa.timeLeft=0');pg.wait_for_function('__sa.state==="over"');check(not ev(pg,'__sa.chipPlaying'),'chiptune stops on the score screen')
   pg.click('#snd') if pg.is_visible('#snd') else None
   check(not real(errs) and not [e for e in errs if '404' in e],f'no 404 / console errors with the chiptune present {errs}');cx.close()
-  cx=b.new_context(viewport={'width':412,'height':915},bypass_csp=True,service_workers='block');pg=cx.new_page();pg.route('**/gameplay-chiptune.ogg',lambda r:r.abort())
+  cx=b.new_context(viewport={'width':915,'height':412},bypass_csp=True,service_workers='block');pg=cx.new_page();pg.route('**/gameplay-chiptune.ogg',lambda r:r.abort())
   pg.goto(URL);pg.wait_for_timeout(300);to_title(pg);pg.wait_for_function('__sa.chipFailed',timeout=8000);play(pg,'white');pg.wait_for_timeout(300)
   check(ev(pg,'__sa.placeholder') and not ev(pg,'__sa.chipPlaying'),'if the chiptune fails to load, the placeholder loop is the fallback');cx.close()
   sz=sum(os.path.getsize(os.path.join(ROOT,f)) for f in ['index.html','game.js','sw.js','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','audio/title-cathedrale.ogg','audio/gameplay-chiptune.ogg'])
   print(f'APP SIZE {sz/1024:.0f} KB');check(sz<2.5e6,f'app stays small ({sz/1024:.0f} KB total)')
-  cx2=b.new_context(viewport={'width':915,'height':412},is_mobile=True,has_touch=True);p2=cx2.new_page();p2.goto(URL);p2.wait_for_timeout(300);check(p2.is_visible('#rot'),'landscape shows "turn your phone upright"')
+  cx2=b.new_context(viewport={'width':412,'height':915},is_mobile=True,has_touch=True);p2=cx2.new_page();p2.goto(URL);p2.wait_for_timeout(300);check(p2.is_visible('#rot') and 'sideways' in p2.inner_text('#rot'),'portrait shows "turn your phone sideways"')
   b.close()
 finally: srv.terminate()
 print(f'\n{passes} passed, {len(fails)} failed');sys.exit(1 if fails else 0)

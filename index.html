@@ -30,12 +30,10 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 .bar{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800}.bar i{font-style:normal;width:46px}.bar em{display:block;height:10px;border-radius:5px;background:#ff9f1c;border:2px solid #082a3d;max-width:calc(100% - 56px)}
 #reason.gulp{font-size:52px;color:#e2463c;text-shadow:0 3px 0 #082a3d}#reason.caught{font-size:52px;color:#ff9a1e;text-shadow:0 3px 0 #082a3d}
 #rot{position:fixed;inset:0;background:#06324a;color:#fff;font:800 24px system-ui;display:none;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:9}
-@media (orientation:landscape) and (max-height:500px){#pickUi{justify-content:center}.pickcard{padding:12px;max-height:92vh;overflow:auto}
-.pick{pointer-events:auto;display:flex;align-items:center;gap:8px;width:100%;min-height:96px;margin:8px 0;padding:8px;border:4px solid #082a3d;border-radius:18px;background:#fff;color:#082a3d;text-align:left;font:inherit;box-shadow:0 5px 0 #082a3d;cursor:pointer}
-.pick.sel{background:#fff6cc}.pv{flex:none}.pinfo{flex:1;display:flex;flex-direction:column;gap:3px}.pinfo b{font-size:21px}.pdesc{font-size:14px;line-height:1.25}
-.bar{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800}.bar i{font-style:normal;width:46px}.bar em{display:block;height:10px;border-radius:5px;background:#ff9f1c;border:2px solid #082a3d;max-width:calc(100% - 56px)}
-#reason.gulp{font-size:52px;color:#e2463c;text-shadow:0 3px 0 #082a3d}#reason.caught{font-size:52px;color:#ff9a1e;text-shadow:0 3px 0 #082a3d}
-#rot{display:flex}}
+@media (orientation:portrait){#rot{display:flex}}
+@media (orientation:landscape) and (max-height:520px){.pickcard{max-width:96vw;max-height:94vh;padding:8px 10px}.pickcard h2{margin:0 0 4px;font-size:22px}#pickList{display:flex;gap:8px}.pick{flex-direction:column;min-height:0;margin:4px 0;padding:6px;text-align:center}.pinfo b{font-size:17px}.pdesc{font-size:12px}
+.card{max-width:min(720px,92vw);padding:10px 16px;margin:6px}.card h2{font-size:24px;margin:2px 0 4px}#final{font-size:46px;margin:0}#reason.gulp,#reason.caught{font-size:36px}
+#credUi .card{max-height:94vh;columns:2;column-gap:22px;overflow-wrap:anywhere;padding:8px 14px}#credUi .card p{font-size:12px;margin:3px 0}#credUi .card h2,#credUi .card .btn{column-span:all}#titleUi{padding-bottom:calc(env(safe-area-inset-bottom) + 3vh)}.big{font-size:28px;padding:10px 36px}}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="titleUi" class="ui hide"><button id="start" class="btn big">Start</button><div class="row"><button id="snd" class="btn sm">🔊 Sound on</button><button id="calm" class="btn sm">🌊 Shake on</button><button id="cred" class="btn sm">Credits</button></div></div>
@@ -49,6 +47,6 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 <button id="credBack" class="btn sm">Back</button></div></div>
 <div id="tap" class="ui hide"><div>Tap to start</div></div>
 <div id="note" class="hide"></div>
-<div id="rot">🦈 Please turn your phone upright</div>
-<script src="game.js?v=5"></script>
+<div id="rot"><div>🦈🔄<br>Turn your phone sideways<br><small>Shark Attack plays in landscape</small></div></div>
+<script src="game.js?v=6"></script>
 </body></html>

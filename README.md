@@ -1,6 +1,6 @@
 # Shark Attack
 
-A family-friendly offline PWA game, built for portrait phones (it's tuned on 412x915, 390x844 and 360x740). It has no ads, no sign-in, no analytics and no outside requests. It only loads its own files.
+An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x360; portrait shows a "Turn your phone sideways" prompt and pauses). It has no ads, no sign-in, no analytics and no outside requests. It only loads its own files.
 
 ## How to play
 - **Steer:** slide your finger and the shark swims in the direction you slide (it faces that way). The farther you keep sliding, the faster it goes, building up gradually. If you lift your finger it drifts and slows down.
@@ -93,4 +93,15 @@ Jeremy asked for "a continue game that does not end until you are eaten and dive
   - A "good" bot (wiggles 4×/s when stunned) lasted a median of about 10–13 min.
   - A "weak" bot (1.5 wiggles/s) lasted about 2–3 min.
   - A real player who wiggles fast can therefore last several minutes.
-- Tests: `python3 tests/test_modes.py`. Cache is `sharkattack-v5`.
+- Tests: `python3 tests/test_modes.py`. Cache was `sharkattack-v5` (now v6, see below).
+
+## Deep ocean (v6): landscape, depth, volcanic floor
+
+- **Landscape**: manifest `orientation: landscape`; portrait shows "Turn your phone sideways" and pauses play. Pick cards sit in a row; score and credits cards fit 412 px tall screens.
+- **Intro**: a face-on shark swims at the screen with its jaws wide open around the title words, then CHOMPS a bite out of them (`renderFrontShark`, `TITLE_BITE_AT`, `TITLE_SWIM`).
+- **World** (`WORLD`): 5 screens tall, the camera follows the shark up and down (`CAM_EASE`). A depth meter on the right shows the zone (`ZONES`: Sunlit, Twilight, Midnight, Volcanic) and depth in metres.
+- **Scenery**: bright sunlit shallows with light rays, kelp and rocks; darker twilight with jellies; near-black midnight with rock spires and no floor; then a huge volcanic floor with glowing lava cracks, vents and rising embers. A light circle around the shark shrinks as you go deeper. No blood or gore.
+- **Creatures** (`CREATURES`): sizes are judged against your shark. Smaller ones run away (`FLEE`), bigger ones chase you (`CHASE_SHALLOW`..`CHASE_DEEP`, always slower than your top speed) but only below `CHASE_MIN_D` of depth, and they give up after `GIVEUP_S` and rest `REST_S`. Sharks get bigger and more common the deeper you go; glowing fish live near the floor. At least `FOOD_SHARE` of spawns are food-sized. Danger creatures get a red ring and "!", and off-screen chasers show red edge arrows.
+- **Slower growth** (`GROW`): next size needs `NEED_BASE + NEED_PER_LVL x size` (16, 24, 32...); a creature gives `REL x its size / your bite` (about 1 per food fish), a surfer gives `SURFER` (2). Roughly 3x slower than v5.
+- Divers, nets, ambush, Timed and Endless all still work (divers stay in the upper band, `DIVER_BAND`).
+- Cache is `sharkattack-v6`. Tests: `python3 tests/test_v6.py` (port 8883). All suites run in landscape now.
