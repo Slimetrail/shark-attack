@@ -15,7 +15,7 @@ const SURFERS=[{kind:"kneel",pts:3,hy:16},{kind:"stand",pts:5,hy:46}];// hy: how
 const BEAT={PLACEHOLDER_BPM:100,CHIPTUNE_BPM:80/*eighth-note pulse of the v2 render (music team: TEMPO_EIGHTH_BPM=80)*/,ASSIST_MS:80,PERFECT_MS:45,PERFECT_BONUS:1,on:true};
 const SAFE_SPAWN_S=1.5;
 // DIVERS + AMBUSH. The 3-hit lose rule and the ambush odds/timing are OUR choice, to confirm with Jeremy.
-const DIVER_TRIGGER_SURFERS=3,DIVER_SPEED_FRACTION=.58,DIVER_DETECT_RANGE=1/3,DIVER_GIVEUP_MS=3000,DIVER_GRACE_MS=2000,DIVER_COOLDOWN_MS=2000,DIVER_CATCHES_TO_LOSE=3,DIVER_MAX=3,DIVER_SIZE=46,DIVER_GROWTH_LOSS=2;
+const DIVER_TRIGGER_SURFERS=3,DIVER_SPEED_FRACTION=.5,DIVER_DETECT_RANGE=.28,DIVER_GIVEUP_MS=3000,DIVER_GRACE_MS=2000,DIVER_COOLDOWN_MS=4000,DIVER_SAFE_AFTER_STUN_MS=1500,DIVER_CATCHES_TO_LOSE=3,DIVER_MAX=3,DIVER_SIZE=46,DIVER_NET_REACH=.25,DIVER_GROWTH_LOSS=2;
 const STUN_MS=1000,AMBUSH_STUN_MS=2000;// a hit that brings an ambush stuns longer so the threat is real (it arrives at AMBUSH_ARRIVE_MS)
 const AMBUSH_ON_HIT=[false,false,null,true],AMBUSH_CHANCE=.5;// index = net hit number; null = roll AMBUSH_CHANCE. Hit 3 also ends the round ("Caught!") so it never actually ambushes
 const AMBUSH_ARRIVE_MS=1350,AMBUSH_COOLDOWN_MS=6000,STRUGGLE_SHORTEN_MS=250,STRUGGLE_PX=.2,AMBUSHER_SIZE=1.6,AMBUSHER_LEAVE_MS=3000;// STRUGGLE_PX: screen widths of drag/wiggle per shorten step
@@ -31,7 +31,7 @@ const TYPES={
  hammer:{name:"Hammerhead",desc:"Turns the tightest and grabs surfers best. Jumps a bit lower.",body:"#7f9488",hi:"#b8cbbf",belly:"#eef3ee",ext:"#34463c",stripe:null,hammer:true,
   size:1.0,speed:1.0,acc:1.0,turn:1.3,catchR:1.35,leap:.9,grow:1.0,bars:{Size:3,Speed:3,Jump:2}},
  tiger:{name:"Tiger Shark",desc:"Smallest, but quick off the mark, jumps highest and grows fast.",body:"#8a8a70",hi:"#c9c29a",belly:"#f7f1de",ext:"#45412c",stripe:"#e0841a",hammer:false,
-  size:.85,speed:1.0,acc:1.3,turn:1.05,catchR:1.0,leap:1.2,grow:1.3,bars:{Size:2,Speed:3,Jump:5}}};
+  size:.9,speed:1.0,acc:1.3,turn:1.05,catchR:1.0,leap:1.2,grow:1.5,bars:{Size:2,Speed:3,Jump:5}}};
 // =======================================================================
 const SHOW_FPS=/[?&]fps/.test(location.search);
 const C=document.getElementById("c"),X=C.getContext("2d",{alpha:false});
@@ -113,7 +113,7 @@ function biteTitle(c,cx,cy,r){// cartoon bite: scalloped chunk removed + dark ri
 
 
 // ---------- world ----------
-const shark={stun:0,x:0,y:0,ang:0,spd:0,lvl:0,L:70,Lt:70,wag:0,chomp:0,meter:0,run:0,air:false,vx:0,vy:0,h:0,sq:0,cool:0,perfect:false,face:1};
+const shark={stun:0,safe:0,x:0,y:0,ang:0,spd:0,lvl:0,L:70,Lt:70,wag:0,chomp:0,meter:0,run:0,air:false,vx:0,vy:0,h:0,sq:0,cool:0,perfect:false,face:1};
 const fish=[],surf=[],parts=[],pops=[];
 const divers=[];const amb={on:false,t:0,x:0,y:0,x0:0,y0:0,dir:1,phase:"",lt:0,reachT:-1,ate:false,spr:null,L:0};
 let netHits=0,surfersCaught=0,ambCool=0,bannerT=0,diverTipT=0,diverSpr=null,struggles=0;
@@ -218,7 +218,7 @@ function drawTitle(t){const r=titleRect();X.drawImage(title,r.x,r.y+Math.sin(t*1
 let lastBub=-9,wasFast=false;
 function startGame(){hideAll();state="play";score=0;elapsed=0;endReason="";roundLen=window.__saRound||ROUND_SECONDS;timeLeft=roundLen;
  shark.lvl=0;shark.meter=0;buildShark();shark.Lt=shark.L;shark.x=W/2;shark.y=(SURF+BED)/2;shark.ang=0;shark.spd=sharkMax(0)*.25;shark.run=0;shark.air=false;shark.h=0;shark.cool=0;shark.sq=0;
- touch.on=false;touch.drive=0;shake=0;shark.stun=0;divers.length=0;amb.on=false;netHits=0;surfersCaught=0;ambCool=0;bannerT=0;diverTipT=0;struggles=0;touch.strug=0;wasFast=false;lastBub=-9;for(const p of parts)p.t=0;for(const p of pops)p.t=0;placeAll();playMusic("game");
+ touch.on=false;touch.drive=0;shake=0;shark.stun=0;shark.safe=0;divers.length=0;amb.on=false;amb.ate=false;netHits=0;surfersCaught=0;ambCool=0;bannerT=0;diverTipT=0;struggles=0;touch.strug=0;wasFast=false;lastBub=-9;for(const p of parts)p.t=0;for(const p of pops)p.t=0;placeAll();playMusic("game");
  hintT=localStorage.getItem(HINT_KEY)?0:6;localStorage.setItem(HINT_KEY,"1")}
 function spark(x,y,big){for(const p of parts)if(p.t<=0){const a=Math.random()*6.28,v=rnd(40,140)*(big?1.4:1);p.x=x;p.y=y;p.vx=Math.cos(a)*v;p.vy=Math.sin(a)*v-(big?60:0);p.t=.5;return}}
 function addPop(x,y,txt){let o=pops[0];for(const p of pops)if(p.t<o.t)o=p;o.x=Math.max(50,Math.min(W-50,x));o.y=y;o.t=1;o.txt=txt}
@@ -239,7 +239,7 @@ function gameOver(why){endReason=why;endRound()}
 function struggle(d){touch.strug=(touch.strug||0)+d;while(touch.strug>=W*STRUGGLE_PX&&shark.stun>0){touch.strug-=W*STRUGGLE_PX;shark.stun=Math.max(0,shark.stun-STRUGGLE_SHORTEN_MS/1000);struggles++;spark(shark.x,shark.y,0);SFX.bump()}}
 function surferCaught(){surfersCaught++;const want=Math.min(DIVER_MAX,Math.floor(surfersCaught/DIVER_TRIGGER_SURFERS));while(divers.length<want)spawnDiver()}
 function spawnDiver(x,y){let bx=0,by=0,bd=-1;
- for(let k=0;k<6;k++){const e=k%3,cx=e===0?-30:e===1?W+30:rnd(40,W-40),cy=e===2?SURF+20:rnd(SURF+40,BED-40),d=Math.hypot(cx-shark.x,cy-shark.y);if(d>bd){bd=d;bx=cx;by=cy}}// edge or surface, farthest from the shark
+ for(let k=0;k<6;k++){const e=k%3,cx=e===0?-30:e===1?W+30:rnd(40,W-40),cy=e===2?SURF+20:rnd(SURF+40,BED-40),d=Math.hypot(cx-shark.x,cy-shark.y)-divers.reduce((m,o)=>Math.hypot(cx-o.x,cy-o.y)<80?m+999:m,0);if(d>bd){bd=d;bx=cx;by=cy}}// edge or surface, farthest from the shark
  const d={x:x??bx,y:y??by,ang:0,st:"wander",grace:DIVER_GRACE_MS/1000,cool:0,lost:0,wt:0,ph:Math.random()*6};d.ang=Math.atan2(shark.y-d.y,shark.x-d.x);divers.push(d);
  bannerT=1.5;SFX.divers();if(!localStorage.getItem(DIVER_TIP_KEY)){diverTipT=4.5;localStorage.setItem(DIVER_TIP_KEY,"1")}return d}
 function diverSpeed(){return sharkMax(shark.lvl)*DIVER_SPEED_FRACTION}
@@ -254,12 +254,12 @@ function startAmbush(){const L=shark.L*AMBUSHER_SIZE;amb.on=true;amb.t=0;amb.pha
 function updDivers(dt){if(ambCool>0)ambCool-=dt;if(bannerT>0)bannerT-=dt;if(diverTipT>0)diverTipT-=dt;
  const v=diverSpeed(),range=H*DIVER_DETECT_RANGE,L=shark.L;
  for(const d of divers){d.ph+=dt*5;if(d.grace>0)d.grace-=dt;if(d.cool>0)d.cool-=dt;const dist=Math.hypot(shark.x-d.x,shark.y-d.y);
-  if(dist<range&&!shark.air){d.st="chase";d.lost=0}else if(d.st==="chase"){d.lost+=dt;if(d.lost*1000>=DIVER_GIVEUP_MS)d.st="wander"}
+  if(d.cool>0){d.st="wander";d.wa=Math.atan2(d.y-shark.y,d.x-shark.x);d.wt=.5}else   if(dist<range&&!shark.air){d.st="chase";d.lost=0}else if(d.st==="chase"){d.lost+=dt;if(d.lost*1000>=DIVER_GIVEUP_MS)d.st="wander"}
   let tgt,sp;if(d.st==="chase"){tgt=Math.atan2(shark.y-d.y,shark.x-d.x);sp=v}else{d.wt-=dt;if(d.wt<=0){d.wt=rnd(1.2,2.5);d.wa=d.ang+rnd(-1.4,1.4)}tgt=d.wa??d.ang;sp=v*.45}
   d.ang+=angDiff(d.ang,tgt)*Math.min(1,dt*2.5);d.x+=Math.cos(d.ang)*sp*dt;d.y+=Math.sin(d.ang)*sp*dt;
   if(d.y<SURF+16){d.y=SURF+16;d.ang=Math.abs(d.ang)}if(d.y>BED-20){d.y=BED-20;d.ang=-Math.abs(d.ang)}// stays in the water
   if(d.x<-40){d.x=-40;d.ang=Math.PI-d.ang;d.wa=0}else if(d.x>W+40){d.x=W+40;d.ang=Math.PI-d.ang;d.wa=Math.PI}
-  if(d.grace<=0&&d.cool<=0&&!shark.air&&shark.stun<=0){const [nx,ny]=netPt(d),r=L*.35+14;if((nx-shark.x)**2+(ny-shark.y)**2<r*r){netHit(d);if(state!=="play")return}}}
+  if(d.grace<=0&&d.cool<=0&&!shark.air&&shark.stun<=0&&shark.safe<=0){const [nx,ny]=netPt(d),r=L*DIVER_NET_REACH+8;if((nx-shark.x)**2+(ny-shark.y)**2<r*r){netHit(d);if(state!=="play")return}}}
  if(amb.on){amb.t+=dt;const La=amb.L;
   if(amb.phase==="come"){const k=Math.min(1,amb.t*1000/AMBUSH_ARRIVE_MS),e=k*k*(3-2*k);amb.x=amb.x0+(shark.x-amb.dir*L*.2-amb.x0)*e;amb.y=amb.y0+(shark.y-amb.y0)*e;
    if(Math.hypot(amb.x-shark.x,amb.y-shark.y)<La*.15&&amb.reachT<0)amb.reachT=amb.t;
@@ -276,7 +276,8 @@ function updPlay(dt){elapsed+=dt;timeLeft-=dt;if(hintT>0)hintT-=dt;if(timeLeft<=
    for(let i=0;i<12;i++)spark(shark.x,SURF,1);const bl=beatLen(),off=Math.abs(((beatNow()+bl/2)%bl)-bl/2)*1000;window.__saLastLand={offMs:off};
    if(BEAT.on&&off<=BEAT.PERFECT_MS){addScore(BEAT.PERFECT_BONUS);SFX.perfect();addPop(shark.x,SURF-30,"PERFECT! +"+BEAT.PERFECT_BONUS)}}}
  else{
-  if(shark.stun>0){shark.stun=Math.max(0,shark.stun-dt);touch.drive=0;shark.ang+=Math.sin(elapsed*25)*dt*2}
+  if(shark.safe>0&&shark.stun<=0)shark.safe-=dt;
+  if(shark.stun>0){shark.stun=Math.max(0,shark.stun-dt);shark.safe=DIVER_SAFE_AFTER_STUN_MS/1000;touch.drive=0;shark.ang+=Math.sin(elapsed*25)*dt*2}
   else if(touch.on){shark.ang+=angDiff(shark.ang,touch.dir)*Math.min(1,dt*STEER.TURN*trait("turn"));if(performance.now()-touch.lastMove>80)touch.drive=Math.max(0,touch.drive-dt*STEER.DRIVE_DECAY)}
   else touch.drive=Math.max(0,touch.drive-dt*STEER.DRIVE_DECAY*2);
   const tgt=shark.stun>0?0:max*(touch.on?STEER.MIN+(1-STEER.MIN)*touch.drive:STEER.MIN);
@@ -286,7 +287,7 @@ function updPlay(dt){elapsed+=dt;timeLeft-=dt;if(hintT>0)hintT-=dt;if(timeLeft<=
   const fr=shark.spd/max;if(fr>=FAST_SFX.AT&&!wasFast&&elapsed-lastBub>=FAST_SFX.COOL){SFX.bubbles();lastBub=elapsed;for(let i=0;i<3;i++)spark(shark.x-Math.cos(shark.ang)*L*.5,shark.y,0)}wasFast=fr>=FAST_SFX.AT;
   // surface: launch if fast with enough run-up, else bump back down with a ripple
   if(shark.y-L*.08<=SURF){if(Math.sin(shark.ang)<LAUNCH.UP&&shark.cool<=0&&canLaunch())launch();
-   else{shark.y=SURF+L*.08;if(Math.sin(shark.ang)<0){shark.ang=-shark.ang;shark.spd*=.75;shark.run*=.5;SFX.ripple();addPop(shark.x,SURF+10,"splish");spark(shark.x,SURF,0)}}}
+   else{shark.y=SURF+L*.08;const sn=Math.sin(shark.ang);if(sn<-.5){shark.ang=-shark.ang;shark.spd*=.75;shark.run*=.5;SFX.ripple();addPop(shark.x,SURF+10,"splish");spark(shark.x,SURF,0)}else if(sn<0)shark.ang=Math.cos(shark.ang)>=0?0:Math.PI}}// steep: bump down; shallow: glide along the surface without losing speed
   if(!shark.air){const b=BED-L*.15;if(shark.y>b){shark.y=b;shark.ang=-Math.abs(shark.ang)}
    if(shark.x<L*.35){shark.x=L*.35;shark.ang=Math.PI-shark.ang}else if(shark.x>W-L*.35){shark.x=W-L*.35;shark.ang=Math.PI-shark.ang}}}
  updDivers(dt);if(state!=="play")return;
@@ -327,7 +328,7 @@ function drawPlay(t){
   const pw=power(),ok=canLaunch();if(pw>.03){X.lineWidth=ok?5:3;X.strokeStyle=ok?"rgba(255,210,63,.95)":"rgba(235,252,255,.6)";X.beginPath();X.arc(shark.x,shark.y,L*.62,-Math.PI/2,-Math.PI/2+pw*6.283);X.stroke()}}// launch-power ring, gold = can leap
  const sq=shark.sq>0?Math.sin(shark.sq/.12*Math.PI):0,wob=Math.sin(shark.wag)*.04*(shark.air?0:1),flip=Math.cos(shark.ang)<0?-1:1;
  X.setTransform(DPR,0,0,DPR,shark.x*DPR,shark.y*DPR);X.rotate(shark.ang+wob);X.scale(ks*(1+sq*.15),ks*(1-sq*.18)*flip);
- const s=shark.chomp>0?sprO:sprC,dw=s.width/DPR,dh=s.height/DPR;X.drawImage(s,-dw/2-sprC.L*.05,-dh/2,dw,dh);X.setTransform(DPR,0,0,DPR,0,0);
+ const s=shark.chomp>0?sprO:sprC,dw=s.width/DPR,dh=s.height/DPR;X.globalAlpha=shark.safe>0&&shark.stun<=0&&Math.sin(t*20)<0?.45:1;X.drawImage(s,-dw/2-sprC.L*.05,-dh/2,dw,dh);X.globalAlpha=1;X.setTransform(DPR,0,0,DPR,0,0);
  if(shark.stun>0){X.fillStyle="#ffe14d";X.strokeStyle=P.ink;X.lineWidth=2;for(let i=0;i<4;i++){const a=t*5+i*1.57,x=shark.x+Math.cos(a)*L*.35,y=shark.y-L*.32+Math.sin(a)*L*.08;X.beginPath();for(let j=0;j<10;j++){const r=j%2?3:8,b=j*.628;X.lineTo(x+Math.cos(b)*r,y+Math.sin(b)*r)}X.closePath();X.fill();X.stroke()}
   if(amb.on&&amb.phase==="come"){X.font="900 20px system-ui,sans-serif";X.lineWidth=5;X.strokeText("WIGGLE TO BREAK FREE!",W/2,shark.y+L*.6);X.fillStyle="#fff";X.fillText("WIGGLE TO BREAK FREE!",W/2,shark.y+L*.6)}}}
 function drawHud(){const top=safeTop()+8,mw=Math.min(150,W*.36),mx=(W-mw)/2,my=top+12,fr=shark.lvl>=MAX_LEVEL?1:shark.meter/need(shark.lvl);
@@ -373,7 +374,7 @@ C.addEventListener("pointermove",e=>{if(!touch.on)return;const dx=e.clientX-touc
  if(shark.stun>0){touch.x=e.clientX;touch.y=e.clientY;struggle(d);return}
  touch.sx=touch.sx*.55+dx/d*.45;touch.sy=touch.sy*.55+dy/d*.45;touch.dir=Math.atan2(touch.sy,touch.sx);touch.drive=Math.min(1,touch.drive+d/(W*STEER.DRIVE_PX));touch.lastMove=performance.now();touch.x=e.clientX;touch.y=e.clientY});
 const up=()=>{touch.on=false};C.addEventListener("pointerup",up);C.addEventListener("pointercancel",up);
-document.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});document.addEventListener("gesturestart",e=>e.preventDefault());
+document.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});document.addEventListener("gesturestart",e=>e.preventDefault());document.addEventListener("contextmenu",e=>e.preventDefault());// no long-press menu
 document.addEventListener("pointerdown",()=>{if(AC&&AC.state==="suspended")AC.resume().catch(()=>{})},true);
 function buildPick(){const box=$("pickList");box.innerHTML="";for(const k of Object.keys(TYPES)){const t=TYPES[k],b=document.createElement("button");b.className="pick"+(k===sType?" sel":"");b.dataset.type=k;
   const cv=render3DShark(110*2,false,t);cv.style.width="110px";cv.className="pv";b.appendChild(cv);
@@ -394,12 +395,12 @@ if("serviceWorker" in navigator&&location.protocol!=="file:")navigator.serviceWo
 
 // ---------- test hooks ----------
 window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
- get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},MUSIC_VOL,get placeholder(){return !!placeholder},
+ get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
  get type(){return sType},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.x=-999;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti){const f=fish.find(q=>q.tier===(ti||0)),[mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>q.tier===ti);f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},
  placeSurfer(i,x,k){const s=surf[i];s.zip=0;s.x=x;s.vx=0;if(k!=null)s.k=k},divers,amb,get netHits(){return netHits},get surfersCaught(){return surfersCaught},get struggles(){return struggles},get ambCool(){return ambCool},set ambCool(v){ambCool=v},get bannerT(){return bannerT},
- DIV:{DIVER_TRIGGER_SURFERS,DIVER_SPEED_FRACTION,DIVER_DETECT_RANGE,DIVER_GIVEUP_MS,DIVER_GRACE_MS,DIVER_COOLDOWN_MS,DIVER_CATCHES_TO_LOSE,DIVER_MAX,STUN_MS,AMBUSH_STUN_MS,AMBUSH_ON_HIT,AMBUSH_CHANCE,AMBUSH_ARRIVE_MS,AMBUSH_COOLDOWN_MS,STRUGGLE_SHORTEN_MS,STRUGGLE_PX,AMBUSHER_SIZE,AMBUSHER_LEAVE_MS},
- surferCaught,spawnDiver,diverSpeed,netHit,struggle,setAmbushForce(v){window.__saAmbushForce=v},
+ DIV:{DIVER_TRIGGER_SURFERS,DIVER_SPEED_FRACTION,DIVER_DETECT_RANGE,DIVER_GIVEUP_MS,DIVER_GRACE_MS,DIVER_COOLDOWN_MS,DIVER_SAFE_AFTER_STUN_MS,DIVER_NET_REACH,DIVER_CATCHES_TO_LOSE,DIVER_MAX,STUN_MS,AMBUSH_STUN_MS,AMBUSH_ON_HIT,AMBUSH_CHANCE,AMBUSH_ARRIVE_MS,AMBUSH_COOLDOWN_MS,STRUGGLE_SHORTEN_MS,STRUGGLE_PX,AMBUSHER_SIZE,AMBUSHER_LEAVE_MS},
+ render3DShark,sim(sec,bot,step){step=step||1/60;const n=Math.round(sec/step);let i=0;for(;i<n&&state==="play";i++){if(bot)bot(step);updPlay(step)}return i*step},startAs(t){sType=t;startGame()},surferCaught,spawnDiver,diverSpeed,netHit,struggle,setAmbushForce(v){window.__saAmbushForce=v},
  setLevel(l){shark.lvl=l;shark.meter=0;buildShark();shark.Lt=shark.L}};

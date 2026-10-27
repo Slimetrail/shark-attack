@@ -63,3 +63,21 @@ The **numbers below are our own choice and easy to tune** in the `TYPES` table i
 
 ## Notes
 Icons: `tools/make_icons.py` made the current icons from the earlier top-down shark art. It calls functions that no longer exist in game.js, so it won't run until it's switched to `render3DShark`. The icons themselves are fine as shipped.
+
+## Polish pass (v4): picked defaults & tuning
+Defaults kept (all are constants at the top of `game.js`, exposed in `__sa.DIV`):
+60 s round (`?round=N` overrides), 3 net hits = "Caught!", ambush: hit 1 never, hit 2 = 50%, hit 3 ends.
+
+Changed after headless balance runs (`python3 tests/balance.py`, 25 bot rounds per type × 4 modes):
+- Divers slower (`DIVER_SPEED_FRACTION` .58→.5) and notice the shark from less far (`DIVER_DETECT_RANGE` 1/3→.28): they were catching too fast.
+- After a net hit the diver backs off for 4 s (`DIVER_COOLDOWN_MS` 2000→4000) and the shark blinks, un-nettable, 1.5 s after a stun (new `DIVER_SAFE_AFTER_STUN_MS`): stops chain-hits.
+- Smaller net (new `DIVER_NET_REACH` .25; was L·.35+14).
+- Shallow angle into the surface now glides instead of bumping (bumps kept killing speed, trapping the shark near divers).
+- Tiger shark size .85→.9, growth 1.3→1.5: it scored ~40% below white shark.
+- Divers spawn apart; `amb.ate` reset each round (stat bug).
+
+Results: wiggling bot never eaten by the ambush; ambush warning ≥1.35 s; all 3 types reach time-up in most normal rounds (avg score white≈100, hammer≈84, tiger≈79). With divers present the whole round the simple bot is usually "Caught!" — it's a poor dodger; a pure-flee bot took 0 hits.
+
+Other: icons re-rendered with the 3D side-view shark (`tools/make_icons.py` works again, uses `__sa.render3DShark`), cache `sharkattack-v4`, long-press menu/callout disabled. Feel checks: `python3 tests/test_feel.py` (dead spot, speed cap, slow stop, wiggle, pointercancel, background pause/mute, no scroll/zoom). Perf headless: ~0.15 ms JS/frame (0.32 ms at 4× CPU throttle).
+
+Not confirmed on a real phone: actual touch feel/latency on the S26 Ultra, portrait lock (only works when installed/fullscreen), audio resume after backgrounding on Samsung Internet/Chrome, real frame rate at 120 Hz, and whether kids find divers fair. Bot results are not human results.
