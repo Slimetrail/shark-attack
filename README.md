@@ -12,7 +12,26 @@ A family-friendly offline PWA game, built for portrait phones (it's tuned on 412
   - Fish bigger than you are tinted red and marked "!". If one catches you, it's **Gulp!** and the round ends.
   - Fish the same size as you just bump you.
   - You're safe from fish only while you're in the air.
-- **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends either with "Time's up!" or "Gulp!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
+- **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!", "Gulp!" or "Caught!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
+
+## Divers and the ambush
+- **Divers** turn up after you catch your **3rd surfer** in a round (`DIVER_TRIGGER_SURFERS`). You get a "Divers!" banner and a warning sound.
+  - One more diver comes for every 3 more surfers, with up to 3 at once (`DIVER_MAX`).
+  - Divers start at a screen edge or near the surface, away from you, and can't net you for their first 2 s.
+  - They swim at 58% of your top speed (`DIVER_SPEED_FRACTION`) and only notice you within 1/3 of the screen height (`DIVER_DETECT_RANGE`). Out of range they wander, and they give up a chase after 3 s.
+  - They stay underwater and can't net you mid-leap.
+  - When an off-screen diver is close, an orange arrow shows at the screen edge.
+- **Net hits:** you're stunned for 1 s (`STUN_MS`) and lose 2 points of growth, and that diver waits 2 s before it can net again.
+  - The three icons under the timer show your hits.
+  - **The 3rd net hit ends the round with "Caught!".**
+- **Ambush:** a big dark shark, 1.6× your current size, may come for you while you're stunned.
+  - Hit 1 never brings one. Hit 2 brings one half the time (`AMBUSH_CHANCE` 0.5). Hit 3 always would, but it ends the round first.
+  - It comes in from the far edge with a red "!" and a warning sound, and reaches you 1.35 s after the hit (`AMBUSH_ARRIVE_MS`).
+  - A hit that brings an ambush stuns you for 2 s (`AMBUSH_STUN_MS`) so the threat is real. Wiggle or drag to break free: every 1/5 screen width of finger travel takes 0.25 s off the stun (`STRUGGLE_SHORTEN_MS`), so about 3 quick wiggles gets you out in time.
+  - If you're still stunned when it arrives, it's **Gulp!**. If you got free, it circles off and leaves after 3 s.
+  - It can't eat a shark that isn't stunned or is mid-leap. Only one comes at a time, with 6 s between ambushes (`AMBUSH_COOLDOWN_MS`).
+  - The first time divers appear, you get a tip: "Nets stun you. Big sharks love a stunned shark!"
+- **The 3-hit lose rule and the ambush odds and timing are OUR choice, still to confirm with Jeremy.** Everything above is a constant at the top of `game.js`.
 
 ## Shark types (`TYPES_MECHANICAL`)
 The **numbers below are our own choice and easy to tune** in the `TYPES` table in `game.js`. Add `?flat` to the URL to make all types play the same.
@@ -37,7 +56,7 @@ The **numbers below are our own choice and easy to tune** in the `TYPES` table i
 - `?flat` makes all shark types the same.
 
 ## Tests
-`pip install playwright && playwright install chromium`, then `python3 tests/test_shark.py`. It uses port 8872 (override with `SA_PORT`) and writes screenshots to /workspace/shark-shots/.
+`pip install playwright && playwright install chromium`, then `python3 tests/test_shark.py` (port 8872, override with `SA_PORT`), then `python3 tests/test_divers.py` (port 8873, override with `SA_PORT2`). Both and writes screenshots to /workspace/shark-shots/.
 
 ## Notes
-`tools/make_icons.py` made the icons from the earlier top-down art. It needs updating to use `render3DShark` before you can run it again.
+Icons: `tools/make_icons.py` made the current icons from the earlier top-down shark art. It calls functions that no longer exist in game.js, so it won't run until it's switched to `render3DShark`. The icons themselves are fine as shipped.

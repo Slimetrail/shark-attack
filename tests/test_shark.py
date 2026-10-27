@@ -176,7 +176,7 @@ try:
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v1' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v1')
+  check('sharkattack-v2' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v2')
   check(ev(pg,'__sa.chip')==False and ev(pg,'__sa.placeholder')==True,'no chiptune file yet -> placeholder WebAudio loop')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()
   cx2=b.new_context(viewport={'width':915,'height':412},is_mobile=True,has_touch=True);p2=cx2.new_page();p2.goto(URL);p2.wait_for_timeout(300);check(p2.is_visible('#rot'),'landscape shows "turn your phone upright"')
