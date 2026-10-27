@@ -12,7 +12,7 @@ const STEER={MIN:.2,DRIVE_PX:.55,DRIVE_DECAY:.5,TURN:6,ACC:1.8,DEC:1.2};// DRIVE
 // Launch: heading up through the surface. power = LAUNCH.K * (speed/max) * (run-up distance at speed / screen height), capped at 1.
 const LAUNCH={K:2.2,MIN_POWER:.22,MIN_SPEED:.45,UP:-.35,H_MAX:.32,G:1.6,COOL:.3};// H_MAX: max height as fraction of screen height, G: gravity in screen-heights/s^2
 const SURFERS=[{kind:"kneel",pts:3,hy:16},{kind:"stand",pts:5,hy:46}];// hy: how high above the water the surfer's catch point is
-const BEAT={PLACEHOLDER_BPM:100,CHIPTUNE_BPM:100,ASSIST_MS:80,PERFECT_MS:45,PERFECT_BONUS:1,on:true};
+const BEAT={PLACEHOLDER_BPM:100,CHIPTUNE_BPM:80/*eighth-note pulse of the v2 render (music team: TEMPO_EIGHTH_BPM=80)*/,ASSIST_MS:80,PERFECT_MS:45,PERFECT_BONUS:1,on:true};
 const SAFE_SPAWN_S=1.5;
 // DIVERS + AMBUSH. The 3-hit lose rule and the ambush odds/timing are OUR choice, to confirm with Jeremy.
 const DIVER_TRIGGER_SURFERS=3,DIVER_SPEED_FRACTION=.58,DIVER_DETECT_RANGE=1/3,DIVER_GIVEUP_MS=3000,DIVER_GRACE_MS=2000,DIVER_COOLDOWN_MS=2000,DIVER_CATCHES_TO_LOSE=3,DIVER_MAX=3,DIVER_SIZE=46,DIVER_GROWTH_LOSS=2;
@@ -160,14 +160,21 @@ function placeAll(){for(const f of fish)spawnFish(f,false);for(const s of surf)s
 // ---------- audio (one AudioContext, synthesized SFX, capped voices) ----------
 const FAST_SFX={AT:.7,COOL:1.5};// bubbles when speed rises past 70% of max (upward crossing only), at most once per 1.5 s
 const MAX_VOICES=8;
-let AC=null,soundOn=localStorage.getItem(SND_KEY)!=="0",sfx=null,noiseBuf=null,voices=0,music={title:null,game:null,cur:null},chipFile=false,placeholder=null,phT0=0;
+let AC=null,soundOn=localStorage.getItem(SND_KEY)!=="0",sfx=null,noiseBuf=null,voices=0,music={title:null,game:null,cur:null},chip={buf:null,src:null,bus:null,t0:0,failed:false,want:false},placeholder=null,phT0=0;
 const sfxCount={chomp:0,bubbles:0,gulp:0,played:0};// test hooks: requested count per sound; "played" = actually sounded (unmuted)
 function initAudio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();sfx=AC.createGain();sfx.gain.value=.45;sfx.connect(AC.destination);
   noiseBuf=AC.createBuffer(1,Math.floor(AC.sampleRate*.12),AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)}catch(e){AC=null}
  music.title=new Audio("audio/title-cathedrale.ogg");music.title.loop=true;music.title.preload="auto";music.title.volume=0;
- if(chipFile){music.game=new Audio("audio/gameplay-chiptune.ogg");music.game.loop=true;music.game.volume=0}}
+ loadChip()}
  if(AC&&AC.state==="suspended")AC.resume().catch(()=>{})}
-function checkChip(){return fetch("audio/gameplay-chiptune.ogg",{method:"HEAD",cache:"no-cache"}).then(r=>r.ok,()=>false).then(ok=>ok||(window.caches?caches.match("audio/gameplay-chiptune.ogg").then(m=>!!m):false)).then(ok=>{chipFile=!!ok})}
+// Gameplay music: Slopcore's 8-bit "Reflets dans l'eau" v2, played as a WebAudio buffer loop (sample-accurate, no gap at the loop point).
+// If it fails to load or decode, the original placeholder loop below is the fallback.
+const CHIP_URL="audio/gameplay-chiptune.ogg",MUSIC_VOL={title:.8,game:.3};// game track is ~9 dB louder than the title file, so it plays lower to sit under the SFX
+function loadChip(){if(!AC||chip.buf||chip.loading)return;chip.loading=true;fetch(CHIP_URL).then(r=>{if(!r.ok)throw new Error("chip "+r.status);return r.arrayBuffer()})
+ .then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{chip.buf=buf;if(chip.want&&placeholder){phStop();chipStart()}}).catch(()=>{chip.failed=true})}
+function chipStart(){if(!AC||!chip.buf||chip.src)return;const bus=AC.createGain(),t=AC.currentTime;bus.gain.setValueAtTime(0,t);bus.gain.linearRampToValueAtTime(soundOn?MUSIC_VOL.game:0,t+.6);bus.connect(AC.destination);
+ const src=AC.createBufferSource();src.buffer=chip.buf;src.loop=true;src.connect(bus);src.start(t);chip.src=src;chip.bus=bus;chip.t0=t}
+function chipStop(){if(!chip.src)return;const s=chip.src,b=chip.bus;try{b.gain.setTargetAtTime(0,AC.currentTime,.15);s.stop(AC.currentTime+.8);setTimeout(()=>b.disconnect(),1000)}catch(e){}chip.src=null;chip.bus=null}
 function voice(dur){if(!AC||!soundOn||voices>=MAX_VOICES)return false;voices++;setTimeout(()=>voices--,dur*1000+60);sfxCount.played++;return true}
 function blip(f0,f1,dur,type,vol,delay){if(!voice(dur+(delay||0)))return;const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||"square";o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);
  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol||.3,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(sfx);o.start(t);o.stop(t+dur+.02)}
@@ -182,8 +189,7 @@ const SFX={
  splash(){noise(.12,.3,900)},launch(){blip(180,520,.18,"triangle",.25)},ripple(){blip(300,420,.08,"sine",.15)},bump(){blip(220,180,.06,"triangle",.18)},
  divers(){[880,660,880,660].forEach((f,i)=>blip(f,f,.11,"square",.14,i*.13))},net(){noise(.1,.25,1400);blip(400,200,.2,"triangle",.25)},ambush(){blip(110,90,.5,"sawtooth",.16);blip(130,100,.45,"sawtooth",.12,.3)},caught(){[523,494,466,440].forEach((f,i)=>blip(f,f,.18,"triangle",.25,i*.15))},
  perfect(){blip(1047,1568,.12,"square",.15)},end(){[784,659,523,392].forEach((f,i)=>blip(f,f*.98,.2,"triangle",.25,i*.16))}};
-// PLACEHOLDER gameplay music until Slopcore Studio's "Reflets dans l'eau" chiptune ships as audio/gameplay-chiptune.ogg.
-// Tiny ORIGINAL 8-bit loop (not Debussy, not the real track) at BEAT.PLACEHOLDER_BPM, cheap look-ahead scheduler.
+// FALLBACK only (used if the chiptune file fails to load/decode): tiny ORIGINAL 8-bit loop (not Debussy, not the real track) at BEAT.PLACEHOLDER_BPM, cheap look-ahead scheduler.
 const PH_NOTES=[63,70,75,79, 61,68,73,77, 60,67,72,75, 58,65,70,74];const PH_BASS=[39,37,36,34];
 function phStart(){if(!AC||placeholder)return;const bus=AC.createGain();bus.gain.value=soundOn?.1:0;bus.connect(AC.destination);let step=0,next=AC.currentTime+.05;phT0=next;const st=30/BEAT.PLACEHOLDER_BPM;
  const tick=()=>{while(next<AC.currentTime+.25){const m=440*Math.pow(2,(PH_NOTES[step%16]-69)/12),o=AC.createOscillator(),g=AC.createGain();o.type="square";o.frequency.value=m;g.gain.setValueAtTime(.5,next);g.gain.exponentialRampToValueAtTime(.01,next+st*.8);o.connect(g);g.connect(bus);o.start(next);o.stop(next+st*.85);
@@ -191,11 +197,11 @@ function phStart(){if(!AC||placeholder)return;const bus=AC.createGain();bus.gain
    step++;next+=st}};placeholder={bus,id:setInterval(tick,100)};tick()}
 function phStop(){if(!placeholder)return;clearInterval(placeholder.id);const b=placeholder.bus;try{b.gain.setTargetAtTime(0,AC.currentTime,.2);setTimeout(()=>b.disconnect(),800)}catch(e){}placeholder=null}
 let fadeId=0;
-function playMusic(which){const id=++fadeId,from=music.cur,to=which==="title"?music.title:(chipFile?music.game:null);
- if(which==="game"&&!chipFile)phStart();else phStop();music.cur=to;if(to&&soundOn)to.play().catch(()=>{});
- let k=0;const step=()=>{if(id!==fadeId)return;k+=.1;if(from&&from!==to)from.volume=Math.max(0,from.volume-.1);if(to)to.volume=soundOn?Math.min(.8,k*.8):0;if(k<1)setTimeout(step,60);else if(from&&from!==to)from.pause()};step()}
-function setSound(on){soundOn=on;localStorage.setItem(SND_KEY,on?"1":"0");$("snd").textContent=on?"🔊 Sound on":"🔈 Sound off";if(placeholder)placeholder.bus.gain.value=on?.1:0;
- for(const a of[music.title,music.game])if(a){if(on&&a===music.cur){a.volume=.8;a.play().catch(()=>{})}else a.volume=0}}
+function playMusic(which){const id=++fadeId,from=music.cur,to=which==="title"?music.title:null;chip.want=which==="game";
+ if(which==="game"){if(chip.buf)chipStart();else phStart()}else{phStop();chipStop()}music.cur=to;if(to&&soundOn)to.play().catch(()=>{});
+ let k=0;const step=()=>{if(id!==fadeId)return;k+=.1;if(from&&from!==to)from.volume=Math.max(0,from.volume-.1);if(to)to.volume=soundOn?Math.min(MUSIC_VOL.title,k*MUSIC_VOL.title):0;if(k<1)setTimeout(step,60);else if(from&&from!==to)from.pause()};step()}
+function setSound(on){soundOn=on;localStorage.setItem(SND_KEY,on?"1":"0");$("snd").textContent=on?"🔊 Sound on":"🔈 Sound off";if(placeholder)placeholder.bus.gain.value=on?.1:0;if(chip.bus){chip.bus.gain.cancelScheduledValues(AC.currentTime);chip.bus.gain.value=on?MUSIC_VOL.game:0}
+ for(const a of[music.title])if(a){if(on&&a===music.cur){a.volume=MUSIC_VOL.title;a.play().catch(()=>{})}else a.volume=0}}
 
 // ---------- title ----------
 const T={t:0,bitten:false,done:false,shX:0};const TITLE_SWIM=2.4;
@@ -219,8 +225,8 @@ function addPop(x,y,txt){let o=pops[0];for(const p of pops)if(p.t<o.t)o=p;o.x=Ma
 function addScore(n){score+=n}
 function feed(g){if(shark.lvl>=MAX_LEVEL){shark.meter=need(shark.lvl);return}shark.meter+=g*trait("grow");
  while(shark.meter>=need(shark.lvl)&&shark.lvl<MAX_LEVEL){shark.meter-=need(shark.lvl);shark.lvl++;const keep=shark.L;buildShark();shark.Lt=shark.L;shark.L=keep;SFX.grow();addPop(shark.x,shark.y-shark.L*.6,"BIGGER!")}}
-function beatLen(){return 60/(chipFile?BEAT.CHIPTUNE_BPM:BEAT.PLACEHOLDER_BPM)}
-function beatNow(){if(chipFile&&music.game&&!music.game.paused)return music.game.currentTime;if(placeholder&&AC)return AC.currentTime-phT0;return elapsed}
+function beatLen(){return 60/(chip.src?BEAT.CHIPTUNE_BPM:BEAT.PLACEHOLDER_BPM)}
+function beatNow(){if(chip.src)return (AC.currentTime-chip.t0)%chip.buf.duration;if(placeholder&&AC)return AC.currentTime-phT0;return elapsed}
 function mouth(){const k=shark.L*.48;return [shark.x+Math.cos(shark.ang)*k,shark.y+Math.sin(shark.ang)*k]}
 function angDiff(a,b){let d=b-a;while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;return d}
 function power(){const max=sharkMax(shark.lvl);return Math.min(1,LAUNCH.K*(shark.spd/max)*(shark.run/H))}
@@ -336,7 +342,7 @@ function drawHud(){const top=safeTop()+8,mw=Math.min(150,W*.36),mx=(W-mw)/2,my=t
  X.textAlign="left"}
 function endRound(){state="over";shark.air=false;shake=0;C.style.transform="";const eaten=endReason==="eaten",caught=endReason==="caught";shark.stun=0;amb.on=false;$("reason").textContent=eaten?"Gulp!":caught?"Caught!":"Time's up!";$("reason").className=eaten?"gulp":caught?"caught":"";
  if(score>best){best=score;localStorage.setItem(BEST_KEY,String(best))}$("final").textContent=score;$("bestTxt").textContent=(score>=best&&score>0?"🏆 New best! ":"Best: ")+best;
- $("roundNote").textContent=`Round length: ${roundLen} seconds (default — not yet confirmed).`;if(eaten)SFX.gulp();else if(caught)SFX.caught();else SFX.end();phStop();if(music.game)music.game.pause();show("overUi")}
+ $("roundNote").textContent=`Round length: ${roundLen} seconds (default — not yet confirmed).`;if(eaten)SFX.gulp();else if(caught)SFX.caught();else SFX.end();phStop();chipStop();chip.want=false;show("overUi")}
 
 // ---------- shared draw ----------
 function drawWater(t){X.setTransform(1,0,0,1,0,0);X.drawImage(bg,0,0);X.setTransform(DPR,0,0,DPR,0,0);X.strokeStyle=P.foam;X.lineWidth=3;X.lineCap="round";X.beginPath();
@@ -383,12 +389,12 @@ function setCalm(v){calm=v;localStorage.setItem(CALM_KEY,v?"1":"0");$("calm").te
 $("cred").onclick=()=>{state="credits";show("credUi")};
 $("credBack").onclick=()=>{state="title";show("titleUi")};
 window.addEventListener("resize",resize);
-setSound(soundOn);resize();checkChip();show("tap");startLoop();
+setSound(soundOn);resize();show("tap");startLoop();
 if("serviceWorker" in navigator&&location.protocol!=="file:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 // ---------- test hooks ----------
 window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
- get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get chip(){return chipFile},get placeholder(){return !!placeholder},
+ get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},MUSIC_VOL,get placeholder(){return !!placeholder},
  get type(){return sType},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.x=-999;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti){const f=fish.find(q=>q.tier===(ti||0)),[mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},

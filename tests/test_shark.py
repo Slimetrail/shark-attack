@@ -10,8 +10,8 @@ def check(c,m):
     print(('PASS ' if c else 'FAIL ')+m,flush=True)
     if c: passes+=1
     else: fails.append(m)
-# the only expected "error": the HEAD probe for the not-yet-delivered chiptune file (404) is logged by Chromium
-def real(errs): return [e for e in errs if 'status of 404' not in e and 'ERR_INTERNET_DISCONNECTED' not in e]  # offline phase: network-first fetch fails, SW serves cache
+# no 404s are expected any more (the chiptune ships); offline, the network-first fetch logs ERR_INTERNET_DISCONNECTED and the SW serves cache
+def real(errs): return [e for e in errs if 'ERR_INTERNET_DISCONNECTED' not in e]  # offline phase: network-first fetch fails, SW serves cache
 def newpage(b,w,h,dpr,q=''):
     cx=b.new_context(viewport={'width':w,'height':h},device_scale_factor=dpr,has_touch=True,is_mobile=True,bypass_csp=True)
     pg=cx.new_page();errs=[];outside=[]
@@ -171,14 +171,28 @@ try:
   check('sel' in pg.locator('.pick[data-type=tiger]').get_attribute('class'),'last picked shark (tiger) remembered after reload')
   pg.click('#pickBack');pg.click('#snd');pg.reload();pg.wait_for_timeout(300);check(ev(pg,'__sa.soundOn')==False and 'off' in pg.inner_text('#snd'),'mute persists after reload')
   ev(pg,"localStorage.sharkAttack_sound='1'");pg.reload();pg.wait_for_timeout(300);to_title(pg)
-  pg.click('#cred');pg.wait_for_timeout(200);t=pg.inner_text('#credUi');check('Ivan Ili' in t and 'CC BY 3.0' in t and 'Changes made' in t and 'Slopcore' in t,'credits: Ivan Ilić CC BY 3.0 + changes made + Slopcore placeholder')
+  pg.click('#cred');pg.wait_for_timeout(200);t=pg.inner_text('#credUi');check('Ivan Ili' in t and 'CC BY 3.0' in t and 'Changes made' in t and 'Slopcore' in t and 'Durand' in t and 'No recording was used' in t and 'Giorgi' not in t,'credits: Ivan Ilić CC BY 3.0 + changes made + Slopcore v2 score-only arrangement (no v1/Latso)')
   pg.screenshot(path=f'{SHOTS}/credits.png');pg.click('#credBack')
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v2' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v2')
-  check(ev(pg,'__sa.chip')==False and ev(pg,'__sa.placeholder')==True,'no chiptune file yet -> placeholder WebAudio loop')
+  check('sharkattack-v3' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v3')
+  check('audio/gameplay-chiptune.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v3").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
+  pg.wait_for_function('__sa.chip',timeout=8000);pg.wait_for_timeout(300)
+  check(ev(pg,'__sa.chipPlaying') and not ev(pg,'__sa.placeholder'),'offline: real chiptune plays from cache (placeholder not used)')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()
+  # chiptune online: decodes to a 72 s seamless buffer loop; fallback when the file fails
+  cx,pg,errs,outside=newpage(b,412,915,2);to_title(pg);pg.wait_for_function('__sa.chip',timeout=8000);play(pg,'white');pg.wait_for_timeout(300)
+  info=ev(pg,'({p:__sa.chipPlaying,ph:__sa.placeholder,bpm:__sa.BEAT.CHIPTUNE_BPM,bl:__sa.beatLen(),vol:__sa.MUSIC_VOL.game})')
+  check(info['p'] and not info['ph'] and abs(info['bl']-.75)<1e-9,f'gameplay uses the real chiptune (buffer loop), beat assist at {info["bpm"]} BPM eighths {info}')
+  ev(pg,'__sa.timeLeft=0');pg.wait_for_function('__sa.state==="over"');check(not ev(pg,'__sa.chipPlaying'),'chiptune stops on the score screen')
+  pg.click('#snd') if pg.is_visible('#snd') else None
+  check(not real(errs) and not [e for e in errs if '404' in e],f'no 404 / console errors with the chiptune present {errs}');cx.close()
+  cx=b.new_context(viewport={'width':412,'height':915},bypass_csp=True,service_workers='block');pg=cx.new_page();pg.route('**/gameplay-chiptune.ogg',lambda r:r.abort())
+  pg.goto(URL);pg.wait_for_timeout(300);to_title(pg);pg.wait_for_function('__sa.chipFailed',timeout=8000);play(pg,'white');pg.wait_for_timeout(300)
+  check(ev(pg,'__sa.placeholder') and not ev(pg,'__sa.chipPlaying'),'if the chiptune fails to load, the placeholder loop is the fallback');cx.close()
+  sz=sum(os.path.getsize(os.path.join(ROOT,f)) for f in ['index.html','game.js','sw.js','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','audio/title-cathedrale.ogg','audio/gameplay-chiptune.ogg'])
+  print(f'APP SIZE {sz/1024:.0f} KB');check(sz<2.5e6,f'app stays small ({sz/1024:.0f} KB total)')
   cx2=b.new_context(viewport={'width':915,'height':412},is_mobile=True,has_touch=True);p2=cx2.new_page();p2.goto(URL);p2.wait_for_timeout(300);check(p2.is_visible('#rot'),'landscape shows "turn your phone upright"')
   b.close()
 finally: srv.terminate()

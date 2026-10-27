@@ -6,7 +6,7 @@ A family-friendly offline PWA game, built for portrait phones (it's tuned on 412
 - **Steer:** slide your finger and the shark swims in the direction you slide (it faces that way). The farther you keep sliding, the faster it goes, building up gradually. If you lift your finger it drifts and slows down.
 - **Leap:** *Swim down to build speed, then swim up fast to leap!* Leap height depends on speed × run-up distance at speed, up to a cap. Too little just bumps the surface. The power gauge shows your launch power.
 - **Surfers** can only be caught in the air. Kneeling surfers are worth 3 and standing surfers 5.
-- **Landing on the beat:** if a landing comes within ±80 ms of the music beat, it gets nudged onto the beat for a +1 perfect bonus. Set the tempo with `BEAT.CHIPTUNE_BPM` / `PLACEHOLDER_BPM` (100).
+- **Landing on the beat:** if a landing comes within ±80 ms of the music beat, it gets nudged onto the beat for a +1 perfect bonus. The beat follows the gameplay track's eighth-note pulse, `BEAT.CHIPTUNE_BPM` = 80, so a beat every 0.75 s. `PLACEHOLDER_BPM` (100) is only used by the fallback loop.
 - **Fish:**
   - Eat smaller fish to fill the growth meter. The shark grows in size steps (max 10) and gets a little faster each step.
   - Fish bigger than you are tinted red and marked "!". If one catches you, it's **Gulp!** and the round ends.
@@ -44,9 +44,12 @@ The **numbers below are our own choice and easy to tune** in the `TYPES` table i
 
 ## Audio
 - **Title music:** Debussy, *La Cathédrale engloutie*, performed by Ivan Ilić, CC BY 3.0. This is an 88 s excerpt. See AUDIO-LICENSES.md and the in-game Credits.
-- **Gameplay music:** this will be Slopcore Studio's chiptune "Reflets dans l'eau", but it **hasn't been delivered yet**. Until then an original WebAudio placeholder loop plays.
-  - To swap it in, drop the file at `audio/gameplay-chiptune.ogg`, set `BEAT.CHIPTUNE_BPM`, and bump `VER` in sw.js and `?v=` in index.html.
-  - The game checks for the file with a HEAD request, so a **404 for it in the console is expected** until it exists.
+- **Gameplay music: the real chiptune is in.** It's Slopcore Studio's 8-bit "Reflets dans l'eau" v2, arranged from the public-domain 1905 Durand score with no recording used.
+  - It ships as `audio/gameplay-chiptune.ogg`: 72 s, mono, 64 kbps, 511 KB.
+  - The service worker precaches it, so it works offline.
+  - It plays as a gapless WebAudio loop at volume 0.3 (`MUSIC_VOL.game`), which sits under the sound effects.
+  - If the file ever fails to load, an original WebAudio fallback loop plays instead.
+  - See AUDIO-LICENSES.md for the licensing.
 - **Sound effects** are all synthesized in WebAudio, so there are no sound files: chomp, bubbles (when crossing 70% speed, with a 1.5 s cooldown), gulp, splash, launch and others. Mute is remembered.
 - **Nobody has listened to the audio yet.** It was built on a computer with no speakers, so a phone listen is the first real test.
 
