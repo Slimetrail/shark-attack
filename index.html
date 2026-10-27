@@ -23,6 +23,7 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 #tap div{color:#fff;font:900 34px system-ui,sans-serif;text-shadow:0 4px 0 #082a3d;animation:p 1.2s infinite alternate}
 @keyframes p{to{transform:scale(1.08)}}
 #note{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 4px);text-align:center;color:#cfefff;font-size:12px;pointer-events:none}
+.modes{display:flex;gap:8px;margin:4px 0 2px}.mode{pointer-events:auto;flex:1;min-height:48px;border:4px solid #082a3d;border-radius:14px;background:#fff;color:#082a3d;font:inherit;font-weight:800;font-size:16px;box-shadow:0 4px 0 #082a3d}.mode.sel{background:#ffd23f}
 #pickUi{justify-content:center}.pickcard{padding:12px;max-height:92vh;overflow:auto}
 .pick{pointer-events:auto;display:flex;align-items:center;gap:8px;width:100%;min-height:96px;margin:8px 0;padding:8px;border:4px solid #082a3d;border-radius:18px;background:#fff;color:#082a3d;text-align:left;font:inherit;box-shadow:0 5px 0 #082a3d;cursor:pointer}
 .pick.sel{background:#fff6cc}.pv{flex:none}.pinfo{flex:1;display:flex;flex-direction:column;gap:3px}.pinfo b{font-size:21px}.pdesc{font-size:14px;line-height:1.25}
@@ -38,8 +39,8 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="titleUi" class="ui hide"><button id="start" class="btn big">Start</button><div class="row"><button id="snd" class="btn sm">🔊 Sound on</button><button id="calm" class="btn sm">🌊 Shake on</button><button id="cred" class="btn sm">Credits</button></div></div>
-<div id="overUi" class="ui hide"><div class="card"><h2 id="reason">Time's up!</h2><div>Your score</div><div id="final">0</div><p id="bestTxt">Best: 0</p><button id="again" class="btn big">Play again</button><br><button id="home" class="btn sm">Home</button><p id="roundNote" style="font-size:12px;opacity:.75"></p></div></div>
-<div id="pickUi" class="ui hide"><div class="card pickcard"><h2>Pick your shark</h2><div id="pickList"></div><button id="pickBack" class="btn sm">Back</button></div></div>
+<div id="overUi" class="ui hide"><div class="card"><h2 id="reason">Time's up!</h2><div>Your score</div><div id="final">0</div><p id="stats"></p><p id="bestTxt">Best: 0</p><button id="again" class="btn big">Play again</button><br><button id="home" class="btn sm">Home</button><p id="roundNote" style="font-size:12px;opacity:.75"></p></div></div>
+<div id="pickUi" class="ui hide"><div class="card pickcard"><h2>Pick your shark</h2><div class="modes"><button id="mode_timed" class="mode">⏱ Timed (60 s)</button><button id="mode_endless" class="mode">♾️ Endless</button></div><div id="pickList"></div><button id="pickBack" class="btn sm">Back</button></div></div>
 <div id="credUi" class="ui hide"><div class="card"><h2>Credits</h2>
 <p><b>Title music:</b> “La Cathédrale engloutie” (Préludes, Book I, No. 10), composed by Claude Debussy (public domain). Performed by <b>Ivan Ilić</b>, recorded April 2006, Paris. Licensed under <b>Creative Commons Attribution 3.0 Unported (CC BY 3.0)</b> — creativecommons.org/licenses/by/3.0/<br>Source: Wikimedia Commons, “File:La Cathédrale engloutie - Claude Debussy - performed by Ivan Ilic.ogg” — commons.wikimedia.org/wiki/File:La_Cathédrale_engloutie_-_Claude_Debussy_-_performed_by_Ivan_Ilic.ogg<br><i>Changes made:</i> trimmed to the first 88 seconds, fade-in and fade-out added, mixed to mono, re-encoded as 64 kbps Ogg Vorbis, looped in the game. The performer does not endorse this game.</p>
 <p><b>Game music:</b> “Reflets dans l'eau” (Claude Debussy, <i>Images, 1re série</i>, Paris: A. Durand &amp; Fils, 1905, plate D.&amp;F. 6615; the score is public domain). Original 8-bit chiptune arrangement by Slopcore Studio, transcribed from the printed score only (scan: Sibley Music Library, University of Rochester, urresearch.rochester.edu, item 18334; listed as public domain on IMSLP). No recording was used. Arrangement made for Jeremy's personal-use project Shark Attack.</p>
@@ -49,5 +50,5 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 <div id="tap" class="ui hide"><div>Tap to start</div></div>
 <div id="note" class="hide"></div>
 <div id="rot">🦈 Please turn your phone upright</div>
-<script src="game.js?v=4"></script>
+<script src="game.js?v=5"></script>
 </body></html>

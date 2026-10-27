@@ -81,3 +81,16 @@ Results: wiggling bot never eaten by the ambush; ambush warning ≥1.35 s; all 3
 Other: icons re-rendered with the 3D side-view shark (`tools/make_icons.py` works again, uses `__sa.render3DShark`), cache `sharkattack-v4`, long-press menu/callout disabled. Feel checks: `python3 tests/test_feel.py` (dead spot, speed cap, slow stop, wiggle, pointercancel, background pause/mute, no scroll/zoom). Perf headless: ~0.15 ms JS/frame (0.32 ms at 4× CPU throttle).
 
 Not confirmed on a real phone: actual touch feel/latency on the S26 Ultra, portrait lock (only works when installed/fullscreen), audio resume after backgrounding on Samsung Internet/Chrome, real frame rate at 120 Hz, and whether kids find divers fair. Bot results are not human results.
+
+## Game modes (v5): Timed and Endless
+Jeremy asked for "a continue game that does not end until you are eaten and divers are faster the more surfers you eat".
+- The pick screen has **⏱ Timed (60 s)** (default) and **♾️ Endless**. The choice is remembered.
+- **Endless** has no timer. The HUD shows the time survived. The game ends only when you are eaten ("Gulp!").
+- **OUR reading, to confirm with Jeremy:** in Endless, net hits never end the game. They only stun you and cost growth. From the 2nd hit on, every hit has a 50% ambush chance, and a big shark can still eat you. Timed keeps the rule that 3 net hits = "Caught!".
+- **Divers speed up in both modes.** Diver speed = shark top speed × `DIVER_SPEED_FRACTION` (.5) × (1 + `DIVER_SPEEDUP_PER_SURFER` (.05) × each surfer past the 3rd). It is capped at `DIVER_SPEED_CAP` (1.05) × shark top speed, which is reached at about 24 surfers. Every `DIVER_SPEEDUP_HINT_EVERY` (3) extra surfers, "Divers are faster!" shows low on screen, away from the "Divers!" banner.
+- The Endless score screen shows the score, surfers eaten and time survived. The best score is kept separately for each mode (`sharkAttack_best`, `sharkAttack_best_endless`).
+- **Balance** (`python3 tests/balance_endless.py`, the same bot capped at 15 min):
+  - A "good" bot (wiggles 4×/s when stunned) lasted a median of about 10–13 min.
+  - A "weak" bot (1.5 wiggles/s) lasted about 2–3 min.
+  - A real player who wiggles fast can therefore last several minutes.
+- Tests: `python3 tests/test_modes.py`. Cache is `sharkattack-v5`.
