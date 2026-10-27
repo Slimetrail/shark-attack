@@ -105,3 +105,11 @@ Jeremy asked for "a continue game that does not end until you are eaten and dive
 - **Slower growth** (`GROW`): next size needs `NEED_BASE + NEED_PER_LVL x size` (16, 24, 32...); a creature gives `REL x its size / your bite` (about 1 per food fish), a surfer gives `SURFER` (2). Roughly 3x slower than v5.
 - Divers, nets, ambush, Timed and Endless all still work (divers stay in the upper band, `DIVER_BAND`).
 - Cache is `sharkattack-v6`. Tests: `python3 tests/test_v6.py` (port 8883). All suites run in landscape now.
+
+## Lighter + fairer deep (v7)
+
+- **Performance**: the tall world backdrop (water, sky, light rays, scenery, volcanic floor) is painted once into an offscreen canvas and blitted each frame; the deep-dark overlay is one drawImage; creatures off-screen are culled; particles, embers and surface waves are reduced while the screen is busy (divers, ambusher, or >14 creatures visible). Orientation is tracked with a media-query listener instead of every frame.
+- **Title**: the face-on shark is sized so its whole head stays on screen (`TITLE_TOP_PAD`), jaws still open around the words.
+- **Volcanic floor**: at most `MAX_BIG` (3) sharks near you, spawns spread out (`SPREAD_PX`), glowing fish are always food-sized (`GLOW_MAX` .84 of your bite). Chasing starts in the Twilight zone (`CHASE_MIN_D` .3) and deep chasers are a bit slower (`CHASE_DEEP` .7).
+- Cache `sharkattack-v7`, `game.js?v=7`.
+- Tests: the diver perf check now asserts it is measuring real play (it used to time the game-over screen, which is capped at 30 fps); beat-assist landing tolerance allows 2 frames of measurement slack (`LAND_FRAME_SLACK`); balance_endless runs 30 games per type.

@@ -2,7 +2,8 @@
 # Run: python3 tests/balance_endless.py [games]   -> prints a table; exits 1 if a fairness rule is broken.
 import subprocess,sys,os,time,json
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=int(os.environ.get('SA_PORT5','8879'));N=int(sys.argv[1]) if len(sys.argv)>1 else 10;CAP=900
+# N=30 games per type: survival is bimodal (games end early or run to the cap), so a median of 10 games was a coin-flip.
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=int(os.environ.get('SA_PORT5','8879'));N=int(sys.argv[1]) if len(sys.argv)>1 else 30;CAP=900
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(1)
 BOT=r'''(wig)=>{const S=__sa,s=S.shark,W=innerWidth,H=innerHeight;let mode="hunt",wt=0,t=0;const st={get mode(){return mode},amb:0,ambEaten:0,ambWarn:[],netT:[]};let ambSeen=false,ambT0=0;
  return {st,fn(dt){t+=dt;const T=S.touch;T.on=true;T.lastMove=performance.now()+9e9;

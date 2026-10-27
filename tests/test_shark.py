@@ -20,6 +20,10 @@ def newpage(b,w,h,dpr,q=''):
     pg.goto(URL+q);pg.wait_for_timeout(300);return cx,pg,errs,outside
 def to_title(pg): pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
 def play(pg,t='white'): pg.click('#start');pg.wait_for_timeout(150);pg.click(f'.pick[data-type={t}]');pg.wait_for_timeout(250)
+# Landing is detected on the first rendered frame after touchdown and compared with the AudioContext clock, so the measured
+# offset carries up to one frame (~16.7 ms at 60 Hz) of detection lag plus up to one frame of rAF-vs-audio-clock jitter.
+# PERFECT_MS (45) is the game's promise; the test allows 2 frames of measurement slack on top of it.
+LAND_FRAME_SLACK=34
 def ev(pg,js): return pg.evaluate(js)
 def stage(pg,y_frac=.6,ang=0,spd=None):
     ev(pg,f'()=>{{__sa.clearFood();const s=__sa.shark;s.air=false;s.cool=0;s.run=0;s.x=innerWidth/2;s.y=__sa.SURF+innerHeight*.9*{y_frac};s.ang={ang};s.spd={spd if spd is not None else "__sa.maxSpeed()*.2"};__sa.touch.on=false;__sa.touch.drive=0}}')
@@ -100,7 +104,7 @@ try:
     stage(pg,.06,-math.pi/2,'__sa.maxSpeed()');pg.wait_for_timeout(60*i);ev(pg,'__sa.shark.run=innerHeight*.5;__sa.touch.on=true;__sa.touch.dir=-Math.PI/2;__sa.touch.drive=1;__sa.touch.lastMove=performance.now()+9e9')
     pg.wait_for_function('__sa.shark.air',timeout=1500);ev(pg,'__sa.touch.on=false');l=ev(pg,'window.__saLastLaunch');pg.wait_for_function('!__sa.shark.air',timeout=3000);o=ev(pg,'window.__saLastLand')
     res.append((round((l['air']-l['base'])*1000),l['assisted'],round(o['offMs'])))
-  check(all(abs(d)<=80 for d,_,_ in res) and any(a for _,a,_ in res) and all(off<=45+20 for d,a,off in res if a),f'beat assist: airtime nudged <=80 ms, assisted landings on the beat (nudge ms, assisted, land offset ms) {res}')
+  check(all(abs(d)<=80 for d,_,_ in res) and any(a for _,a,_ in res) and all(off<=45+LAND_FRAME_SLACK for d,a,off in res if a),f'beat assist: airtime nudged <=80 ms, assisted landings on the beat (nudge ms, assisted, land offset ms) {res}')
   # fish growth + chomp sfx hook
   stage(pg,.5,0);ev(pg,'__sa.setLevel(0)');L0=ev(pg,'__sa.shark.Lt');v0=ev(pg,'__sa.maxSpeed()');c0=ev(pg,'__sa.sfxCount.chomp')
   for i in range(20): ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(60)
@@ -176,8 +180,8 @@ try:
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v6' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v6')
-  check('audio/gameplay-chiptune.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v6").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
+  check('sharkattack-v7' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v7')
+  check('audio/gameplay-chiptune.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v7").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
   pg.wait_for_function('__sa.chip',timeout=8000);pg.wait_for_timeout(300)
   check(ev(pg,'__sa.chipPlaying') and not ev(pg,'__sa.placeholder'),'offline: real chiptune plays from cache (placeholder not used)')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()

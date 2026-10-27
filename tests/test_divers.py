@@ -97,9 +97,10 @@ try:
   cdp=cx.new_cdp_session(pg)
   for rate in (1,4):
     cdp.send('Emulation.setCPUThrottlingRate',{'rate':rate});calm(pg);ev(pg,'()=>{__sa.setAmbushForce(null);for(let i=0;i<9;i++)__sa.surferCaught();for(const d of __sa.divers){d.grace=99}}')
-    ev(pg,'()=>{__sa.amb.on=false;__sa.ambCool=0;__sa.netHit(null);__sa.setAmbushForce(true);__sa.netHit(null);__sa.shark.stun=99;__sa.perf.reset()}') if rate==1 else ev(pg,'__sa.perf.reset()')
-    pg.wait_for_timeout(3000);pf=ev(pg,'({f:__sa.perf.frames,js:__sa.perf.js,dt:__sa.perf.dtSum})')
+    ev(pg,'()=>{__sa.amb.on=false;__sa.ambCool=0;__sa.netHit(null);__sa.setAmbushForce(true);__sa.netHit(null);__sa.shark.stun=99;__sa.god=true;__sa.perf.reset()}') if rate==1 else ev(pg,'__sa.perf.reset()')
+    pg.wait_for_timeout(3000);pf=ev(pg,'({f:__sa.perf.frames,js:__sa.perf.js,dt:__sa.perf.dtSum,st:__sa.state,amb:__sa.amb.on,nd:__sa.divers.length})')
     print(f"PERF divers+ambush cpu x{rate}: {pf['f']} frames/3s, avg JS {pf['js']/max(1,pf['f']):.2f} ms/frame",flush=True)
+    check(pf['st']=='play' and pf['nd']>=3,f'perf window measured real play with 3 divers (state {pf["st"]}, divers {pf["nd"]}, ambusher {pf["amb"]})')
     check(pf['js']/max(1,pf['f'])<2.5 and pf['f']>80,f'perf ok with 3 divers + ambusher at cpu x{rate}')
   b.close()
 finally:
