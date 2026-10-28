@@ -66,37 +66,55 @@ const P={ink:"#082a3d",foam:"rgba(220,248,255,.45)",red:"#e2463c",yel:"#ffcc33"}
 function mk(w,h){const c=document.createElement("canvas");c.width=Math.max(1,Math.ceil(w));c.height=Math.max(1,Math.ceil(h));return c}
 
 // ---------- art ----------
-function drawFish(g,s,col,tier,danger){g.lineJoin="round";
- if(danger){g.save();g.lineWidth=9;g.strokeStyle="#ff2a2a";g.beginPath();g.ellipse(-s*.1,0,s*.78,s*.4,0,0,7);g.stroke();g.restore()}
- g.lineWidth=tier>1?3.5:2.5;g.strokeStyle=P.ink;g.fillStyle=danger?"#ff5a4e":col;
- g.beginPath();g.moveTo(-s*.45,0);g.lineTo(-s*.85,-s*.35);g.lineTo(-s*.8,s*.35);g.closePath();g.fill();g.stroke();
- g.beginPath();g.ellipse(0,0,s*.55,s*.32,0,0,7);g.fill();g.stroke();
- if(tier>=1){g.beginPath();g.moveTo(-s*.1,-s*.3);g.lineTo(s*.05,-s*.5);g.lineTo(s*.15,-s*.28);g.fill();g.stroke()}
- if(tier>=2){g.strokeStyle="rgba(8,42,61,.5)";for(let i=0;i<tier;i++){g.beginPath();g.moveTo(-s*.15+i*s*.12,-s*.25);g.lineTo(-s*.15+i*s*.12,s*.25);g.stroke()}g.strokeStyle=P.ink}
- if(tier>=3){g.fillStyle="#fff";for(let i=0;i<3;i++){g.beginPath();g.moveTo(s*.4,-s*.08+i*s*.05);g.lineTo(s*.47,-s*.05+i*s*.05);g.lineTo(s*.4,-s*.02+i*s*.05);g.fill()}}
- g.fillStyle="#fff";g.beginPath();g.arc(s*.28,-s*.06,s*.1,0,7);g.fill();g.stroke();g.fillStyle=P.ink;g.beginPath();g.arc(s*.31,-s*.06,s*.05,0,7);g.fill();
- if(danger){g.lineWidth=3;g.beginPath();g.moveTo(s*.18,-s*.2);g.lineTo(s*.38,-s*.13);g.stroke()}}
-function drawDiver(g,s){g.lineJoin="round";g.lineCap="round";g.lineWidth=2.5;g.strokeStyle=P.ink;// side view facing right, cartoon
- g.fillStyle="#ffcc33";g.beginPath();g.moveTo(-s*.75,-s*.05);g.lineTo(-s*1.0,-s*.22);g.lineTo(-s*1.02,s*.12);g.closePath();g.fill();g.stroke();// fins
- g.fillStyle="#9aa7b3";g.beginPath();g.roundRect(-s*.45,-s*.36,s*.55,s*.16,s*.08);g.fill();g.stroke();// tank
- g.fillStyle="#ff7a1e";g.beginPath();g.ellipse(-s*.25,0,s*.52,s*.2,0,0,7);g.fill();g.stroke();// suit
- g.fillStyle="#ffe0bd";g.beginPath();g.arc(s*.32,-s*.04,s*.17,0,7);g.fill();g.stroke();// head
- g.fillStyle="#7fe0ff";g.beginPath();g.roundRect(s*.34,-s*.14,s*.16,s*.13,s*.04);g.fill();g.stroke();// mask
- g.strokeStyle="#6b4a2a";g.lineWidth=3;g.beginPath();g.moveTo(s*.1,s*.06);g.lineTo(s*.8,-s*.1);g.stroke();// pole
- g.strokeStyle=P.ink;g.lineWidth=2;g.fillStyle="rgba(255,255,255,.25)";g.beginPath();g.ellipse(s*.98,-s*.14,s*.2,s*.24,0,0,7);g.fill();g.stroke();
- g.lineWidth=1;g.beginPath();for(let i=-2;i<=2;i++){g.moveTo(s*.8,-s*.14+i*s*.08);g.lineTo(s*1.16,-s*.14+i*s*.08);g.moveTo(s*.98+i*s*.07,-s*.36);g.lineTo(s*.98+i*s*.07,s*.08)}g.stroke()}
-function drawSurfer(g,s,stand){// side view on a board, board centred at 0,0 (on the water line)
- g.lineJoin="round";g.lineCap="round";g.strokeStyle=P.ink;g.lineWidth=3;g.fillStyle=stand?"#3bb3ff":"#ff5d8f";
- g.beginPath();g.ellipse(0,0,s*.7,s*.09,0,0,7);g.fill();g.stroke();g.fillStyle="#fff";g.fillRect(-s*.5,-s*.025,s,s*.05);
- const skin="#f2b27a";
- if(stand){g.lineWidth=6;g.strokeStyle="#1d5fa8";g.beginPath();g.moveTo(-s*.12,-s*.06);g.lineTo(-s*.05,-s*.35);g.lineTo(s*.12,-s*.06);g.stroke();
-  g.fillStyle="#ffd23f";g.strokeStyle=P.ink;g.lineWidth=3;g.beginPath();g.roundRect(-s*.14,-s*.66,s*.24,s*.34,6);g.fill();g.stroke();
-  g.strokeStyle=skin;g.lineWidth=6;g.beginPath();g.moveTo(-s*.1,-s*.6);g.lineTo(-s*.38,-s*.5);g.moveTo(s*.08,-s*.6);g.lineTo(s*.36,-s*.72);g.stroke();
-  g.fillStyle=skin;g.strokeStyle=P.ink;g.lineWidth=3;g.beginPath();g.arc(-s*.02,-s*.8,s*.13,0,7);g.fill();g.stroke();g.fillStyle="#6b3d1f";g.beginPath();g.arc(-s*.02,-s*.84,s*.13,Math.PI,0);g.fill()}
- else{g.fillStyle="#ff9f1c";g.strokeStyle=P.ink;g.lineWidth=3;g.beginPath();g.roundRect(-s*.16,-s*.36,s*.26,s*.28,6);g.fill();g.stroke();
-  g.strokeStyle=skin;g.lineWidth=6;g.beginPath();g.moveTo(s*.06,-s*.28);g.lineTo(s*.3,-s*.08);g.stroke();
-  g.fillStyle=skin;g.strokeStyle=P.ink;g.lineWidth=3;g.beginPath();g.arc(s*.0,-s*.48,s*.12,0,7);g.fill();g.stroke();g.fillStyle="#ffd23f";g.beginPath();g.arc(-s*.02,-s*.52,s*.12,Math.PI,0);g.fill()}
- g.fillStyle=P.ink;g.beginPath();g.arc(stand?s*.05:s*.06,stand?-s*.8:-s*.48,2.2,0,7);g.fill()}
+// v8 shaded art helpers: mix a #rrggbb colour toward black (k<0) or white (k>0)
+function tone(hex,k){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const t=k<0?0:255,a=Math.abs(k);r=Math.round(r+(t-r)*a);g=Math.round(g+(t-g)*a);b=Math.round(b+(t-b)*a);return `rgb(${r},${g},${b})`}
+// shaded fish, side view facing right, centred at 0,0, length ~1.6s. tier 0 slim minnow, 1 perch, 2 striped snapper, 3 heavy grouper. No cartoon outline.
+function drawFish(g,s,col,tier,danger){g.lineJoin="round";const bh=s*[.24,.3,.33,.38][tier],nose=s*.62,tail=-s*.5;
+ const body=()=>{g.beginPath();g.moveTo(nose,s*.02);g.bezierCurveTo(nose*.8,-bh*1.05,-s*.1,-bh*1.1,tail,-bh*.18);g.lineTo(tail,bh*.18);g.bezierCurveTo(-s*.1,bh*1.05,nose*.8,bh*.95,nose,s*.02);g.closePath()};
+ const fin=(pts,c0)=>{g.beginPath();g.moveTo(pts[0]*s,pts[1]*s);for(let i=2;i<pts.length;i+=4)g.quadraticCurveTo(pts[i]*s,pts[i+1]*s,pts[i+2]*s,pts[i+3]*s);g.closePath();g.fillStyle=c0;g.fill()};
+ const dark=tone(col,-.45),fc=tone(col,-.25);
+ fin([tail+s*.04,0,tail-s*.12,-bh*.6/s,tail-s*.3/1,-bh*1.25/s,tail-s*.18,0,tail-s*.3,bh*1.25/s,tail-s*.12,bh*.6/s,tail+s*.04,0].map((v,i)=>i%2?v:v/s),fc);
+ fin([s*.12,-bh*.9/s,s*.0,-bh*1.7/s,-s*.18/1,-bh*1.25/s,-s*.25,-bh*.85/s,-s*.25,-bh*.85/s].map((v,i)=>i%2?v:v/s),fc);
+ body();const gr=g.createLinearGradient(0,-bh,0,bh);gr.addColorStop(0,dark);gr.addColorStop(.35,col);gr.addColorStop(.62,tone(col,.45));gr.addColorStop(1,tone(col,.2));g.fillStyle=gr;g.fill();
+ g.save();body();g.clip();
+ if(tier>=2){g.fillStyle=tone(col,-.55);g.globalAlpha=.45;for(let i=0;i<3;i++){g.beginPath();g.ellipse(-s*.22+i*s*.2,-bh*.1,s*.035,bh*.9,.1,0,7);g.fill()}g.globalAlpha=1}
+ let q=g.createRadialGradient(s*.2,-bh*.5,0,s*.2,-bh*.5,s*.6);q.addColorStop(0,"rgba(255,255,255,.4)");q.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=q;g.fillRect(-s,-s,2*s,2*s);
+ q=g.createLinearGradient(nose,0,tail,0);q.addColorStop(0,"rgba(0,0,0,0)");q.addColorStop(1,"rgba(0,10,20,.35)");g.fillStyle=q;g.fillRect(-s,-s,2*s,2*s);
+ g.strokeStyle="rgba(0,0,0,.28)";g.lineWidth=Math.max(1,s*.025);g.beginPath();g.moveTo(s*.32,-bh*.6);g.quadraticCurveTo(s*.24,0,s*.32,bh*.6);g.stroke();
+ g.fillStyle="rgba(255,255,255,.28)";g.beginPath();g.ellipse(s*.1,-bh*.45,s*.25,bh*.12,-.05,0,7);g.fill();g.restore();
+ fin([s*.2,bh*.35/s,s*.12,bh*.9/s,s*.02,bh*.75/s,s*.08,bh*.5/s,s*.2,bh*.35/s].map((v,i)=>i%2?v:v/s),"rgba(0,0,0,.18)");
+ body();g.strokeStyle="rgba(0,10,20,.4)";g.lineWidth=Math.max(.8,s*.018);g.stroke();
+ const ex=s*.44,ey=-bh*.25,er=s*(tier===3?.045:.055);g.fillStyle="#f0e6c0";g.beginPath();g.arc(ex,ey,er*1.25,0,7);g.fill();g.fillStyle="#080b0e";g.beginPath();g.arc(ex,ey,er,0,7);g.fill();g.fillStyle="rgba(255,255,255,.85)";g.beginPath();g.arc(ex+er*.35,ey-er*.35,er*.35,0,7);g.fill();
+ g.strokeStyle="rgba(0,0,0,.45)";g.lineWidth=Math.max(1,s*.02);g.beginPath();g.moveTo(nose,s*.03);g.lineTo(nose-s*(tier===3?.14:.07),s*.05+(tier===3?bh*.15:0));g.stroke()}
+// diver: side view facing right, black wetsuit with shading, steel tank, mask, fins, net on a pole
+function drawDiver(g,s){g.lineJoin="round";g.lineCap="round";
+ const limb=(pts,w,c)=>{g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(pts[0]*s,pts[1]*s);for(let i=2;i<pts.length;i+=2)g.lineTo(pts[i]*s,pts[i+1]*s);g.stroke()};
+ limb([-.3,.02,-.6,.12,-.82,.06],s*.11,"#14181d");limb([-.3,-.02,-.62,-.04,-.84,-.14],s*.12,"#1e242b");
+ g.fillStyle="#d9a400";for(const [y,a] of[[.06,.3],[-.14,-.2]]){g.save();g.translate(-s*.86,y*s);g.rotate(a);g.beginPath();g.moveTo(0,-s*.05);g.lineTo(-s*.26,-s*.1);g.lineTo(-s*.26,s*.08);g.lineTo(0,s*.05);g.closePath();g.fill();g.restore()}
+ let q=g.createLinearGradient(0,-s*.36,0,-s*.2);q.addColorStop(0,"#e6ecf0");q.addColorStop(.5,"#8f9aa3");q.addColorStop(1,"#4b545c");g.fillStyle=q;g.beginPath();g.roundRect(-s*.42,-s*.37,s*.52,s*.16,s*.08);g.fill();
+ q=g.createLinearGradient(0,-s*.2,0,s*.2);q.addColorStop(0,"#3a434d");q.addColorStop(.5,"#1a1f25");q.addColorStop(1,"#0b0e11");g.fillStyle=q;g.beginPath();g.ellipse(-s*.08,0,s*.4,s*.17,0,0,7);g.fill();
+ g.fillStyle="#e2463c";g.fillRect(-s*.3,-s*.17,s*.04,s*.33);
+ limb([.15,-.02,.35,.1,.55,.04],s*.08,"#262c33");
+ q=g.createRadialGradient(s*.3,-s*.1,1,s*.32,-s*.04,s*.17);q.addColorStop(0,"#4a525c");q.addColorStop(1,"#101317");g.fillStyle=q;g.beginPath();g.arc(s*.32,-s*.04,s*.16,0,7);g.fill();
+ q=g.createLinearGradient(0,-s*.15,0,0);q.addColorStop(0,"#bff2ff");q.addColorStop(1,"#3b8fb0");g.fillStyle=q;g.beginPath();g.roundRect(s*.36,-s*.14,s*.15,s*.11,s*.03);g.fill();g.fillStyle="rgba(255,255,255,.7)";g.fillRect(s*.38,-s*.13,s*.04,s*.03);
+ g.strokeStyle="#5a4128";g.lineWidth=s*.04;g.beginPath();g.moveTo(s*.45,s*.06);g.lineTo(s*.85,-s*.1);g.stroke();
+ g.strokeStyle="rgba(220,235,240,.8)";g.lineWidth=s*.03;g.beginPath();g.ellipse(s*.98,-s*.14,s*.18,s*.22,0,0,7);g.stroke();
+ g.strokeStyle="rgba(220,235,240,.35)";g.lineWidth=1;g.beginPath();for(let i=-2;i<=2;i++){g.moveTo(s*.82,-s*.14+i*s*.08);g.lineTo(s*1.14,-s*.14+i*s*.08);g.moveTo(s*.98+i*s*.07,-s*.34);g.lineTo(s*.98+i*s*.07,s*.06)}g.stroke()}
+// surfer on a board, side view, board centred at 0,0 on the water line. Shaded skin, wetsuit, hair, board with stringer.
+function drawSurfer(g,s,stand){g.lineJoin="round";g.lineCap="round";const skin="#d89a6a",skinD="#a8693f",suit=stand?"#1f4f7a":"#27313b";
+ let q=g.createLinearGradient(0,-s*.08,0,s*.09);q.addColorStop(0,stand?"#fdfdf7":"#ffe7b0");q.addColorStop(.5,stand?"#d7e4ea":"#f2c76f");q.addColorStop(1,stand?"#8aa2ae":"#b08436");g.fillStyle=q;g.beginPath();g.moveTo(-s*.7,0);g.quadraticCurveTo(-s*.68,-s*.08,0,-s*.08);g.quadraticCurveTo(s*.62,-s*.08,s*.74,-s*.02);g.quadraticCurveTo(s*.6,s*.08,0,s*.08);g.quadraticCurveTo(-s*.66,s*.08,-s*.7,0);g.fill();
+ g.strokeStyle="rgba(40,40,40,.5)";g.lineWidth=1.2;g.beginPath();g.moveTo(-s*.6,-s*.01);g.lineTo(s*.6,-s*.03);g.stroke();
+ const limb=(pts,w,c)=>{g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(pts[0]*s,pts[1]*s);for(let i=2;i<pts.length;i+=2)g.lineTo(pts[i]*s,pts[i+1]*s);g.stroke()};
+ if(stand){limb([-.16,-.07,-.1,-.24,-.04,-.36],s*.08,tone(suit,-.3));limb([.16,-.07,.1,-.24,.04,-.36],s*.085,suit);
+  q=g.createLinearGradient(-s*.12,0,s*.12,0);q.addColorStop(0,tone(suit,-.35));q.addColorStop(.5,tone(suit,.15));q.addColorStop(1,tone(suit,-.2));g.fillStyle=q;g.beginPath();g.ellipse(0,-s*.52,s*.1,s*.18,-.08,0,7);g.fill();
+  limb([-.06,-.62,-.24,-.56,-.4,-.5],s*.055,skinD);limb([.06,-.63,.22,-.7,.38,-.76],s*.055,skin);
+  q=g.createRadialGradient(-s*.03,-s*.8,1,0,-s*.78,s*.1);q.addColorStop(0,tone(skin,.2));q.addColorStop(1,skinD);g.fillStyle=q;g.beginPath();g.arc(0,-s*.78,s*.085,0,7);g.fill();
+  g.fillStyle="#3b2414";g.beginPath();g.arc(-s*.01,-s*.81,s*.088,Math.PI*.95,Math.PI*2.05);g.fill()}
+ else{limb([-.22,-.07,-.05,-.1,.08,-.07],s*.085,tone(suit,-.2));
+  q=g.createLinearGradient(0,-s*.4,0,-s*.08);q.addColorStop(0,tone(suit,.15));q.addColorStop(1,tone(suit,-.3));g.fillStyle=q;g.beginPath();g.ellipse(-s*.08,-s*.24,s*.1,s*.16,.35,0,7);g.fill();
+  limb([.0,-.3,.16,-.18,.3,-.1],s*.055,skin);
+  q=g.createRadialGradient(s*.02,-s*.46,1,s*.03,-s*.44,s*.1);q.addColorStop(0,tone(skin,.2));q.addColorStop(1,skinD);g.fillStyle=q;g.beginPath();g.arc(s*.03,-s*.44,s*.08,0,7);g.fill();
+  g.fillStyle="#d8b04a";g.beginPath();g.arc(s*.02,-s*.47,s*.083,Math.PI*.9,Math.PI*2.05);g.fill()}}
 // v8 shark art: realistic side silhouette, no cartoon outline. Origin: shark centre = canvas centre + (L*.05, 0)
 function sideSharkPath(g,L,open,T){const h=L*.2,bl=T&&T.stripe?1:0;g.beginPath();g.moveTo(L*.5,h*.05);
  if(T&&T.hammer){g.lineTo(L*.5,-h*.25);g.lineTo(L*.48,-h*.68);g.lineTo(L*.42,-h*.72);g.bezierCurveTo(L*.36,-h*.62,L*.3,-h*.6,L*.2,-h*.68)}
@@ -346,7 +364,7 @@ function setMode(m){mode=m;localStorage.setItem(MODE_KEY,m);for(const k of MODES
 let godMode=false;// test hook only: never set by the game
 const DEATH_S=1.5,dead={t:0,puffs:[]};let puffSpr=null;
 function gameOver(why){if(godMode&&why==="eaten")return;endReason=why;if(why==="eaten"&&state==="play"){state="dead";shark.dead=true;shark.air=false;shark.stun=0;dead.t=0;dead.puffs=[];for(let i=0;i<6;i++)dead.puffs.push({a:rnd(0,6.28),d:rnd(.05,.3),k:rnd(.6,1.1),dl:i*.08});return}endRound()}
-function updDead(dt){dead.t+=dt;shark.y=Math.min(BED-shark.L*.15,shark.y+dt*22);if(shake>0)shake-=dt;if(dead.t>=DEATH_S)endRound()}
+function updDead(dt){dead.t+=dt;shark.y=Math.min(BED-shark.L*.15,shark.y+dt*22);if(shake>0)shake-=dt;{const tc=Math.max(0,shark.y-H*.5);camY+=(tc-camY)*Math.min(1,dt*WORLD.CAM_EASE)}if(dead.t>=DEATH_S)endRound()}
 function struggle(d){touch.strug=(touch.strug||0)+d;while(touch.strug>=Math.min(W,H)*STRUGGLE_PX&&shark.stun>0){touch.strug-=Math.min(W,H)*STRUGGLE_PX;shark.stun=Math.max(0,shark.stun-STRUGGLE_SHORTEN_MS/1000);struggles++;spark(shark.x,shark.y,0);SFX.bump()}}
 function surferCaught(){surfersCaught++;{const x=surfersCaught-DIVER_TRIGGER_SURFERS;if(x>0&&x%DIVER_SPEEDUP_HINT_EVERY===0&&diverSpeedMul(x-DIVER_SPEEDUP_HINT_EVERY)<DIVER_SPEED_CAP/DIVER_SPEED_FRACTION)fasterT=2.2}const want=Math.min(DIVER_MAX,Math.floor(surfersCaught/DIVER_TRIGGER_SURFERS));while(divers.length<want)spawnDiver()}
 function spawnDiver(x,y){let bx=0,by=0,bd=-1;

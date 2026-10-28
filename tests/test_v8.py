@@ -47,13 +47,14 @@ try:
     check(ev('__sa.canLaunch')!=None,'leap works at minnow size (checked above)')
     # screenshots mid + huge
     if w==915:
-      ev('()=>{__sa.setLevel(4);const s=__sa.shark;s.y=__sa.SURF+innerHeight*.5;for(const f of __sa.fish)__sa.spawnFish(f,false)}');pg.wait_for_timeout(700);pg.screenshot(path=f'{SHOTS}/v8-mid-size.png')
+      ev('()=>{__sa.setLevel(4);const s=__sa.shark;s.y=__sa.SURF+innerHeight*.5;s.ang=0.15;s.spd=0;for(const f of __sa.fish)__sa.spawnFish(f,false)}');pg.wait_for_timeout(700);pg.screenshot(path=f'{SHOTS}/v8-mid-size.png')
       ev('()=>{__sa.setLevel(9);const s=__sa.shark;s.y=__sa.SURF+innerHeight*.2;s.x=innerWidth*.4;for(const f of __sa.fish)__sa.spawnFish(f,false);__sa.placeSurfer(0,innerWidth*.6,1);__sa.placeSurfer(1,innerWidth*.8,0)}');pg.wait_for_timeout(500);pg.screenshot(path=f'{SHOTS}/v8-huge-near-surfers.png')
       ev('()=>{__sa.setLevel(3);const s=__sa.shark;s.y=__sa.SURF+innerHeight*1.6;s.x=innerWidth*.35;s.spd=0;const c=__sa.fish[0];__sa.setCreature(c,__sa.bite()*2.2,"shark");c.x=s.x+260;c.y=s.y;c.vx=0}');pg.wait_for_timeout(500);pg.screenshot(path=f'{SHOTS}/v8-bigger-shark.png')
     # death: limp shark + red puff
     ev('__sa.god=false');ev('()=>{__sa.setLevel(1);const s=__sa.shark;s.spd=0;s.safe=0;s.ang=0;s.x=innerWidth*.4;s.y=__sa.SURF+innerHeight*.5;const c=__sa.fish[0];__sa.setCreature(c,__sa.bite()*2.5,"shark");c.x=s.x+60;c.y=s.y;c.vx=-200}')
-    pg.wait_for_function('__sa.state==="dead"',timeout=3000);check(ev('__sa.endReason')=='eaten' and ev('__sa.shark.dead'),f'{tag}: touching a bigger shark -> dead state (no bouncing)')
-    y0=ev('__sa.shark.y');pg.wait_for_timeout(450)
+    pg.wait_for_function('__sa.state==="dead"',timeout=3000);pg.wait_for_timeout(500);check(ev('__sa.endReason')=='eaten' and ev('__sa.shark.dead'),f'{tag}: touching a bigger shark -> dead state (no bouncing)')
+    y0=ev('__sa.shark.y');pg.wait_for_timeout(250)
+    vis=ev('()=>{const s=__sa.shark,y=s.y-__sa.camY;return y-s.L*.4>0&&y+s.L*.4<innerHeight}');check(vis,f'{tag}: dead shark fully on screen while sinking')
     red=ev('''()=>{const c=document.getElementById("c"),g=c.getContext("2d"),s=__sa.shark,d=devicePixelRatio,cy=(s.y-__sa.camY)*d,cx=s.x*d,R=s.L*.7*d;const im=g.getImageData(cx-R,cy-R,R*2,R*2).data;let n=0;for(let i=0;i<im.length;i+=16)if(im[i]>140&&im[i+1]<90&&im[i+2]<100)n++;return n}''')
     if w==915: pg.screenshot(path=f'{SHOTS}/v8-dead-red-puff.png')
     check(red>30,f'{tag}: red puff visible around the dead shark ({red} red samples)')
