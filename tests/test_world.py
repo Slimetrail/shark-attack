@@ -20,6 +20,8 @@ try:
   pg.on('pageerror',lambda e:errs.append(str(e)));ev=pg.evaluate
   pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
   pg.click('#start');pg.wait_for_timeout(200);pg.click('.pick[data-type=white]');pg.wait_for_timeout(400);ev('__sa.god=true;__sa.timeLeft=1e6')
+  # world tests only: no divers, so a long swim that happens to catch surfers can't end the Timed round by nets ("caught" ignores god mode)
+  ev('()=>{const s0=__sa.sim;__sa.sim=(a,bot,c)=>s0(a,dt=>{__sa.divers.length=0;if(bot)bot(dt)},c);(function k(){__sa.divers.length=0;requestAnimationFrame(k)})()}')
   # endless: swim a long way in each direction (stage 9 = no depth limit)
   for name,ang,ax in [('left',3.14159,'x'),('right',0,'x'),('down',1.5708,'y')]:
     r=ev(f'''()=>{{__sa.setLevel(9);const s=__sa.shark,W=innerWidth,H=innerHeight;s.x=W/2;s.y=__sa.SURF+H;__sa.camX=0;__sa.respawnAll();const x0=s.x,y0=s.y;let tl=new Set();
@@ -78,8 +80,8 @@ try:
   # D) prey flee speeds + bounded minnow chase bot: a small fish flees at 0.85-0.92x YOUR top speed, a bigger shark chases slower than
   # your top speed, and a bot steering straight at a fleeing minnow-sized fish catches it within 12 s of game time.
   r=ev('''()=>{__sa.setLevel(3);const s=__sa.shark,W=innerWidth,H=innerHeight;s.x=__sa.camX+W/2;s.y=__sa.SURF+H*.8;s.air=false;s.spd=0;__sa.camY=s.y-H/2;__sa.respawnAll();
-    for(const f of __sa.fish)if(!f.off){f.x=__sa.camX-W*5;}
-    const i=__sa.placeFishAt(0,s.x+H*.25,s.y,1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*.5,"fish");f.band=[__sa.SURF+20,Infinity];f.vx=0;f.vy=0;const kk=f.fk;
+    __sa.clearFood();/* park every other creature (off) so no tile refresh can respawn the target */
+    const i=__sa.placeFishAt(0,s.x+H*.25,s.y,1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*.5,"fish");f.tile=null;f.band=[__sa.SURF+20,Infinity];f.vx=0;f.vy=0;const kk=f.fk;
     let t=0,caught=-1,mx=0,sc0=__sa.score;const top=__sa.sharkMax(s.lvl);
     __sa.sim(12,dt=>{t+=dt;if(caught>=0)return;if(f.st==="flee")mx=Math.max(mx,Math.hypot(f.vx,f.vy));if(__sa.score>sc0||f.x!==f.x){caught=t;return}
       Object.assign(__sa.touch,{on:true,dir:Math.atan2(f.y-s.y,f.x-s.x),drive:1,lastMove:performance.now()+9e9})});
