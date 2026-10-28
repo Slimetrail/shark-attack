@@ -61,12 +61,12 @@ try:
     check(ev('__sa.shark.y')>y0 and ev('__sa.state')=='dead',f'{tag}: dead shark sinks slowly')
     pg.wait_for_function('__sa.state==="over"',timeout=3000);check(pg.inner_text('#reason')=='Gulp!',f'{tag}: then the plain "Gulp!" end screen')
     check(not errs,f'{tag}: no page errors {errs[:2]}');cx.close()
-  # perf at minnow start, busy screen, CPU x4 (same limits as before)
+  # perf at CPU x4, busy screen (all 45 creatures crammed on screen): minnow, huge, deep, seabed (same limits as before)
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,bypass_csp=True,service_workers='block');pg=cx.new_page();ev=pg.evaluate
   pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);pg.click('#start');pg.wait_for_timeout(200);pg.click('.pick[data-type=tiger]');pg.wait_for_timeout(300)
   ev('__sa.god=true;__sa.timeLeft=999');cdp=cx.new_cdp_session(pg);cdp.send('Emulation.setCPUThrottlingRate',{'rate':4})
-  for lvl,name in [(0,'minnow'),(9,'huge')]:
-    ev(f'()=>{{__sa.setLevel({lvl});const s=__sa.shark;s.y=__sa.SURF+innerHeight*.5;for(const f of __sa.fish){{__sa.spawnFish(f,false);f.y=s.y+(Math.random()-.5)*innerHeight*.8;f.x=Math.random()*innerWidth}}}}');pg.wait_for_timeout(400);ev('__sa.perf.reset()');pg.wait_for_timeout(3000)
+  for lvl,name,yy in [(0,'minnow','__sa.SURF+innerHeight*.5'),(9,'huge','__sa.SURF+innerHeight*.5'),(8,'deep','__sa.SURF+(__sa.BED-__sa.SURF)*.85'),(8,'seabed','__sa.BED-40')]:
+    ev(f'()=>{{__sa.setLevel({lvl});const s=__sa.shark;s.y={yy};s.x=__sa.camX+innerWidth/2;__sa.camX=s.x-innerWidth/2;__sa.camY=s.y-innerHeight/2;__sa.respawnAll();for(const f of __sa.fish){{if(f.kind!=="star")f.y=s.y+(Math.random()-.5)*innerHeight*.8;f.x=__sa.camX+Math.random()*innerWidth}}}}');pg.wait_for_timeout(400);ev('__sa.perf.reset()');pg.wait_for_timeout(3000)
     fr,js,st=ev('[__sa.perf.frames,__sa.perf.js/__sa.perf.frames,__sa.state]');print(f'PERF v8 {name} cpu x4: {fr} frames/3s, avg JS {js:.2f} ms/frame')
     check(st=='play' and fr>80 and js<2.5,f'perf at CPU x4 ({name}, busy screen): {fr} frames/3s, {js:.2f} ms/frame')
   b.close()

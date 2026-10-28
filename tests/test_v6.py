@@ -39,9 +39,9 @@ try:
     check(abs(ev('__sa.WORLD_H')-h*5)<2 and ev('__sa.BED')>h*4,f'{tag}: world is 5 screens tall, floor far below')
     ev('__sa.timeLeft=999')
     if w==915: pg.screenshot(path=f'{SHOTS}/v8-shallow.png')
-    # camera follows the shark down
+    # camera follows the shark down (v8: stage 8+ so the soft depth limit allows the floor)
     for frac,name in [(.45,'mid'),(.75,'deep'),(.985,'floor')]:
-      ev(f'()=>{{const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*{frac};s.x=innerWidth/2;s.spd=0;__sa.touch.on=false;for(const f of __sa.fish)__sa.spawnFish(f,false)}}');pg.wait_for_timeout(1500)
+      ev(f'()=>{{__sa.setLevel(__sa.DEPTH_LIMIT.FREE_LVL);const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*{frac};s.x=innerWidth/2;s.spd=0;__sa.touch.on=false;for(const f of __sa.fish)__sa.spawnFish(f,false)}}');pg.wait_for_timeout(1500)
       cy=ev('__sa.camY');sy=ev('__sa.shark.y')
       check(sy-cy>0 and sy-cy<h,f'{tag}: camera follows the shark to {name} depth (shark on screen at {sy-cy:.0f}px)')
       if w==915: pg.screenshot(path=f'{SHOTS}/v8-{name}.png')
@@ -66,7 +66,7 @@ try:
     check(ev('__sa.need(0)')==5 and ev('__sa.need(1)')==7,'v8 growth needs 5 + 2 per size (minnow start)')
     if w==915:
       ev('()=>{const s=__sa.shark;s.y=__sa.BED-60;for(const f of __sa.fish)__sa.spawnFish(f,false);let n=0;for(const f of __sa.fish){if(n<3){__sa.setCreature(f,__sa.bite()*2.4,"shark");f.x=100+n*320;f.y=s.y-90-n*20;n++}}}');pg.wait_for_timeout(500);pg.screenshot(path=f'{SHOTS}/v8-volcanic-big-sharks.png')
-    mb=ev('()=>{const s=__sa.shark;s.y=__sa.BED-60;let worst=0;for(let r=0;r<30;r++){for(const f of __sa.fish)__sa.spawnFish(f,false);const n=__sa.fish.filter(f=>f.kind==="shark"&&Math.abs(f.y-s.y)<innerHeight*.6).length;worst=Math.max(worst,n)}const g=__sa.fish.filter(f=>f.kind==="glow").length;s.y=__sa.SURF+innerHeight*.45;return [worst,g,__sa.CREATURES.MAX_BIG]}')
+    mb=ev('()=>{__sa.setLevel(__sa.DEPTH_LIMIT.FREE_LVL);const s=__sa.shark;s.y=__sa.BED-60;let worst=0;for(let r=0;r<30;r++){for(const f of __sa.fish)__sa.spawnFish(f,false);const n=__sa.fish.filter(f=>f.kind==="shark"&&Math.abs(f.y-s.y)<innerHeight*.6).length;worst=Math.max(worst,n)}const g=__sa.fish.filter(f=>f.kind==="glow").length;s.y=__sa.SURF+innerHeight*.45;return [worst,g,__sa.CREATURES.MAX_BIG]}')
     check(1<=mb[0]<=mb[2]+1 and mb[1]>=3,f'{tag}: volcanic floor not crowded: at most {mb[0]} sharks near you (cap {mb[2]}), {mb[1]} glowing fish')
     check(not errs,f'{tag}: no console errors {errs[:3]}');check(not outside,f'{tag}: no outside requests {outside[:3]}')
     cx.close()
