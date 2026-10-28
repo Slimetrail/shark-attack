@@ -265,7 +265,7 @@ function spawnFish(f,edge){const P0=state==="play";let cy=P0?shark.y:SURF+H*.4;
   if(!crowd&&(!P0||Math.hypot(f.x-shark.x,f.y-shark.y)>Math.min(W,H)*(elapsed<SAFE_SPAWN_S?.7:.45)))break}
  const d=depthOf(f.y),C=CREATURES;let kind=Math.random()<C.SHARK_P_SHALLOW+(C.SHARK_P_DEEP-C.SHARK_P_SHALLOW)*d?"shark":d>C.GLOW_DEPTH&&Math.random()<.6?"glow":"fish";
  const mx=C.SIZE_SHALLOW+(C.SIZE_DEEP-C.SIZE_SHALLOW)*d;let sz=C.SIZE_MIN+(mx-C.SIZE_MIN)*Math.pow(Math.random(),1.5);sz*=sizeK;if(kind==="shark")sz=Math.max(sz,22+30*d)*rnd(1,1.25);sz*=worldK;
- if(P0&&Math.random()<C.FOOD_SHARE+Math.max(0,GROW.SURF_LVL-shark.lvl)*.03){sz=Math.min(sz,bite()*rnd(.4,.84));if(kind==="shark"&&(sz<20*worldK||d>.3))kind=d>C.GLOW_DEPTH?"glow":"fish"}
+ if(P0&&!(kind==="shark"&&d>.3&&shark.lvl>=GROW.SURF_LVL)&&Math.random()<C.FOOD_SHARE+Math.max(0,GROW.SURF_LVL-shark.lvl)*.03){sz=Math.min(sz,bite()*rnd(.4,.84));if(kind==="shark"&&(sz<20*worldK||d>.3))kind=d>C.GLOW_DEPTH?"glow":"fish"}
  if(kind==="shark"&&P0){let n=0;for(const q of fish)if(q!==f&&q.kind==="shark"&&Math.abs(q.y-f.y)<H*.8)n++;if(n>=C.MAX_BIG)kind=d>C.GLOW_DEPTH?"glow":"fish"}
  if(kind==="glow"&&P0)sz=Math.min(sz,bite()*C.GLOW_MAX);// glowing fish stay modest so the floor reads clearly
  setCreature(f,Math.max(C.SIZE_MIN*worldK,sz),kind);f.pal=kind==="fish"?Math.floor(rnd(0,d>.5?FISH_PAL.length+3:FISH_PAL.length)):f.pal;
@@ -551,12 +551,15 @@ $("cred").onclick=()=>{state="credits";show("credUi")};
 $("credBack").onclick=()=>{state="title";show("titleUi")};
 window.addEventListener("resize",resize);
 setSound(soundOn);resize();show("tap");startLoop();
-if("serviceWorker" in navigator&&location.protocol!=="file:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+// build id + "Updated!" note (shown once, 2 s, on the first launch of a new build). Update checks are done by the service worker.
+const BUILD=(document.querySelector('meta[name="build"]')||{}).content||"",BUILD_KEY="sharkAttack_build";
+{const prev=localStorage.getItem(BUILD_KEY);if(BUILD&&prev&&prev!==BUILD){$("upd").classList.remove("hide");setTimeout(()=>$("upd").classList.add("hide"),2000)}if(BUILD)localStorage.setItem(BUILD_KEY,BUILD)}
+if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("sw.js").then(()=>navigator.serviceWorker.ready).then(r=>{if(navigator.onLine&&r.active)r.active.postMessage("check")}).catch(()=>{})}
 
 // ---------- test hooks ----------
 window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
  get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
- get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},WORLD,ZONES,GROW,CREATURES,depthOf,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleRect(){return titleRect()},get rotPaused(){return fsRot},set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
+ get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},WORLD,ZONES,GROW,CREATURES,depthOf,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.x=-999;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti){const f=fish[0];setCreature(f,TIERS[ti||0].s,"fish");f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>!q.used)||fish[0];setCreature(f,TIERS[ti].s,"fish");f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},

@@ -14,7 +14,7 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch()
   man=json.load(open(os.path.join(ROOT,'manifest.webmanifest')));check(man['orientation']=='landscape','manifest orientation landscape')
-  sw=open(os.path.join(ROOT,'sw.js')).read();check('VER="8"' in sw and 'game.js?v=8' in sw,'service worker cache bumped to v8')
+  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"8"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=8' in sw,'service worker cache bumped to v8 (sharkattack-v + build 8)')
   check('game.js?v=8' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=8')
   for w,h in [(915,412),(844,390)]:
     cx=b.new_context(viewport={'width':w,'height':h},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True,service_workers='block');pg=cx.new_page();errs=[];outside=[]
