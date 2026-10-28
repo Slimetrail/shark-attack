@@ -46,6 +46,7 @@ sc={t:avg([x['score'] for x in res[('wiggles',t)]]) for t in ['white','hammer','
 if max(sc.values())>1.6*min(sc.values()): bad.append(f'shark types unbalanced {sc}')
 import statistics as _st
 for (label,t),r in res.items():
+  if "diver" in label: continue  # these rows start with surfers pre-caught to force divers
   ft=[x['ft'] for x in r if x['ft']>=0];lt=[x['lt'] for x in r if x['lt']>=0]
   print(f"first surfer {label:10}{t:8} caught in {len(ft)}/{len(r)} games, median {(_st.median(ft) if ft else -1):.1f} s; reached surfer size in {len(lt)}/{len(r)}, median {(_st.median(lt) if lt else -1):.1f} s")
 print('ISSUES' if bad else 'BALANCE OK',bad);json.dump({f'{k[0]}/{k[1]}':v for k,v in res.items()},open('/tmp/balance.json','w'))
