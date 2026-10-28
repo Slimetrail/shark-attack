@@ -55,7 +55,7 @@ try:
     pg.wait_for_function('__sa.state==="dead"',timeout=3000);pg.wait_for_timeout(500);check(ev('__sa.endReason')=='eaten' and ev('__sa.shark.dead'),f'{tag}: touching a bigger shark -> dead state (no bouncing)')
     y0=ev('__sa.shark.y');pg.wait_for_timeout(250)
     vis=ev('()=>{const s=__sa.shark,y=s.y-__sa.camY;return y-s.L*.4>0&&y+s.L*.4<innerHeight}');check(vis,f'{tag}: dead shark fully on screen while sinking')
-    red=ev('''()=>{const c=document.getElementById("c"),g=c.getContext("2d"),s=__sa.shark,d=devicePixelRatio,cy=(s.y-__sa.camY)*d,cx=s.x*d,R=s.L*.7*d;const im=g.getImageData(cx-R,cy-R,R*2,R*2).data;let n=0;for(let i=0;i<im.length;i+=16)if(im[i]>140&&im[i+1]<90&&im[i+2]<100)n++;return n}''')
+    red=ev('''()=>{const c=document.getElementById("c"),g=c.getContext("2d"),s=__sa.shark,d=__sa.DPR,cy=(s.y-__sa.camY)*d,cx=(s.x-__sa.camX)*d,R=s.L*.7*d;const im=g.getImageData(cx-R,cy-R,R*2,R*2).data;let n=0;for(let i=0;i<im.length;i+=16)if(im[i]>140&&im[i+1]<90&&im[i+2]<100)n++;return n}''')
     if w==915: pg.screenshot(path=f'{SHOTS}/v8-dead-red-puff.png')
     check(red>30,f'{tag}: red puff visible around the dead shark ({red} red samples)')
     check(ev('__sa.shark.y')>y0 and ev('__sa.state')=='dead',f'{tag}: dead shark sinks slowly')
