@@ -113,3 +113,13 @@ Jeremy asked for "a continue game that does not end until you are eaten and dive
 - **Volcanic floor**: at most `MAX_BIG` (3) sharks near you, spawns spread out (`SPREAD_PX`), glowing fish are always food-sized (`GLOW_MAX` .84 of your bite). Chasing starts in the Twilight zone (`CHASE_MIN_D` .3) and deep chasers are a bit slower (`CHASE_DEEP` .7).
 - Cache `sharkattack-v7`, `game.js?v=7`.
 - Tests: the diver perf check now asserts it is measuring real play (it used to time the game-over screen, which is capped at 30 fps); beat-assist landing tolerance allows 2 frames of measurement slack (`LAND_FRAME_SLACK`); balance_endless runs 30 games per type.
+
+## Endless ocean + realism (v8)
+
+- **World**: endless sideways (3×3 tile pool, depth-locked spawns, camera snap). Bots and tests are camera-relative.
+- **Look**: our own baked reef and deep species (`SPECIES`, `drawSpecies`; groupers with long bodies, big mouths, heavy heads; longer parrotfish, hogfish, wrasse, squirrelfish with pelvic fins and dorsal spines; anglers with a baked lure, octopus, starfish). Reference photos in /workspace/refs were only looked at, never loaded or traced. Great white (countershading), tiger (bars fade as it grows), hammerhead (cephalofoil, eyes at the tips). The red danger ring is gone; danger fish keep the "!". NPC tilt is clamped to ±0.5 rad.
+- **Prey** (`CREATURES.FLEE_MIN/MAX`): fleeing fish swim at 0.85–0.92× your top speed and tire after `FLEE_BURST_S` (to `FLEE_TIRED` for `FLEE_TIRED_S`), so a minnow can catch them.
+- **Growth** (`GROW`): next size needs 3 + 1 × size (retuned so Timed is winnable). Sim results: `tests/balance_results.md`.
+- **Intro**: the shark swims past "SHARK ATTACK", turns, comes back and bites the C; the K is torn off and hangs, the A is knocked crooked — all baked into the one title layer (`tearTitle`). Start works at any time.
+- **Quality**: `?rs=0.5..2` render scale, `?fx=0..3` effects, `?dprcap=`, `?adapt=0` to switch off adaptive quality (`ADAPT`: drops fx, then render scale to 0.6, when frames average >21 ms). Grid: `tests/perf_ceiling.py` → `tests/perf_ceiling_results.md` (a desktop proxy, not a phone). Recommended Galaxy S26 Ultra default = the shipped one (DPR cap 2, rs 1, fx 2, adapt on).
+- Cache `sharkattack-v8`, `game.js?v=8`. Tests: test_shark, test_divers, test_feel, test_modes, test_v6, test_v8, test_update, test_world, plus balance.py and balance_endless.py. Not tested on a real phone.
