@@ -108,19 +108,19 @@ function drawFish(g,s,col,tier,danger){g.lineJoin="round";const bh=s*[.24,.3,.33
 // z: 0 shallow / small prey, 1 mid reef, 2 deeper reef (lower mid layer), 3 deep (drawn for "glow"-kind deep creatures). h = half body height / s.
 const SPECIES=[
  {n:"Yellowtail damselfish",z:0,c:"#1d2f6b",c2:"#ffd21f",h:.36,tail:"fork",pat:"dots",eye:.06},
- {n:"Bluehead wrasse",z:0,c:"#3fc46a",c2:"#2a5cff",h:.2,tail:"fork",pat:"head",eye:.05},
+ {n:"Bluehead wrasse",el:1.3,z:0,c:"#3fc46a",c2:"#2a5cff",h:.2,tail:"fork",pat:"head",eye:.05},
  {n:"Bigeye",z:0,c:"#e2352b",c2:"#ff8a70",h:.32,tail:"fork",pat:"none",eye:.11},
  {n:"Blue tang",z:1,c:"#2f55d4",c2:"#ffd84a",h:.5,tail:"lunate",pat:"lines",eye:.06,spine:1},
  {n:"Queen angelfish",z:1,c:"#2fa7a0",c2:"#ffcf1f",h:.58,tail:"round",pat:"crown",eye:.055,trail:1},
- {n:"Queen parrotfish",z:1,c:"#1f9fb0",c2:"#7be04a",h:.32,tail:"lunate",pat:"bands",eye:.05,beak:1},
- {n:"Princess parrotfish",z:1,c:"#3a6fe0",c2:"#ffae2a",h:.3,tail:"lunate",pat:"stripe",eye:.05,beak:1},
- {n:"Striped parrotfish",z:1,c:"#5a7fa8",c2:"#e8f0ff",h:.3,tail:"lunate",pat:"stripes",eye:.05,beak:1},
+ {n:"Queen parrotfish",el:1.2,z:1,c:"#1f9fb0",c2:"#7be04a",h:.32,tail:"lunate",pat:"bands",eye:.05,beak:1},
+ {n:"Princess parrotfish",el:1.2,z:1,c:"#3a6fe0",c2:"#ffae2a",h:.3,tail:"lunate",pat:"stripe",eye:.05,beak:1},
+ {n:"Striped parrotfish",el:1.2,z:1,c:"#5a7fa8",c2:"#e8f0ff",h:.3,tail:"lunate",pat:"stripes",eye:.05,beak:1},
  {n:"Gray triggerfish",z:1,c:"#8a9aa6",c2:"#5c6b78",h:.46,tail:"lunate",pat:"dots",eye:.05,trig:1},
- {n:"Tiger grouper",z:2,c:"#c8563a",c2:"#5a1e14",h:.34,tail:"round",pat:"bars",eye:.05,big:1},
- {n:"Black grouper",z:2,c:"#4a5560",c2:"#1c2228",h:.34,tail:"round",pat:"blotch",eye:.05,big:1},
- {n:"Nassau grouper",z:2,c:"#c9a27e",c2:"#5b3a26",h:.34,tail:"round",pat:"bars",eye:.05,big:1},
- {n:"Hogfish",z:2,c:"#f0b0a0",c2:"#9c3a3a",h:.38,tail:"lunate",pat:"mask",eye:.045,snout:1,tall:1},
- {n:"Squirrelfish",z:2,c:"#e8402e",c2:"#ffe3d8",h:.3,tail:"fork",pat:"stripes",eye:.1,spiny:1},
+ {n:"Tiger grouper",el:1.4,z:2,c:"#c8563a",c2:"#5a1e14",h:.34,tail:"round",pat:"bars",eye:.05,big:1},
+ {n:"Black grouper",el:1.4,z:2,c:"#4a5560",c2:"#1c2228",h:.34,tail:"round",pat:"blotch",eye:.05,big:1},
+ {n:"Nassau grouper",el:1.4,z:2,c:"#c9a27e",c2:"#5b3a26",h:.34,tail:"round",pat:"bars",eye:.05,big:1},
+ {n:"Hogfish",el:1.15,z:2,c:"#f0b0a0",c2:"#9c3a3a",h:.38,tail:"lunate",pat:"mask",eye:.045,snout:1,tall:1},
+ {n:"Squirrelfish",el:1.2,z:2,c:"#e8402e",c2:"#ffe3d8",h:.3,tail:"fork",pat:"stripes",eye:.1,spiny:1},
  {n:"Silver spinyfin",z:3,c:"#c9ccd2",c2:"#8a2a1c",h:.5,tail:"fork",pat:"none",eye:.12,ring:1},
  {n:"Mirrorbelly",z:3,c:"#a08a62",c2:"#e8e4d4",h:.26,tail:"fork",pat:"belly",eye:.07,dome:1},
  {n:"Fangtooth",z:3,c:"#6b6a3a",c2:"#3a3a20",h:.4,tail:"fork",pat:"none",eye:.04,fang:1},
@@ -128,9 +128,9 @@ const SPECIES=[
  {n:"Pelican eel",z:3,c:"#22242a",c2:"#ff5a8a",h:.14,tail:"whip",pat:"none",eye:.025,gulp:1,lng:1.7}];
 const PLANK_SP=[{n:"Silverside fry",z:0,c:"#b8d8e0",c2:"#eaffff",h:.16,tail:"fork",pat:"belly",eye:.08},{n:"Glass minnow",z:0,c:"#9fd8b0",c2:"#e0fff0",h:.18,tail:"fork",pat:"belly",eye:.09}];
 const SP_Z=[0,1,2,3].map(z=>SPECIES.map((p,i)=>p.z===z?i:-1).filter(i=>i>=0));
-function drawSpecies(g,s,p){g.lineJoin="round";g.lineCap="round";const L=p.lng||1,bh=s*p.h,nose=s*.62*(p.lng?1.05:1),tail=-s*.5*L,col=p.c,dark=tone(col,-.45),fc=tone(col,-.22);
+function drawSpecies(g,s,p){g.lineJoin="round";g.lineCap="round";const L=p.lng||1,E=p.el||1,bh=s*p.h,nose=s*.62*(p.lng?1.05:1)*(1+(E-1)*.4),tail=-s*.5*L*(1+(E-1)*.6),col=p.c,dark=tone(col,-.45),fc=tone(col,-.22);
  const body=()=>{g.beginPath();if(p.lng){g.moveTo(nose,0);g.bezierCurveTo(nose*.85,-bh*1.2,nose*.2,-bh,0,-bh*.9);g.lineTo(tail,-bh*.25);g.lineTo(tail,bh*.25);g.lineTo(0,bh*.9);g.bezierCurveTo(nose*.2,bh,nose*.85,bh*1.2,nose,0)}
-  else{const nz=p.snout?nose*1.08:nose;g.moveTo(nz,p.snout?bh*.15:s*.02);g.bezierCurveTo(nose*(p.snout?.55:.8),-bh*1.1,-s*.12,-bh*1.1,tail,-bh*.2);g.lineTo(tail,bh*.2);g.bezierCurveTo(-s*.12,bh*1.05,nose*.8,bh*.95,nz,p.snout?bh*.15:s*.02)}g.closePath()};
+  else{const nz=p.snout?nose*1.08:nose;g.moveTo(nz,p.snout?bh*.15:s*.02);g.bezierCurveTo(nose*(p.snout?.55:p.big?.98:.8),-bh*(p.big?1.3:1.1),-s*.12*E,-bh*1.1,tail,-bh*.2);g.lineTo(tail,bh*.2);g.bezierCurveTo(-s*.12*E,bh*1.05,nose*(p.big?.98:.8),bh*(p.big?1.15:.95),nz,p.snout?bh*.15:s*.02)}g.closePath()};
  const poly=(pts,c0,rays)=>{const path=()=>{g.beginPath();g.moveTo(pts[0]*s,pts[1]*s);for(let i=2;i<pts.length;i+=4)g.quadraticCurveTo(pts[i]*s,pts[i+1]*s,pts[i+2]*s,pts[i+3]*s);g.closePath()};path();g.fillStyle=c0;g.fill();
   if(rays!==0){g.save();path();g.clip();g.strokeStyle="rgba(0,0,0,.22)";g.lineWidth=Math.max(.6,s*.008);const bx=pts[0]*s,by=pts[1]*s;for(let i=2;i<pts.length;i+=2){const ex=pts[i]*s,ey=pts[i+1]*s;for(let k=0;k<3;k++){g.beginPath();g.moveTo(bx,by);g.lineTo(ex+(k-1)*s*.05,ey+(k-1)*s*.05);g.stroke()}}g.fillStyle="rgba(255,255,255,.12)";g.fillRect(-2*s,-2*s,4*s,4*s);g.restore();path();g.strokeStyle="rgba(0,10,20,.3)";g.lineWidth=Math.max(.6,s*.01);g.stroke()}};
  const t0=tail/s,hh=p.h,tc=p.tail==="lunate"||p.n==="Yellowtail damselfish"?p.c2:fc;
@@ -140,9 +140,10 @@ function drawSpecies(g,s,p){g.lineJoin="round";g.lineCap="round";const L=p.lng||
  else if(p.tail==="lunate")poly([t0+.03,0,t0-.12,-hh*.4,t0-.3,-hh*1.15,t0-.2,0,t0-.3,hh*1.15,t0-.12,hh*.4,t0+.03,0],tc);
  else poly([t0+.04,0,t0-.12,-hh*.5,t0-.32,-hh*1.1,t0-.17,0,t0-.32,hh*1.1,t0-.12,hh*.5,t0+.04,0],tc);
  // dorsal / anal fins
- if(p.spiny||p.tall){g.fillStyle=p.tall?p.c2:tone(col,-.15);g.beginPath();g.moveTo(s*.28,-bh*.8);for(let i=0;i<7;i++){const x=s*.28-i*s*.09;g.lineTo(x-s*.03,-bh*(p.tall&&i<3?1.9:1.45));g.lineTo(x-s*.09,-bh*.95)}g.lineTo(-s*.35,-bh*.5);g.closePath();g.fill()}
+ if(p.spiny||p.tall){g.fillStyle=p.tall?p.c2:tone(col,-.15);g.beginPath();g.moveTo(s*.28,-bh*.8);for(let i=0;i<7;i++){const x=(s*.28-i*s*.09)*E;g.lineTo(x-s*.03,-bh*(p.tall&&i<3?1.9:1.45));g.lineTo(x-s*.09,-bh*.95)}g.lineTo(-s*.35*E,-bh*.5);g.closePath();g.fill();g.strokeStyle="rgba(0,0,0,.3)";g.lineWidth=Math.max(.6,s*.008);for(let i=0;i<7;i++){const x=(s*.28-i*s*.09)*E;g.beginPath();g.moveTo(x-s*.03,-bh*(p.tall&&i<3?1.9:1.45));g.lineTo(x-s*.03,-bh*.8);g.stroke()}}
  else if(p.trail){poly([.15,-hh*.9,-.05,-hh*1.7,-.62,-hh*1.25,-.32,-hh*.75,-.3,-hh*.6],p.c2);poly([.1,hh*.9,-.05,hh*1.7,-.62,hh*1.25,-.32,hh*.75,-.3,hh*.6],p.c2)}
- else if(!p.lng){poly([.22,-hh*.9,.05,-hh*1.4,-.3,-hh*1.25,-.4,-hh*.55,-.4,-hh*.45],fc);poly([.0,hh*.9,-.15,hh*1.35,-.36,hh*.8,-.38,hh*.5,-.38,hh*.4],fc)}
+ else if(!p.lng){poly([.22*E,-hh*.9,.05*E,-hh*1.4,-.3*E,-hh*1.25,-.4*E,-hh*.55,-.4*E,-hh*.45],fc);poly([.0,hh*.9,-.15*E,hh*1.35,-.36*E,hh*.8,-.38*E,hh*.5,-.38*E,hh*.4],fc)}
+ if(E>1&&!p.lng){poly([.12*E,hh*.95,.02*E,hh*1.55,-.04*E,hh*1.45,.02*E,hh*1.1,.06*E,hh*.95],fc)}// pelvic fin
  else{g.fillStyle=fc;g.fillRect(tail,-bh*.4,-tail*.9,bh*.15)}
  if(p.trig){g.fillStyle=dark;g.beginPath();g.moveTo(s*.2,-bh*.85);g.lineTo(s*.12,-bh*1.45);g.lineTo(s*.06,-bh*.9);g.fill()}
  // body with Echo-style shading
@@ -173,10 +174,11 @@ function drawSpecies(g,s,p){g.lineJoin="round";g.lineCap="round";const L=p.lng||
  // jaws: fangs (stylized white points, no gore), parrot beak, pelican-eel gulper
  if(p.gulp){g.fillStyle=tone(col,.12);g.beginPath();g.moveTo(nose*.2,bh*.5);g.quadraticCurveTo(nose*.9,bh*3,nose*1.15,bh*.6);g.lineTo(nose,0);g.closePath();g.fill();g.strokeStyle="rgba(0,0,0,.5)";g.stroke()}
  if(p.fang){g.fillStyle="#f4f0e0";for(let i=0;i<4;i++){const x=nose-s*.03-i*s*.05;g.beginPath();g.moveTo(x,s*.01);g.lineTo(x-s*.015,s*.01+bh*(i%2?.25:.45));g.lineTo(x-s*.03,s*.01);g.fill()}}
+ if(p.big){g.strokeStyle="rgba(20,5,0,.6)";g.lineWidth=Math.max(1,s*.022);g.beginPath();g.moveTo(nose,s*.03);g.quadraticCurveTo(nose*.8,bh*.45,nose*.55,bh*.3);g.stroke();g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.moveTo(nose,s*.04);g.quadraticCurveTo(nose*.85,bh*.75,nose*.5,bh*.5);g.quadraticCurveTo(nose*.8,bh*.4,nose,s*.04);g.fill()}
  if(p.beak){g.fillStyle="#e9f2e8";g.beginPath();g.arc(nose-s*.02,s*.02,s*.04,-1.4,1.4);g.fill()}
  if(p.dome){g.fillStyle="rgba(220,240,255,.55)";g.beginPath();g.ellipse(s*.42,-bh*.55,s*.07,s*.05,0,0,7);g.fill()}
  if(p.barbel){g.strokeStyle=tone(p.c2,-.2);g.lineWidth=Math.max(1,s*.015);g.beginPath();g.moveTo(nose*.85,bh*.9);g.quadraticCurveTo(nose*.7,bh*3,nose*.95,bh*4.2);g.stroke()}
- const ex=p.snout?s*.36:s*.44*(p.lng?1.05:1),ey=-bh*(p.lng?.3:.25),er=s*p.eye;g.fillStyle="rgba(0,0,0,.35)";g.beginPath();g.arc(ex,ey,er*1.45,0,7);g.fill();{const ig=g.createRadialGradient(ex,ey,er*.6,ex,ey,er*1.3);ig.addColorStop(0,p.ring?p.c2:p.z===3?"#c8d0c0":"#e8c050");ig.addColorStop(1,p.ring?tone(p.c2,-.4):p.z===3?"#606858":"#8a5a20");g.fillStyle=ig;g.beginPath();g.arc(ex,ey,er*1.3,0,7);g.fill()}g.fillStyle="#04060a";g.beginPath();g.arc(ex,ey,er*.85,0,7);g.fill();g.fillStyle="rgba(255,255,255,.85)";g.beginPath();g.arc(ex+er*.35,ey-er*.35,er*.35,0,7);g.fill();
+ const ex=p.snout?nose*.62:nose*(p.big?.66:.71),ey=-bh*(p.lng?.3:.25),er=s*p.eye;g.fillStyle="rgba(0,0,0,.35)";g.beginPath();g.arc(ex,ey,er*1.45,0,7);g.fill();{const ig=g.createRadialGradient(ex,ey,er*.6,ex,ey,er*1.3);ig.addColorStop(0,p.ring?p.c2:p.z===3?"#c8d0c0":"#e8c050");ig.addColorStop(1,p.ring?tone(p.c2,-.4):p.z===3?"#606858":"#8a5a20");g.fillStyle=ig;g.beginPath();g.arc(ex,ey,er*1.3,0,7);g.fill()}g.fillStyle="#04060a";g.beginPath();g.arc(ex,ey,er*.85,0,7);g.fill();g.fillStyle="rgba(255,255,255,.85)";g.beginPath();g.arc(ex+er*.35,ey-er*.35,er*.35,0,7);g.fill();
  if(!p.fang&&!p.gulp){g.strokeStyle="rgba(0,0,0,.45)";g.lineWidth=Math.max(1,s*.02);g.beginPath();g.moveTo(nose*(p.snout?1.08:1),s*.03);g.lineTo(nose-s*.07,s*.05);g.stroke()}}
 // the cheap lure / eye dot (baked into a tiny glow sprite, drawn with the halo pass): offset of the lit spot per deep species
 function spLure(p,s){const nose=s*.62*1.05,bh=s*p.h;return p.barbel?[nose*.95,bh*4.2]:p.gulp?[-s*.5*p.lng-s*.75,s*.05]:null}
