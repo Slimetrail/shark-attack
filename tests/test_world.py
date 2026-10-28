@@ -75,6 +75,20 @@ try:
       for(let k=0;k<200;k++){const x=Math.floor(Math.random()*c.width),y=Math.floor(c.height*(.45+Math.random()*.1));const i=(y*c.width+x)*4;ls.push(.3*im[i]+.59*im[i+1]+.11*im[i+2])}ls.sort((a,b)=>a-b);out.push(ls[100])}__sa.respawnAll();return out}''')
   check(r[0]>r[1]>r[2]>=r[3]-2,f'water darkens with depth (median luma surface/mid/deep/cap {[round(x) for x in r]})')
   check(r[0]-r[2]>60 and r[3]<20,'surface clearly lighter, deep cap near black')
+  # D) prey flee speeds + bounded minnow chase bot: a small fish flees at 0.85-0.92x YOUR top speed, a bigger shark chases slower than
+  # your top speed, and a bot steering straight at a fleeing minnow-sized fish catches it within 12 s of game time.
+  r=ev('''()=>{__sa.setLevel(3);const s=__sa.shark,W=innerWidth,H=innerHeight;s.x=__sa.camX+W/2;s.y=__sa.SURF+H*.8;s.air=false;s.spd=0;__sa.camY=s.y-H/2;__sa.respawnAll();
+    for(const f of __sa.fish)if(!f.off){f.x=__sa.camX-W*5;}
+    const i=__sa.placeFishAt(0,s.x+H*.25,s.y,1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*.5,"fish");f.band=[__sa.SURF+20,Infinity];f.vx=0;f.vy=0;const kk=f.fk;
+    let t=0,caught=-1,mx=0,sc0=__sa.score;const top=__sa.sharkMax(s.lvl);
+    __sa.sim(12,dt=>{t+=dt;if(caught>=0)return;if(f.st==="flee")mx=Math.max(mx,Math.hypot(f.vx,f.vy));if(__sa.score>sc0||f.x!==f.x){caught=t;return}
+      Object.assign(__sa.touch,{on:true,dir:Math.atan2(f.y-s.y,f.x-s.x),drive:1,lastMove:performance.now()+9e9})});
+    __sa.touch.on=false;const fks=__sa.fish.map(q=>q.fk).filter(v=>v!==undefined);
+    return {kk,ratio:mx/top,caught,fmin:Math.min(...fks),fmax:Math.max(...fks),chase:[__sa.CREATURES.CHASE_SHALLOW,__sa.CREATURES.CHASE_DEEP]}}''')
+  check(.85<=r['fmin'] and r['fmax']<=.92,f"every creature's flee factor in 0.85-0.92 ({r['fmin']:.3f}-{r['fmax']:.3f})")
+  check(.8<=r['ratio']<=.925,f"fleeing fish peaks at {r['ratio']:.3f}x top speed (rolled {r['kk']:.3f})")
+  check(max(r['chase'])<1,f"chasers stay slower than top speed ({r['chase']})")
+  check(0<=r['caught']<=12,f"minnow chase bot catches the fleeing fish in {r['caught']:.2f} s (bound 12 s)")
   check(not errs,f'no page errors {errs[:3]}')
   b.close()
 finally:
