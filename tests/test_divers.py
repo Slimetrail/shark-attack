@@ -60,7 +60,7 @@ try:
   while ev(pg,'__sa.state')=='play' and ev(pg,'performance.now()')-t0<1150: pg.wait_for_timeout(40)
   check(ev(pg,'__sa.state')=='play' and ev(pg,'__sa.amb.reachT')<0,'ambusher has not reached the shark before 1.15 s')
   ev(pg,'__sa.netHit(null)') if False else None
-  pg.wait_for_function('__sa.state!=="play"',timeout=2000);rt=ev(pg,'__sa.amb.reachT');print('reachT',rt);check(pg.inner_text('#reason')=='Gulp!' and ev(pg,'__sa.amb.ate') and rt>=1.2,'unescaped stunned shark is eaten -> Gulp! screen')
+  pg.wait_for_function('__sa.state=="over"',timeout=4000);rt=ev(pg,'__sa.amb.reachT');print('reachT',rt);check(pg.inner_text('#reason')=='Gulp!' and ev(pg,'__sa.amb.ate') and rt>=1.2,'unescaped stunned shark is eaten -> Gulp! screen')
   # escape by wiggling (real pointer events)
   pg.click('#again');pg.wait_for_timeout(200);calm(pg);ev(pg,'__sa.netHit(null)');pg.wait_for_timeout(1100);calm(pg);stunWith(pg,'true')
   pg.mouse.move(150,250);pg.mouse.down()
