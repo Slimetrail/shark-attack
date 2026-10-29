@@ -92,7 +92,7 @@ try:
   for i in range(10): ev(pg,'__sa.placeSurfer(0,__sa.shark.x+Math.cos(__sa.shark.ang)*__sa.shark.L*.48,0)');pg.wait_for_timeout(30)
   check(ev(pg,'__sa.score')==s0,'slow shark at the surface only bumps a surfer (no catch)')
   stage(pg,.06,-math.pi/2,'__sa.maxSpeed()');ev(pg,'__sa.setLevel(__sa.GROW.SURF_LVL);__sa.shark.run=innerHeight*.5;__sa.touch.on=true;__sa.touch.dir=-Math.PI/2;__sa.touch.drive=1;__sa.touch.lastMove=performance.now()+9e9')
-  pg.wait_for_function('__sa.shark.air',timeout=1500);ev(pg,'__sa.touch.on=false;__sa.surf[0].zip=0');s0=ev(pg,'__sa.score')
+  pg.wait_for_function('__sa.shark.air',timeout=1500);s0=ev(pg,'(()=>{__sa.touch.on=false;const v=__sa.score;__sa.surf[0].zip=0;return v})()')# score read BEFORE reviving the surfer (race fix, same as test_v8)
   for i in range(40):
     ev(pg,'__sa.surf[0].zip>0||__sa.placeSurfer(0,__sa.shark.x+Math.cos(__sa.shark.ang)*__sa.shark.L*.48,0)');pg.wait_for_timeout(20)
     if ev(pg,'__sa.score')>=s0+3: break
