@@ -20,10 +20,10 @@ try:
   # tuning constants are exposed and sane
   D=ev(pg,'__sa.DIV');src=open(os.path.join(ROOT,'game.js')).read();check('return m?+m[1]:60' in src and D['DIVER_CATCHES_TO_LOSE']==3 and D['AMBUSH_ON_HIT'][1]==False and D['AMBUSH_CHANCE']==.5 and D['AMBUSH_ON_HIT'][3]==True,'defaults: 60 s round, 3 net hits, ambush hit1 never / hit2 50% / hit3 ends')
   check(D['AMBUSH_ARRIVE_MS']>=1200,'ambush warning time >= 1.2 s')
-  # dead spot: tiny jitter does not change heading or drive
+  # v10 analog: no dead spot; a jitter of 1-2 px from the first touch gives only a tiny drive (slow), never a burst
   stage();pg.mouse.move(200,200);pg.mouse.down();a0=ev(pg,'__sa.shark.ang')
   for dx,dy in [(1,1),(2,-1),(-1,2),(1,-2)]: pg.mouse.move(200+dx,200+dy);pg.wait_for_timeout(20)
-  check(ev(pg,'__sa.touch.drive')==0,'dead spot: finger jitter under 3 px adds no speed');pg.mouse.up()
+  dj=ev(pg,'__sa.touch.drive');check(0<dj<.02,f'tiny jitter (2 px from the first touch) = tiny drive {dj:.4f}, no dead zone, no burst');pg.mouse.up()
   # speed cap
   stage();pg.mouse.move(30,200);pg.mouse.down()
   for i in range(40): pg.mouse.move(30+(i%2)*0+ (i*9)%380,200);pg.wait_for_timeout(16)
