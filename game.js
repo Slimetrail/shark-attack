@@ -12,7 +12,7 @@ const STEER={MIN:.2,FULL:.25,DIR_PX:1.5,DRIVE_DECAY:.5,TURN:12,ACC:1.8,DEC:1.2};
 // Launch: heading up through the surface. power = LAUNCH.K * (speed/max) * (run-up distance at speed / screen height), capped at 1.
 const LAUNCH={K:2.2,MIN_POWER:.22,MIN_SPEED:.45,UP:-.35,H_MAX:.32,G:1.6,COOL:.3};// H_MAX: max height as fraction of screen height, G: gravity in screen-heights/s^2
 const SURFERS=[{kind:"kneel",pts:3,hy:16},{kind:"stand",pts:5,hy:46}];// hy: how high above the water the surfer's catch point is
-const BEAT={PLACEHOLDER_BPM:100,CHIPTUNE_BPM:80/*eighth-note pulse of the v2 render (music team: TEMPO_EIGHTH_BPM=80)*/,ASSIST_MS:80,PERFECT_MS:45,PERFECT_BONUS:1,on:true};
+const BEAT={PLACEHOLDER_BPM:100,CHIPTUNE_BPM:120/*v10: eighth-note pulse of "Open Water" v2 (6/8, eighth = 0.5 s)*/,ASSIST_MS:80,PERFECT_MS:45,PERFECT_BONUS:1,on:true};
 const SAFE_SPAWN_S=1.5;
 // ---- v6: LANDSCAPE WORLD + DEPTH ----
 // WORLD.SCREENS: world height in screen heights (camera follows the shark up/down). SKY: sky band above the surface (screen heights).
@@ -531,12 +531,12 @@ let AC=null,soundOn=localStorage.getItem(SND_KEY)!=="0",sfx=null,noiseBuf=null,v
 const sfxCount={chomp:0,bubbles:0,gulp:0,played:0};// test hooks: requested count per sound; "played" = actually sounded (unmuted)
 function initAudio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();sfx=AC.createGain();sfx.gain.value=.3;/* v10 item 11: SFX bus .45 -> .3 so music sits above */sfx.connect(AC.destination);
   noiseBuf=AC.createBuffer(1,Math.floor(AC.sampleRate*.12),AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)}catch(e){AC=null}
- music.title=new Audio("audio/title-cathedrale.ogg");music.title.loop=true;music.title.preload="auto";music.title.volume=0;
+ music.title=new Audio("audio/intro-scary.ogg");music.title.loop=false;/* v10 item 10: 40 s intro plays once (file fades out), then stops */music.title.preload="auto";music.title.volume=0;
  loadChip()}
  if(AC&&AC.state==="suspended")AC.resume().catch(()=>{})}
 // Gameplay music: Slopcore's 8-bit "Reflets dans l'eau" v2, played as a WebAudio buffer loop (sample-accurate, no gap at the loop point).
 // If it fails to load or decode, the original placeholder loop below is the fallback.
-const CHIP_URL="audio/gameplay-chiptune.ogg",MUSIC_VOL={title:.8,game:.42};// game track is ~9 dB louder than the title file, so it plays lower to sit under the SFX
+const CHIP_URL="audio/play-swim-piano.ogg",MUSIC_VOL={title:.5,game:.5};/* v10: both files -16 LUFS, peaks -1.3/-1.9 dBFS; .5 sits above the .3 SFX bus */// game track is ~9 dB louder than the title file, so it plays lower to sit under the SFX
 function loadChip(){if(!AC||chip.buf||chip.loading)return;chip.loading=true;fetch(CHIP_URL).then(r=>{if(!r.ok)throw new Error("chip "+r.status);return r.arrayBuffer()})
  .then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{chip.buf=buf;if(chip.want&&placeholder){phStop();chipStart()}}).catch(()=>{chip.failed=true})}
 function chipStart(){if(!AC||!chip.buf||chip.src)return;const bus=AC.createGain(),t=AC.currentTime;bus.gain.setValueAtTime(0,t);bus.gain.linearRampToValueAtTime(soundOn?MUSIC_VOL.game:0,t+.6);bus.connect(AC.destination);

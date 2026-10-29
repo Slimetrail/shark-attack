@@ -70,12 +70,12 @@ try:
   pg.wait_for_timeout(300);k=keys();check('sa-test-b1' not in k and 'sa-test-b2' in k,f'old cache removed ({k})')
   launch();check(not upd_shown(),'"Updated!" shown only once')
   # 4) failed partial update keeps b2
-  set_build('b3','b3');os.rename(os.path.join(TD,'audio/gameplay-chiptune.ogg'),os.path.join(WEB,'hidden.ogg'))
+  set_build('b3','b3');os.rename(os.path.join(TD,'audio/play-swim-piano.ogg'),os.path.join(WEB,'hidden.ogg'))
   launch();pg.wait_for_timeout(2500);launch();pg.wait_for_timeout(1500)
   k=keys();check('sa-test-b3' not in k and ev('__sa.BUILD')=='b2' and ev('window.__saCode')=='b2' and not upd_shown(),f'partial download (1 file 404) never replaces b2 ({k})')
   cx.set_offline(True);pg.reload();pg.wait_for_timeout(400);play();pg.wait_for_timeout(500)
   check(ev('__sa.state')=='play' and ev('__sa.BUILD')=='b2','still plays offline on b2 after the failed update')
-  os.rename(os.path.join(WEB,'hidden.ogg'),os.path.join(TD,'audio/gameplay-chiptune.ogg'));cx.set_offline(False)
+  os.rename(os.path.join(WEB,'hidden.ogg'),os.path.join(TD,'audio/play-swim-piano.ogg'));cx.set_offline(False)
   # 5) offline: zero network
   cx.set_offline(True);seen=[];h=lambda r:seen.append(r.url);srvlog_before=len(reqs);pg.reload();pg.wait_for_timeout(1500)
   check(ev('__sa.BUILD')=='b2','offline launch served from cache');cx.set_offline(False)

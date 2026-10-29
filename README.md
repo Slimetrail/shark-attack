@@ -43,11 +43,9 @@ The **numbers below are our own choice and easy to tune** in the `TYPES` table i
 | Tiger | 0.85 | 1.0 | 1.3 | 1.05 | 1.0 | 1.2 | 1.3 |
 
 ## Audio
-- **Title music:** Debussy, *La Cathédrale engloutie*, performed by Ivan Ilić, CC BY 3.0. This is an 88 s excerpt. See AUDIO-LICENSES.md and the in-game Credits.
-- **Gameplay music: the real chiptune is in.** It's Slopcore Studio's 8-bit "Reflets dans l'eau" v2, arranged from the public-domain 1905 Durand score with no recording used.
-  - It ships as `audio/gameplay-chiptune.ogg`: 72 s, mono, 64 kbps, 511 KB.
-  - The service worker precaches it, so it works offline.
-  - It plays as a gapless WebAudio loop at volume 0.3 (`MUSIC_VOL.game`), which sits under the sound effects.
+- **Music (v10):** `audio/intro-scary.ogg` (40 s intro, plays once on the title) and `audio/play-swim-piano.ogg` ("Open Water", 90 s seamless loop, beat assist at 120 eighths/min). Both CC0 (own work + VSCO-2 CE piano samples); see AUDIO-LICENSES.md.
+  - The service worker precaches both, so they work offline.
+  - The swim song plays as a gapless WebAudio loop at volume 0.5 (`MUSIC_VOL.game`), above the 0.3 sound-effects bus. Wave/water sounds were removed in build 25.
   - If the file ever fails to load, an original WebAudio fallback loop plays instead.
   - See AUDIO-LICENSES.md for the licensing.
 - **Sound effects** are all synthesized in WebAudio, so there are no sound files: chomp, bubbles (when crossing 70% speed, with a 1.5 s cooldown), gulp, splash, launch and others. Mute is remembered.
