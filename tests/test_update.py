@@ -94,6 +94,20 @@ try:
   pg2.close();launch();check(ev('__sa.BUILD')in('b2','b3') and ev('localStorage.getItem("saTEST_build")')==ev('__sa.BUILD'),'TEST still runs after live SW activated; own storage key')
   check(not outside,f'no outside requests {outside[:3]}')
   check(not errs,f'no console errors {errs[:3]}')
+  # 6) install button (like Dino Colossus): repo manifest fullscreen; button + apple-touch-icon present in a browser tab; hidden when installed
+  rm=json.load(open(os.path.join(ROOT,'manifest.webmanifest'))) if 'json' in dir() else __import__('json').load(open(os.path.join(ROOT,'manifest.webmanifest')))
+  check(rm.get('display')=='fullscreen' and rm.get('display_override')==['fullscreen','standalone'] and rm.get('orientation')=='landscape','repo manifest: display fullscreen + display_override, landscape')
+  for mode,want in [(None,True),('standalone',False),('fullscreen',False)]:
+    c2=b.new_context(viewport={'width':915,'height':412},has_touch=True,is_mobile=True,bypass_csp=True)
+    if mode: c2.add_init_script("(()=>{const o=matchMedia.bind(window);window.matchMedia=q=>q.includes('display-mode: %s')?{matches:true,media:q,addEventListener(){},removeEventListener(){},addListener(){},removeListener(){}}:o(q)})()"%mode)
+    p2=c2.new_page();p2.goto(URL);p2.wait_for_timeout(300);p2.click('#tap');p2.wait_for_timeout(500)
+    vis=p2.evaluate("(()=>{const b=document.getElementById('instb');return !!b&&getComputedStyle(b).display!=='none'&&!b.classList.contains('hide')})()")
+    if mode is None:
+      ati=p2.evaluate("!!document.querySelector('link[rel=apple-touch-icon]')&&!!document.querySelector('meta[name=apple-mobile-web-app-capable]')")
+      p2.click('#instb');p2.wait_for_timeout(100);hint=p2.evaluate("document.getElementById('insth').textContent")
+      check(ati and 'Install' in hint,f'browser tab: apple-touch-icon + capable meta; Install button with no prompt shows the hint ("{hint}")')
+    check(vis==want,f'Install button {"shown" if want else "hidden"} when display-mode is {mode or "browser"}')
+    c2.close()
   b.close()
 finally:
  srv.terminate();shutil.rmtree(WEB,ignore_errors=True)
