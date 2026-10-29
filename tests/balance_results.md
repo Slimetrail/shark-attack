@@ -12,15 +12,15 @@ Changes: growth NEED_BASE 5→3, NEED_PER_LVL 2→1; prey flee 0.85–0.92× sha
 inside its turn circle — that was why the white looked stuck at lvl 0), rise when stalled at a depth limit.
 The bot's surfer-leap is crude, so real players likely catch surfers sooner; not tested with people.
 
-## v9 (grow + get eaten, no indicators) — bots judge size from data (f.s / bite())
-balance.py (Timed, 25 rounds/type): BALANCE OK. Wiggling bot reaches time-up 19/19/22 of 25 (white/hammer/tiger), eaten 6/6/3; early losses ≤2.
-Reaches surfer size in 18–21/25, median 18–28 s; catches a surfer in 2–7/25, median 29–49 s (v8: 25–32 s / 41–50 s).
-balance_endless.py (30 games/type): ENDLESS BALANCE OK. Good bot: surfer size median 19–31 s; first surfer 16–27/30, median 76–93 s.
+## v9 (grow + get eaten, no indicators) — bots judge size from data (f.s / bite()); numbers at the final v9 code
+balance.py (Timed, 25 rounds/type): BALANCE OK. Wiggling bot reaches time-up 20/19/20 of 25 (white/hammer/tiger), eaten 5/6/5; early losses 1 each.
+Reaches surfer size in 19–22/25, median 19–23 s; catches a surfer in 3–16/25, median 35–44 s (v8: 25–32 s / 41–50 s).
+balance_endless.py (30 games/type): ENDLESS BALANCE OK. Good bot: surfer size median 17–27 s; first surfer 15–24/30, median 95–113 s (v8 65–109 s); 12–14/30 eaten within 15 min.
 balance_v9.py (8 rounds/type; diver = heads below 70% depth from the start, shallow = stays above 22%):
 | mode | bot | eaten (of 24) | survived | eaten at depth <.3/.3-.6/>.6 | reached surfer size |
 |---|---|---|---|---|---|
-| Timed 80 s | early diver | 10 | 14 | 0/6/4 | 1/24 |
-| Timed 80 s | shallow | 1 | 23 | 0/0/1 | 23/24 (median 17–27 s) |
-| Endless 180 s | early diver | 18 | 6 | 0/5/13 | 7/24 |
-| Endless 180 s | shallow | 2 | 22 | 1/0/1 | 22/24 |
-A diving minnow is in real danger (≈40% eaten in a Timed round, median ~45 s in) but usually survives a short dive; it grows very slowly down there (plankton only).
+| Timed 80 s | early diver | 9 | 15 | 0/2/7 | 1/24 |
+| Timed 80 s | shallow | 3 | 21 | 0/1/2 | 23/24 (median 19–34 s) |
+| Endless 180 s | early diver | 22 | 2 | 1/7/14 | 4/24 |
+| Endless 180 s | shallow | 3 | 21 | 2/0/1 | 21/24 |
+A diving minnow is in real danger (~38% eaten in a Timed round, median ~30 s in; staying deep for 3 min is almost always fatal) but a short dive is usually survivable. It grows very slowly down there (plankton only).
