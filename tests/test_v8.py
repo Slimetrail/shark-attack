@@ -26,9 +26,12 @@ try:
     # no popping: grow one level during play, sample per-frame change
     r=ev('''()=>{__sa.clearFood();const s=__sa.shark;s.x=innerWidth/2;s.y=__sa.SURF+innerHeight*.45;s.spd=0;const f=__sa.fish[3];__sa.setCreature(f,20,"fish");f.x=s.x+300;f.y=s.y;f.vx=0;
       const s0=f.s,k0=__sa.worldK;__sa.feed(__sa.need(0)/__sa.trait("grow")+.01);let mx=0,prev=__sa.worldK,Ls=[];for(let i=0;i<180;i++){__sa.sim(1/60);const k=__sa.worldK;mx=Math.max(mx,Math.abs(k/prev-1));prev=k;Ls.push(__sa.shark.L)}
-      return {lvl:s.lvl,k0,k1:__sa.worldK,mx,ratio:f.s/s0,Lconst:Ls.every(x=>x===Ls[0])}}''')
+      return {lvl:s.lvl,k0,k1:__sa.worldK,mx,ratio:f.s/s0,Lmax:Math.max(...Ls.map((x,i)=>i?Math.abs(x/Ls[i-1]-1):0)),Lend:Ls[Ls.length-1],pop:__sa.DRAW.POP_S}}''')
     check(r['lvl']==1 and r['k1']<r['k0'] and r['mx']<.06,f'{tag}: growing eases the world smaller with no pop (max {r["mx"]*100:.1f}% per frame)')
-    check(r['Lconst'] and ev('__sa.shark.L')==L0,f'{tag}: shark drawn size stays fixed while growing')
+    # v9 (Jeremy): the player's drawn size now GROWS each stage (was: stays fixed). Eased, no pop jump.
+    check(1.12<=r['Lend']/L0<=1.18 and r['Lmax']<.06,f'{tag}: v9 shark drawn size grows x{r["Lend"]/L0:.3f} per stage, eased (max {r["Lmax"]*100:.1f}%/frame)')
+    dk=ev('()=>{const o=[];for(let l=0;l<=__sa.MAX_LEVEL;l++)o.push(__sa.drawK(l));return o}')
+    check(all(dk[i+1]>=dk[i] for i in range(len(dk)-1)) and dk[-1]<=1.75+1e-9,f'{tag}: v9 drawn size grows every stage up to the cap ({dk[0]:.2f} -> {dk[-1]:.2f})')
     check(abs(r['ratio']-r['k1']/r['k0'])<.01,f'{tag}: other creatures shrink by the same world factor')
     # eat rules use relative size: same true-size fish stays food/not-food across world scale
     rr=ev('''()=>{const f=__sa.fish[4];__sa.setLevel(2);__sa.setCreature(f,__sa.bite()*.8,"fish");const a=__sa.rel(f);__sa.setLevel(2);const b=__sa.rel(f);__sa.setCreature(f,__sa.bite()*1.3,"fish");const c=__sa.rel(f);__sa.setLevel(5);const d=__sa.rel(f);return [a,b,c,d]}''')
@@ -41,7 +44,7 @@ try:
         ev('__sa.surf[0].zip>0||__sa.placeSurfer(0,__sa.shark.x+Math.cos(__sa.shark.ang)*__sa.shark.L*.48,0)');pg.wait_for_timeout(20)
         if ev('__sa.surfersCaught')>s0: break
       got=ev('__sa.surfersCaught')>s0;pg.wait_for_function('!__sa.shark.air',timeout=4000);return got
-    check(not leap(0),f'{tag}: minnow leaping into a surfer cannot eat it ("Too small!")')
+    check(not leap(0),f'{tag}: minnow leaping into a surfer cannot eat it (v9: silent bump, no "Too small!" text)')
     check(not leap(G['SURF_LVL']-1),f'{tag}: one stage below the surfer size still cannot')
     check(leap(G['SURF_LVL']),f'{tag}: at stage {G["SURF_LVL"]} the shark eats a surfer')
     check(ev('__sa.canLaunch')!=None,'leap works at minnow size (checked above)')

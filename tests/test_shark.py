@@ -109,7 +109,7 @@ try:
   stage(pg,.5,0);ev(pg,'__sa.setLevel(0)');L0=ev(pg,'__sa.worldK');D0=ev(pg,'__sa.shark.L');v0=ev(pg,'__sa.maxSpeed()');c0=ev(pg,'__sa.sfxCount.chomp')
   for i in range(20): ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(60)
   check(ev(pg,'__sa.sfxCount.chomp')>=c0+6,'eating a fish triggers the chomp sound hook')
-  pg.wait_for_timeout(1500);check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.worldK')<L0 and ev(pg,'__sa.shark.L')==D0 and ev(pg,'__sa.maxSpeed()')>v0,'eating small fish grows the shark (v8: world shrinks, shark drawn same size) and speeds it up')
+  pg.wait_for_timeout(1500);check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.worldK')<L0 and ev(pg,'__sa.shark.L')>D0*1.1 and ev(pg,'__sa.maxSpeed()')>v0,'eating small fish grows the shark (v9: drawn shark grows, world shrinks by the rest) and speeds it up')
   ev(pg,'__sa.feed(9999)');check(ev(pg,'__sa.shark.lvl')==ev(pg,'__sa.MAX_LEVEL'),'size capped at MAX_LEVEL')
   # bubbles on fast crossing with cooldown
   def go_fast():
@@ -117,11 +117,11 @@ try:
     pg.wait_for_function('__sa.shark.spd>__sa.maxSpeed()*.75',timeout=3000);ev(pg,'__sa.touch.on=false;__sa.shark.ang=Math.PI')
   stage(pg,.5,0);pg.wait_for_timeout(1600);b0=ev(pg,'__sa.sfxCount.bubbles');go_fast();b1=ev(pg,'__sa.sfxCount.bubbles');go_fast();b2=ev(pg,'__sa.sfxCount.bubbles');pg.wait_for_timeout(1600);go_fast();b3=ev(pg,'__sa.sfxCount.bubbles')
   check(b1==b0+1 and b2==b1 and b3==b2+1,f'bubbles once per fast crossing, cooldown respected ({b0},{b1},{b2},{b3})')
-  # danger tint toggles
+  # v9: no red tint/'!' marker any more; the data flag (eater) still flips once the shark outgrows it
   stage(pg,.7,0);ev(pg,'__sa.setLevel(0)');i3=ev(pg,'()=>{const i=__sa.placeFishAt(3,innerWidth*.8,__sa.SURF+90,-1);__sa.setCreature(__sa.fish[i],__sa.bite()*2,"shark");return i}');pg.wait_for_timeout(100);d0=ev(pg,f'__sa.fish[{i3}].danger')
   pg.screenshot(path=f'{SHOTS}/danger-fish.png')
   ev(pg,'__sa.setLevel(10)');pg.wait_for_timeout(100);d1=ev(pg,f'__sa.fish[{i3}].danger')
-  check(d0 and not d1,f'bigger shark tinted red/danger while bigger, becomes food once the shark outgrows it ({d0}->{d1})')
+  check(d0 and not d1,f'bigger shark is an eater (data only, no marker) while bigger, becomes food once the shark outgrows it ({d0}->{d1})')
   # leaping shark is safe from big fish (arc only)
   stage(pg,.06,-math.pi/2,'__sa.maxSpeed()');ev(pg,'__sa.setLevel(0);__sa.shark.run=innerHeight*.5;__sa.touch.on=true;__sa.touch.dir=-Math.PI/2;__sa.touch.drive=1;__sa.touch.lastMove=performance.now()+9e9')
   pg.wait_for_function('__sa.shark.air',timeout=1500);ev(pg,'__sa.touch.on=false');ev(pg,'__sa.placeFishAt(3,__sa.shark.x+20,__sa.shark.y,-1)');pg.wait_for_timeout(80)

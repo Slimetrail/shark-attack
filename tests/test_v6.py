@@ -65,8 +65,8 @@ try:
     check(sz[1][0]>sz[0][0]*1.5 and sz[1][1]>sz[0][1]*2,f'{tag}: sharks bigger and more common deep down (shallow avg {sz[0][0]:.0f}px p={sz[0][1]:.2f}, deep avg {sz[1][0]:.0f}px p={sz[1][1]:.2f})')
     # flee / chase
     r=ev('''()=>{__sa.clearFood();const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.5;s.x=innerWidth/2;s.spd=0;s.ang=0;__sa.touch.on=false;s.safe=0;
-      const a=__sa.fish[0],c=__sa.fish[1];__sa.setCreature(a,__sa.bite()*.5,"fish");a.x=s.x+110;a.y=s.y;a.vx=0;a.vy=0;
-      __sa.setCreature(c,__sa.bite()*2.2,"shark");c.x=s.x-190;c.y=s.y;c.vx=0;c.vy=0;const ax=a.x,cx=c.x;__sa.sim(.6);return [a.x-ax,c.x-cx,a.st,c.st]}''')
+      const a=__sa.fish[0],c=__sa.fish[1];__sa.setCreature(a,__sa.bite()*.5,"fish");a.x=s.x+s.L*1.1;/* v9: gaps scale with the drawn shark (was 110px/190px at the fixed size) */a.y=s.y;a.vx=0;a.vy=0;
+      __sa.setCreature(c,__sa.bite()*2.2,"shark");c.x=s.x-s.L*1.9;c.y=s.y;c.vx=0;c.vy=0;const ax=a.x,cx=c.x;__sa.sim(.6);return [a.x-ax,c.x-cx,a.st,c.st]}''')
     check(r[0]>10 and r[2]=='flee',f'{tag}: smaller fish runs away ({r[0]:.0f}px, {r[2]})')
     check(r[1]>10 and r[3]=='chase',f'{tag}: bigger shark chases ({r[1]:.0f}px, {r[3]})')
     if w==915:

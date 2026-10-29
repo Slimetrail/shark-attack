@@ -4,7 +4,7 @@
 // ROUND_SECONDS: round length. 60 s is the DEFAULT and is NOT YET CONFIRMED by Jeremy. Test override: ?round=N
 const ROUND_SECONDS=(()=>{const m=/[?&]round=(\d+(\.\d+)?)/.exec(location.search);return m?+m[1]:60})();
 const N_SURF=3,MAX_LEVEL=10,MAX_PARTS=30,BEST_KEY="sharkAttack_best",SND_KEY="sharkAttack_sound",CALM_KEY="sharkAttack_calm",TYPE_KEY="sharkAttack_type",HINT_KEY="sharkAttack_hinted";
-// Fish tiers: small / medium / big / giant. Fish bigger than the shark are dangerous (red + "!").
+// Fish tiers: small / medium / big / giant. Fish clearly bigger than the shark eat it (v9: no markers; judge size by eye).
 const TIERS=[{s:16,pts:1,grow:1,col:"#ffd23f",n:8},{s:28,pts:2,grow:2,col:"#7be04a",n:3},{s:44,pts:3,grow:3,col:"#b06cff",n:1},{s:62,pts:5,grow:4,col:"#ff7a1e",n:1}];
 const N_FISH=TIERS.reduce((a,t)=>a+t.n,0);
 // Steering: the finger's SLIDE direction = swim direction. Each px slid adds "drive" (speed); drive fades when the finger rests.
@@ -30,7 +30,7 @@ const trueGrow=l=>GROW.START*Math.pow(GROW.STEP,l);
 // FOOD_SHARE: share of spawns forced smaller than you (so there is always food). SENSE: notice range (screen heights).
 // FLEE_MIN..FLEE_MAX: each smaller creature's sprint speed (rolled per spawn, 0.85-0.92; plankton just drifts at .15); after FLEE_BURST_S of sprinting it tires to FLEE_TIRED for FLEE_TIRED_S and CHASE_*: chasing speed, both × YOUR current top speed (chasers are always slower than your top speed).
 // GIVEUP_S: a chaser gives up after this long, then rests REST_S. GLOW_DEPTH: below this depth, glowing fish + big sharks.
-const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,FLEE_MIN:.85,FLEE_MAX:.92,FLEE_BURST_S:1.6,FLEE_TIRED:.55,FLEE_TIRED_S:1.1,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,DIVER_BAND:1.1,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
+const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.85,FLEE_MAX:.92,FLEE_BURST_S:1.6,FLEE_TIRED:.55,FLEE_TIRED_S:1.1,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,DIVER_BAND:1.1,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
 // DIVERS + AMBUSH. The 3-hit lose rule and the ambush odds/timing are OUR choice, to confirm with Jeremy.
 // GAME MODES. "timed" = 60 s round, 3 net hits = Caught!. "endless" = no timer, ends only when eaten (Gulp!);
 // net hits only stun + cost growth there (OUR reading of Jeremy's "does not end until you are eaten").
@@ -336,7 +336,12 @@ const depthOf=y=>Math.max(0,Math.min(1,(y-SURF)/(BED-SURF)));
 const depthRaw=y=>(y-SURF)/(BED-SURF);
 const layerOf=y=>{const d=depthRaw(y);return d<LAYERS.TOP?0:d<LAYERS.MID?1:2};
 function bandOf(L){const y=d=>SURF+d*(BED-SURF);return L===0?[SURF+6,y(LAYERS.TOP)-2]:L===1?[y(LAYERS.TOP)+2,y(LAYERS.MID)-2]:[y(LAYERS.MID)+2,Infinity]}
-const sharkL=l=>Math.min(W,H)*.24*trait("size");// DRAWN size: fixed all game (v8); growth shrinks the world instead
+// v9: the DRAWN shark grows ×DRAW.STEP per stage up to DRAW.CAP (start 0.2×screen height, cap 1.75× = 0.35×height, so the screen stays playable
+// without a camera zoom); the world shrinks only by the rest of the true growth (wK), so relative sizes are unchanged.
+const DEEP={GROW:1.2,FADE_LVL:6,MAX_H:.5,GIANT_P:.07,GIANT_MIN:3.8,GIANT_MAX:5.5,GIANT_MAXW:.6};// v9: deep creatures grow with depth (×1+GROW below the mid layer); rare giants up to ~half the screen for a minnow
+const EAT={RATIO:1.3};// v9: a creature this much bigger than your bite EATS you on contact; .87-1.3 = same size (push); smaller = food
+const DRAW={BASE:.2,STEP:1.15,CAP:1.75,EASE:5,POP_S:.4};const drawK=l=>Math.min(DRAW.CAP,Math.pow(DRAW.STEP,l)),wK=l=>drawK(l)/trueGrow(l);
+const sharkL=l=>Math.min(W,H)*DRAW.BASE*drawK(l)*trait("size");
 const bite=()=>shark.L*.4;
 function setWorldK(k){const r=k/worldK;if(r!==1)for(const f of fish)f.s*=r;worldK=k}
 const surfK=()=>Math.max(.55,Math.min(1.8,worldK));
@@ -390,9 +395,11 @@ function buildSprites(){
  starSpr=["#ff8a3d","#ff5f8f","#ffc23d"].map(col=>crit(q=>drawStar(q,FB,col),6));
  sharkSpr=SHARK_PALS.map(T=>{const L=170,c=render3DShark(L*DPR,false,T);c.L=L;c.o=render3DShark(L*DPR,true,T);return c});
  surfSpr=[0,1].map(k=>{const s=60,c=mk(s*1.5*DPR,s*1.1*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(s*.75,s*.98);drawSurfer(q,s,k);return c});
- const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;const L=Math.min(H*.9,420);buildTitleShark()}
+ const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;const L=Math.min(H*.9,420);buildTitleShark();warmSprites()}
+// v9: crop + mip every creature sprite up front (the bigger drawn world hit lazy getImageData crops mid-play = first-encounter stutter)
+function warmSprites(){const all=[].concat(...fishSpr,glowSpr,specSpr,plankSpr,octoSpr,starSpr,[anglerSpr],sharkSpr,sharkSpr.map(c=>c.o));for(const c of all)if(c&&c.width)mip(trim(c),.02)}
 function titleW(){return Math.min(W*.56,H*1.15,560)}
-function buildShark(){const L=sharkL(shark.lvl);shark.L=L;const TT=Object.assign({},TYPES[sType],{barA:Math.max(.18,.62-shark.lvl*.045)});sprC=render3DShark(L*DPR,false,TT);sprO=render3DShark(L*DPR,true,TT);// tiger bars fade with growth
+function buildShark(keep){const L=sharkL(shark.lvl);shark.Lt=L;if(!keep||!(shark.L>0))shark.L=L;const TT=Object.assign({},TYPES[sType],{barA:Math.max(.18,.62-shark.lvl*.045)});sprC=render3DShark(L*DPR,false,TT);sprO=render3DShark(L*DPR,true,TT);// tiger bars fade with growth
 sprC.L=sprO.L=L}
 let _st=-1;function safeTop(){if(_st<0){const d=document.createElement("div");d.style.cssText="position:fixed;top:env(safe-area-inset-top);";document.body.appendChild(d);_st=d.getBoundingClientRect().top||0;d.remove()}return _st}
 function resize(keep){DPR=Math.max(.5,Math.min(DPR_CAP,window.devicePixelRatio||1)*RS0*RSK);W=innerWidth;H=innerHeight;C.width=Math.round(W*DPR);C.height=Math.round(H*DPR);if(!keep)buildSprites();if(state!=="play")placeAll()}
@@ -440,6 +447,8 @@ function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;
  if(P0&&kind!=="plankton"&&kind!=="star"&&kind!=="angler"&&!(kind==="shark"&&d>.3&&shark.lvl>=GROW.SURF_LVL)&&Math.random()<C.FOOD_SHARE+Math.max(0,GROW.SURF_LVL-shark.lvl)*.03){sz=Math.min(sz,bite()*rnd(.4,.84));if(kind==="shark"&&(sz<20*worldK||d>.3))kind=L===2?"glow":"fish"}
  if(kind==="shark"&&P0){let n=0;for(const q of fish)if(q!==f&&!q.off&&q.kind==="shark"&&Math.abs(q.y-f.y)<H*.8&&Math.abs(q.x-f.x)<W*1.6)n++;if(n<C.MAX_BIG&&Math.abs(f.y-shark.y)<H*.8){n=0;for(const q of fish)if(q!==f&&!q.off&&q.kind==="shark"&&Math.abs(q.y-shark.y)<H*.8)n++}if(n>=C.MAX_BIG)kind=L===2?"glow":"fish"}// cap near the spawn AND near you
  if(kind==="glow"&&P0)sz=Math.min(sz,bite()*C.GLOW_MAX);
+ if(P0&&L===2&&kind!=="glow"&&kind!=="star"&&kind!=="plankton"){const g=Math.min(1,Math.max(0,(d-LAYERS.MID)/.6));if(sz>bite()*.9)sz*=1+DEEP.GROW*g*Math.max(0,1-shark.lvl/DEEP.FADE_LVL);sz=Math.min(sz,H*DEEP.MAX_H/(kind==="shark"?2.5:1.6));/* deeper = bigger for a small player (fades out as you grow: perf + you are the big one by then) *//* deeper = bigger (not the prey share) */
+  if((kind==="shark"||kind==="octo")&&Math.random()<DEEP.GIANT_P*(.4+g)&&!fish.some(q=>q!==f&&!q.off&&q.giant)){/* one giant at a time */const vl=Math.min(W*DEEP.GIANT_MAXW,shark.L*rnd(DEEP.GIANT_MIN,DEEP.GIANT_MAX));sz=vl/(kind==="shark"?2.5:1.6);f.giant=true}else f.giant=false}else f.giant=false
  setCreature(f,Math.max(kind==="plankton"?2:C.SIZE_MIN*worldK,sz),kind);
  f.pal=kind==="fish"?Math.floor(rnd(0,L===1?FISH_PAL.length+3:FISH_PAL.length)):kind==="plankton"?Math.floor(rnd(0,2)):kind==="octo"?Math.floor(rnd(0,2)):kind==="star"?Math.floor(rnd(0,3)):f.pal;
  f.sp=-1;if(kind==="fish"){const z=L===0?0:(sz>bite()*.9||depthOf(f.y)>(LAYERS.TOP+LAYERS.MID)/2)?2:1,lst=SP_Z[z];f.sp=lst[Math.floor(Math.random()*lst.length)]}
@@ -537,7 +546,7 @@ function drawTitle(t){const r=titleRect();
 // ---------- play ----------
 let lastBub=-9,wasFast=false;
 function startGame(){hideAll();state="play";score=0;elapsed=0;endReason="";roundLen=window.__saRound||ROUND_SECONDS;timeLeft=roundLen;
- shark.lvl=0;shark.meter=0;shark.dead=false;dead.t=0;worldK=1/trueGrow(0);buildShark();shark.Lt=shark.L;shark.x=W/2;shark.y=SURF+H*.45;camX=0;sizeK=Math.min(1.25,Math.max(.75,bite()/CREATURES.REF_BITE));camY=Math.max(0,shark.y-H*.5);shark.ang=0;shark.spd=sharkMax(0)*.25;shark.run=0;shark.air=false;shark.h=0;shark.cool=0;shark.sq=0;
+ shark.lvl=0;shark.meter=0;shark.dead=false;dead.t=0;worldK=wK(0);shark.pop=0;buildShark();shark.Lt=shark.L;shark.x=W/2;shark.y=SURF+H*.45;camX=0;sizeK=Math.min(1.25,Math.max(.75,bite()/CREATURES.REF_BITE));camY=Math.max(0,shark.y-H*.5);shark.ang=0;shark.spd=sharkMax(0)*.25;shark.run=0;shark.air=false;shark.h=0;shark.cool=0;shark.sq=0;
  touch.on=false;touch.drive=0;shake=0;shark.stun=0;shark.safe=0;divers.length=0;amb.on=false;amb.ate=false;netHits=0;surfersCaught=0;ambCool=0;bannerT=0;diverTipT=0;fasterT=0;struggles=0;touch.strug=0;wasFast=false;lastBub=-9;for(const p of parts)p.t=0;for(const p of pops)p.t=0;placeAll();playMusic("game");
  hintT=localStorage.getItem(HINT_KEY)?0:6;localStorage.setItem(HINT_KEY,"1")}
 function spark(x,y,big){for(const p of parts)if(p.t<=0){const a=Math.random()*6.28,v=rnd(40,140)*(big?1.4:1);p.x=x;p.y=y;p.vx=Math.cos(a)*v;p.vy=Math.sin(a)*v-(big?60:0);p.t=.5;return}}
@@ -545,7 +554,7 @@ function addPop(x,y,txt){let o=pops[0];for(const p of pops)if(p.t<o.t)o=p;o.x=Ma
 function addScore(n){score+=n}
 function feedSurfer(){feed(GROW.SURFER)}
 function feed(g){if(shark.lvl>=MAX_LEVEL){shark.meter=need(shark.lvl);return}shark.meter+=g*trait("grow");
- while(shark.meter>=need(shark.lvl)&&shark.lvl<MAX_LEVEL){shark.meter-=need(shark.lvl);shark.lvl++;SFX.grow();addPop(shark.x,shark.y-shark.L*.6,"BIGGER!")}}
+ while(shark.meter>=need(shark.lvl)&&shark.lvl<MAX_LEVEL){shark.meter-=need(shark.lvl);shark.lvl++;SFX.grow();addPop(shark.x,shark.y-shark.L*.6,"BIGGER!");buildShark(true);shark.pop=DRAW.POP_S;for(let i=0;i<10;i++)spark(shark.x,shark.y,1)}}
 function beatLen(){return 60/(chip.src?BEAT.CHIPTUNE_BPM:BEAT.PLACEHOLDER_BPM)}
 function beatNow(){if(chip.src)return (AC.currentTime-chip.t0)%chip.buf.duration;if(placeholder&&AC)return AC.currentTime-phT0;return elapsed}
 function mouth(){const k=shark.L*.48;return [shark.x+Math.cos(shark.ang)*k,shark.y+Math.sin(shark.ang)*k]}
@@ -595,7 +604,7 @@ function updDivers(dt){if(ambCool>0)ambCool-=dt;if(bannerT>0)bannerT-=dt;if(dive
   else{amb.lt+=dt;const sp=amb.lt*1000<AMBUSHER_LEAVE_MS?40:320;amb.x-=amb.dir*sp*dt;amb.y+=Math.sin(amb.lt*2)*20*dt;// circles off slowly, then swims away
    if(amb.lt*1000>=AMBUSHER_LEAVE_MS&&(amb.x<camX-La||amb.x>camX+W+La))amb.on=false}}}
 function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")timeLeft-=dt;if(hintT>0)hintT-=dt;if(mode==="timed"&&timeLeft<=0){timeLeft=0;gameOver("time");return}
- {const wt=1/trueGrow(shark.lvl);if(worldK!==wt){let nk=worldK+(wt-worldK)*Math.min(1,dt*GROW.EASE);if(Math.abs(nk-wt)<1e-4)nk=wt;setWorldK(nk)}}if(shake>0)shake-=dt;if(shark.cool>0)shark.cool-=dt;if(shark.sq>0)shark.sq-=dt;shark.wag+=dt*(4+shark.spd/40);if(shark.chomp>0)shark.chomp-=dt;
+ {if(shark.L!==shark.Lt){shark.L+=(shark.Lt-shark.L)*Math.min(1,dt*DRAW.EASE);if(Math.abs(shark.L-shark.Lt)<.05)shark.L=shark.Lt}if(shark.pop>0)shark.pop-=dt;const wt=wK(shark.lvl);if(worldK!==wt){let nk=worldK+(wt-worldK)*Math.min(1,dt*GROW.EASE);if(Math.abs(nk-wt)<1e-4)nk=wt;setWorldK(nk)}}if(shake>0)shake-=dt;if(shark.cool>0)shark.cool-=dt;if(shark.sq>0)shark.sq-=dt;shark.wag+=dt*(4+shark.spd/40);if(shark.chomp>0)shark.chomp-=dt;
  const max=sharkMax(shark.lvl),L=shark.L;
  if(shark.air){// ballistic arc: safe from fish, can grab surfers
   shark.vy+=shark.g*dt;shark.x+=shark.vx*dt;shark.y+=shark.vy*dt;shark.ang=Math.atan2(shark.vy,shark.vx);shark.h=Math.max(0,SURF-shark.y);
@@ -620,23 +629,23 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
  {const k=Math.min(1,dt*WORLD.CAM_EASE),tc=Math.max(0,shark.y-H*.5);if(Math.abs(tc-camY)>H*1.2||Math.abs(shark.x-W/2-camX)>W*1.2){camY=tc;camX=shark.x-W/2}else{camY+=(tc-camY)*k;camX+=(shark.x-W/2-camX)*k}}updTiles();// big jump (teleport) = snap
  updDivers(dt);if(state!=="play")return;
  const [mx,my]=mouth(),er=L*.2;
- const CR=CREATURES,smax=max,sense=H*CR.SENSE;
- for(const f of fish){if(f.off)continue;f.ph+=dt*3;const dx=f.x-shark.x,dy=f.y-shark.y,d2=dx*dx+dy*dy,r=rel(f),dist=Math.sqrt(d2)||1;f.danger=r>0&&f.kind==="shark";if(f.rest>0)f.rest-=dt;
+ const CR=CREATURES,smax=max,sense=Math.max(H*CR.SENSE,L*CR.SENSE_L);/* v9: notice range also scales with the drawn shark */
+ for(const f of fish){if(f.off)continue;f.ph+=dt*3;const dx=f.x-shark.x,dy=f.y-shark.y,d2=dx*dx+dy*dy,r=rel(f),dist=Math.sqrt(d2)||1;const eater=f.kind!=="plankton"&&f.kind!=="star"&&f.s/bite()>=EAT.RATIO;f.danger=eater;if(f.rest>0)f.rest-=dt;
   let tvx=f.vx>=0?Math.max(20,Math.abs(f.vx)):-Math.max(20,Math.abs(f.vx)),tvy=0;f.st="";
   const food=r<0&&(shark.lvl>0||f.kind==="plankton");// the minnow (stage 1) eats only plankton
   if(!shark.air&&dist<sense){if(food&&f.kind!=="star"){f.chase+=dt;if(f.chase>CR.FLEE_BURST_S+CR.FLEE_TIRED_S)f.chase=0;const v=smax*(f.kind==="plankton"?.15:f.chase<CR.FLEE_BURST_S?f.fk:CR.FLEE_TIRED);/* sprint, then tire briefly */tvx=dx/dist*v;tvy=dy/dist*v;f.st="flee"}
-   else if(r>0&&f.kind==="shark"&&f.rest<=0&&depthOf(f.y)>=CR.CHASE_MIN_D){const dd=depthOf(f.y),v=smax*(CR.CHASE_SHALLOW+(CR.CHASE_DEEP-CR.CHASE_SHALLOW)*dd);tvx=-dx/dist*v;tvy=-dy/dist*v;f.st="chase";f.chase+=dt;if(f.chase>=CR.GIVEUP_S){f.chase=0;f.rest=CR.REST_S}}}
+   else if(eater&&f.rest<=0&&depthOf(f.y)>=CR.CHASE_MIN_D){const dd=depthOf(f.y),v=smax*(CR.CHASE_SHALLOW+(CR.CHASE_DEEP-CR.CHASE_SHALLOW)*dd);tvx=-dx/dist*v;tvy=-dy/dist*v;f.st="chase";f.chase+=dt;if(f.chase>=CR.GIVEUP_S){f.chase=0;f.rest=CR.REST_S}}}
   else if(f.chase>0)f.chase=Math.max(0,f.chase-dt);
   if(f.st){const k=Math.min(1,dt*2.2);f.vx+=(tvx-f.vx)*k;f.vy+=(tvy-f.vy)*k}else{f.vy*=.97;if(Math.abs(f.vx)<20)f.vx=(f.vx<0?-1:1)*30}
   f.x+=f.vx*dt;f.y+=(f.vy+(f.kind==="star"?0:Math.sin(f.ph)*8))*dt;{const b0=Math.max(SURF+f.s*.6,f.band[0]),b1=f.band[1];if(f.y<b0){f.y=b0;f.vy=Math.abs(f.vy)}else if(f.y>b1){f.y=b1;f.vy=-Math.abs(f.vy)}}// layer-locked
   if(!inWindow(f.x,f.y)){spawnFish(f,true,f.tile);continue}if(f.bump>0)f.bump-=dt;
   if(shark.air)continue;
   if(food){const ex=f.x-mx,ey=f.y-my,rr=er+f.s*.4;if(ex*ex+ey*ey<rr*rr){const pts=ptsOf(f);addScore(pts);feed(growOf(f));SFX.chomp();shark.chomp=.2;addPop(f.x,f.y,"+"+pts);for(let i=0;i<4;i++)spark(f.x,f.y,0);spawnFish(f,true,f.tile)}}
-  else{const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);if(d2<rr*rr){if(r>0&&f.kind==="shark"){const dir=f.vx<0?-1:1,fx=f.x+dir*f.s*(f.kind==="shark"?1.1:.45),qx=fx-shark.x,qy=f.y-shark.y,q=L*.34+f.s*.2;if(qx*qx+qy*qy<q*q){gameOver("eaten");return}}
-    f.vy+=dy/dist*80;shark.x-=dx/dist*6;shark.y-=dy/dist*6;if(f.bump<=0){SFX.bump();f.bump=.4;if((r>=0||!food)&&(shark.tooT||0)<elapsed-1.2){shark.tooT=elapsed;addPop(shark.x,shark.y-L*.55,"Too small!")}}}}}
+  else{const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);if(d2<rr*rr){if(eater&&!godMode){gameOver("eaten");return}/* v9: bigger creatures eat you on contact */
+    f.vy+=dy/dist*80;shark.x-=dx/dist*6;shark.y-=dy/dist*6;if(f.bump<=0){SFX.bump();f.bump=.4}}}}
  for(const s of surf){s.ph+=dt*2;if(s.zip>0){s.zip-=dt;if(s.zip<=0)spawnSurf(s,true);continue}
   s.x+=s.vx*dt;if(s.x<camX-60)s.x+=W+115;else if(s.x>camX+W+60)s.x-=W+115;const sk=surfK(),hy=SURFERS[s.k].hy*sk,cx=s.x,cy=SURF-hy;
-  if(shark.air){const ex=cx-mx,ey=cy-my,rr=(L*.22+18*sk)*trait("catchR");if(ex*ex+ey*ey<rr*rr&&shark.lvl<GROW.SURF_LVL){if(!(s.bump>0)){s.bump=.8;SFX.bump();addPop(cx,cy-20,"Too small!")}}
+  if(shark.air){const ex=cx-mx,ey=cy-my,rr=(L*.22+18*sk)*trait("catchR");if(ex*ex+ey*ey<rr*rr&&shark.lvl<GROW.SURF_LVL){if(!(s.bump>0)){s.bump=.8;SFX.bump()}}
   else if(ex*ex+ey*ey<rr*rr){const pts=SURFERS[s.k].pts;addScore(pts);feedSurfer();SFX.pop();shark.chomp=.25;addPop(cx,cy-20,"+"+pts+" SPLASH!");for(let i=0;i<8;i++)spark(cx,SURF,1);s.zip=1.6;surferCaught()}}
   else if(Math.abs(cx-mx)<L*.4&&my<SURF+L*.3&&!(s.bump>0)){s.bump=.6;s.vx=(cx>shark.x?1:-1)*60;SFX.bump();addPop(cx,cy-20,"boing")}
   if(s.bump>0)s.bump-=dt}
@@ -669,21 +678,20 @@ function drawPlay(t){
    const wob=f.kind==="octo"?1+Math.sin(t*3+f.ph)*.06:1;X.setTransform(DPR*flip*sc,0,0,DPR*sc*wob,(f.x-camX)*DPR,(f.y-camY)*DPR);if(f.kind==="star")X.rotate(f.ph*.05);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}}
  X.globalAlpha=1;busy=divers.length>0||amb.on||onScr>14;
  wT();
- for(const f of fish){if(!f.danger||f.y<top||f.y>bot)continue;const rx=f.kind==="shark"?f.s*1.4:f.s*.8,ry=f.kind==="shark"?f.s*.55:f.s*.42;
-  X.lineWidth=5;X.strokeStyle=P.ink;X.fillStyle="#ff2a2a";X.strokeText("!",f.x,f.y-ry-12);X.fillText("!",f.x,f.y-ry-12)}
  for(const s of surf){if(s.zip>0||SURF>bot)continue;const sp=surfSpr[s.k],dw=sp.width/DPR,dh=sp.height/DPR,y=SURF+Math.sin(s.ph)*2;{const k=surfK();X.setTransform((s.vx<0?-DPR:DPR)*k,0,0,DPR*k,(s.x-camX)*DPR,(y-camY)*DPR)}X.drawImage(sp,-dw/2,-dh*.89,dw,dh)}
  for(const d of divers){const f=Math.cos(d.ang)<0?-1:1,dw=diverSpr.width/DPR,dh=diverSpr.height/DPR;X.setTransform(DPR*f,0,0,DPR,(d.x-camX)*DPR,(d.y-camY+Math.sin(d.ph)*2)*DPR);X.rotate(f>0?d.ang:-(d.ang-Math.PI));X.globalAlpha=d.grace>0?.55:1;X.drawImage(diverSpr,-DIVER_SIZE*1.15,-DIVER_SIZE*.45,dw,dh);X.globalAlpha=1}
  if(amb.on){const s=amb.spr,dw=s.width/DPR,dh=s.height/DPR;const face=amb.phase==="come"?-amb.dir:amb.dir;
   X.setTransform(DPR*(face<0?-1:1),0,0,DPR,(amb.x-camX)*DPR,(amb.y-camY)*DPR);X.globalAlpha=amb.phase==="come"?.6+.4*Math.min(1,amb.t/(AMBUSH_ARRIVE_MS/1000)):.75;X.drawImage(s,-dw/2,-dh/2,dw,dh);X.globalAlpha=1;wT();
-  if(amb.phase==="come"){const ex=Math.max(camX+22,Math.min(camX+W-22,amb.x)),ey=amb.y-amb.L*.35;X.font="900 40px system-ui,sans-serif";X.lineWidth=7;X.fillStyle="#ff2a2a";X.strokeText("!",ex,ey);X.fillText("!",ex,ey);X.font="900 22px system-ui,sans-serif";X.lineWidth=5}}
+  if(amb.phase==="come"){const ex=Math.max(camX+22,Math.min(camX+W-22,amb.x)),ey=amb.y-amb.L*.35;/* v9: no "!" warning */}}
  wT();const L=shark.L,ks=L/sprC.L,max=sharkMax(shark.lvl),sr=shark.spd/max;
  if(shark.air){const k=Math.max(.25,1-shark.h/(H*.35));X.fillStyle="rgba(4,30,50,.35)";X.beginPath();X.ellipse(shark.x,SURF+4,L*.4*k,6*k,0,0,7);X.fill()}
  else{if(sr>.35){const c=Math.cos(shark.ang),sn=Math.sin(shark.ang),bx=shark.x-c*L*.55,by=shark.y-sn*L*.55,len=L*(.3+sr*.9);X.strokeStyle="rgba(235,252,255,"+(.2+sr*.4)+")";X.lineWidth=3;X.beginPath();
    for(const side of[-1,1]){X.moveTo(bx-sn*side*L*.08,by+c*side*L*.08);X.lineTo(bx-c*len-sn*side*len*.25,by-sn*len+c*side*len*.25)}X.stroke()}
   const pw=power(),ok=canLaunch();if(pw>.03){X.lineWidth=ok?5:3;X.strokeStyle=ok?"rgba(255,210,63,.95)":"rgba(235,252,255,.6)";X.beginPath();X.arc(shark.x,shark.y,L*.62,-Math.PI/2,-Math.PI/2+pw*6.283);X.stroke()}}
  const sq=shark.sq>0?Math.sin(shark.sq/.12*Math.PI):0,wob=shark.dead?0:Math.sin(shark.wag)*.04*(shark.air?0:1),flip=(Math.cos(shark.ang)<0?-1:1)*(shark.dead?Math.cos(Math.PI*Math.min(1,dead.t/.7)):1);
- X.setTransform(DPR,0,0,DPR,(shark.x-camX)*DPR,(shark.y-camY)*DPR);X.rotate(shark.ang+wob);X.scale(ks*(1+sq*.15),ks*(1-sq*.18)*flip);
+ X.setTransform(DPR,0,0,DPR,(shark.x-camX)*DPR,(shark.y-camY)*DPR);X.rotate(shark.ang+wob);const gp=shark.pop>0?Math.sin((1-shark.pop/DRAW.POP_S)*Math.PI)*.22:0;X.scale(ks*(1+sq*.15+gp),ks*(1-sq*.18+gp)*flip);
  const s=shark.chomp>0?sprO:sprC,dw=s.width/DPR,dh=s.height/DPR;X.globalAlpha=shark.safe>0&&shark.stun<=0&&Math.sin(t*20)<0?.45:1;X.drawImage(s,-dw/2-sprC.L*.05,-dh/2,dw,dh);X.globalAlpha=1;wT();
+ if(shark.pop>0){const e=1-shark.pop/DRAW.POP_S;X.globalAlpha=1-e;X.strokeStyle="#ffe14d";X.lineWidth=4;X.beginPath();X.arc(shark.x,shark.y,L*(.45+e*.5),0,6.283);X.stroke();X.globalAlpha=1}// grow pop ring
  if(shark.dead){const p=Math.min(1,dead.t/1.3);for(const q of dead.puffs){const e=Math.max(0,Math.min(1,(dead.t-q.dl)/1.2));if(e<=0||e>=1)continue;const r=L*(.18+.42*e)*q.k,x=shark.x+Math.cos(q.a)*L*q.d*(1+e),y=shark.y+Math.sin(q.a)*L*q.d*(1+e)-e*L*.15;X.globalAlpha=(1-e)*.8;X.drawImage(puffSpr,x-r,y-r,r*2,r*2)}X.globalAlpha=1}
  if(shark.stun>0){X.fillStyle="#ffe14d";X.strokeStyle=P.ink;X.lineWidth=2;for(let i=0;i<4;i++){const a=t*5+i*1.57,x=shark.x+Math.cos(a)*L*.35,y=shark.y-L*.32+Math.sin(a)*L*.08;X.beginPath();for(let j=0;j<10;j++){const r=j%2?3:8,b=j*.628;X.lineTo(x+Math.cos(b)*r,y+Math.sin(b)*r)}X.closePath();X.fill();X.stroke()}
   if(amb.on&&amb.phase==="come"){X.font="900 20px system-ui,sans-serif";X.lineWidth=5;X.strokeText("WIGGLE TO BREAK FREE!",camX+W/2,shark.y+L*.6);X.fillStyle="#fff";X.fillText("WIGGLE TO BREAK FREE!",camX+W/2,shark.y+L*.6)}}
@@ -696,7 +704,7 @@ function drawPlay(t){
    else if(f.kind==="angler"){const sc=f.s/anglerSpr.base,lx=(f.x+flip2*f.s*.6*(48/anglerSpr.base))-camX,ly=f.y-f.s*.56-camY,r=f.s*(.9+.15*Math.sin(t*4+f.ph));X.setTransform(DPR,0,0,DPR,0,0);X.globalAlpha=.9;X.drawImage(lureSpr,lx-r,ly-r,r*2,r*2)}
    else if(f.kind==="plankton"){if(++nh>nhMax())continue;const g=plankSpr[f.pal],sc=f.s/g.base;X.setTransform(DPR*sc,0,0,DPR*sc,(f.x-camX)*DPR,(f.y-camY)*DPR);X.globalAlpha=.5;X.drawImage(mip(g,sc),-g.width/DPR/2,-g.height/DPR/2,g.width/DPR,g.height/DPR)}}X.globalAlpha=1;X.globalCompositeOperation="source-over";wT()}
  // off-screen warnings (screen space)
- X.setTransform(DPR,0,0,DPR,0,0);for(const f of fish)if(f.st==="chase")edgeArrow(f.x,f.y,"#ff2a2a");for(const d of divers)if(Math.hypot(d.x-shark.x,d.y-shark.y)<H*.9)edgeArrow(d.x,d.y,"#ff9a1e");wT()}
+ X.setTransform(DPR,0,0,DPR,0,0);for(const d of divers)if(Math.hypot(d.x-shark.x,d.y-shark.y)<H*.9)edgeArrow(d.x,d.y,"#ff9a1e");wT()}
 function drawHud(){X.setTransform(DPR,0,0,DPR,0,0);const top=safeTop()+8,mw=Math.min(150,W*.36),mx=(W-mw)/2,my=top+12,fr=shark.lvl>=MAX_LEVEL?1:shark.meter/need(shark.lvl);
  X.fillStyle=P.ink;X.fillRect(mx-3,my-3,mw+6,22);X.fillStyle="#bfe9ff";X.fillRect(mx,my,mw,16);X.fillStyle="#7be04a";X.fillRect(mx,my,mw*fr,16);
  X.font="900 13px system-ui,sans-serif";X.fillStyle=P.ink;X.textAlign="center";X.textBaseline="top";X.fillText(shark.lvl>=MAX_LEVEL?"MAX SIZE":"SIZE "+(shark.lvl+1),W/2,my+1);
@@ -798,4 +806,4 @@ window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES
  placeSurfer(i,x,k){const s=surf[i];s.zip=0;s.x=x;s.vx=0;if(k!=null)s.k=k},divers,amb,get netHits(){return netHits},get surfersCaught(){return surfersCaught},get struggles(){return struggles},get ambCool(){return ambCool},set ambCool(v){ambCool=v},get bannerT(){return bannerT},
  DIV:{DIVER_TRIGGER_SURFERS,DIVER_SPEED_FRACTION,DIVER_DETECT_RANGE,DIVER_GIVEUP_MS,DIVER_GRACE_MS,DIVER_COOLDOWN_MS,DIVER_SAFE_AFTER_STUN_MS,DIVER_NET_REACH,DIVER_CATCHES_TO_LOSE,DIVER_MAX,STUN_MS,AMBUSH_STUN_MS,AMBUSH_ON_HIT,AMBUSH_CHANCE,AMBUSH_ARRIVE_MS,AMBUSH_COOLDOWN_MS,STRUGGLE_SHORTEN_MS,STRUGGLE_PX,AMBUSHER_SIZE,AMBUSHER_LEAVE_MS},
  render3DShark,sim(sec,bot,step){step=step||1/60;const n=Math.round(sec/step);let i=0;for(;i<n&&state==="play";i++){if(bot)bot(step);updPlay(step)}return i*step},startAs(t,m){sType=t;if(m)setMode(m);startGame()},setMode,get mode(){return mode},get fasterT(){return fasterT},get elapsed(){return elapsed},MODE:{MODES,DIVER_SPEEDUP_PER_SURFER,DIVER_SPEED_CAP,DIVER_SPEEDUP_HINT_EVERY},surferCaught,spawnDiver,diverSpeed,netHit,struggle,setAmbushForce(v){window.__saAmbushForce=v},
- setLevel(l){shark.lvl=l;shark.meter=0;buildShark();shark.Lt=shark.L;setWorldK(1/trueGrow(l))},get worldK(){return worldK},trueGrow,get dead(){return dead},get camX(){return camX},set camX(v){camX=v},set camY(v){camY=v},get tiles(){return tiles},get tileC(){return tileC},updTiles,spawnStats,LAYERS,SPAWN,ALLOWED,ANGLER_D,allowedD,layerOf,depthRaw,DEPTH_LIMIT,CAP_COL,get bandOf(){return bandOf},inWindow,respawnAll(){updTiles(true,true);for(const f of fish)spawnFish(f,false)},drawWater,get FX(){return FX},set FX(v){FX=v},get DPR(){return DPR},get RSK(){return RSK},adapt,ADAPT,ADAPT_ON,DPR_CAP,RS0,SPECIES,PLANK_SP,get specSpr(){return specSpr},spSprite,drawSpecies,render3DShark,TYPES,sharkMax,get pops(){return pops},get depthHintT(){return depthHintT}};
+ setLevel(l){shark.lvl=l;shark.meter=0;buildShark();shark.Lt=shark.L;setWorldK(wK(l))},drawK,wK,DRAW,DEEP,EAT,get worldK(){return worldK},trueGrow,get dead(){return dead},get camX(){return camX},set camX(v){camX=v},set camY(v){camY=v},get tiles(){return tiles},get tileC(){return tileC},updTiles,spawnStats,LAYERS,SPAWN,ALLOWED,ANGLER_D,allowedD,layerOf,depthRaw,DEPTH_LIMIT,CAP_COL,get bandOf(){return bandOf},inWindow,respawnAll(){updTiles(true,true);for(const f of fish)spawnFish(f,false)},drawWater,get FX(){return FX},set FX(v){FX=v},get DPR(){return DPR},get RSK(){return RSK},adapt,ADAPT,ADAPT_ON,DPR_CAP,RS0,SPECIES,PLANK_SP,get specSpr(){return specSpr},spSprite,drawSpecies,render3DShark,TYPES,sharkMax,get pops(){return pops},get depthHintT(){return depthHintT}};

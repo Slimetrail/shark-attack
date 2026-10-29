@@ -77,9 +77,10 @@ try:
   check(r[0]-r[2]>60 and r[3]<20,'surface clearly lighter, deep cap near black')
   # D) prey flee speeds + bounded minnow chase bot: a small fish flees at 0.85-0.92x YOUR top speed, a bigger shark chases slower than
   # your top speed, and a bot steering straight at a fleeing minnow-sized fish catches it within 12 s of game time.
+  # v9: the start gap is s.L*1.25 (was H*.25 = 1.25 x the old fixed drawn length) because the drawn shark now grows per stage.
   r=ev('''()=>{__sa.setLevel(3);const s=__sa.shark,W=innerWidth,H=innerHeight;s.x=__sa.camX+W/2;s.y=__sa.SURF+H*.8;s.air=false;s.spd=0;__sa.camY=s.y-H/2;__sa.respawnAll();
     __sa.clearFood();/* park every other creature (off) so no tile refresh can respawn the target */
-    const i=__sa.placeFishAt(0,s.x+H*.25,s.y,1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*.5,"fish");f.tile=null;f.band=[__sa.SURF+20,Infinity];f.vx=0;f.vy=0;const kk=f.fk;
+    const i=__sa.placeFishAt(0,s.x+s.L*1.25,s.y,1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*.5,"fish");f.tile=null;f.band=[__sa.SURF+20,Infinity];f.vx=0;f.vy=0;const kk=f.fk;
     let t=0,caught=-1,mx=0,sc0=__sa.score;const top=__sa.sharkMax(s.lvl);
     __sa.sim(12,dt=>{t+=dt;if(caught>=0)return;if(f.st==="flee")mx=Math.max(mx,Math.hypot(f.vx,f.vy));if(__sa.score>sc0||f.x!==f.x){caught=t;return}
       Object.assign(__sa.touch,{on:true,dir:Math.atan2(f.y-s.y,f.x-s.x),drive:1,lastMove:performance.now()+9e9})});
@@ -89,6 +90,28 @@ try:
   check(.8<=r['ratio']<=.925,f"fleeing fish peaks at {r['ratio']:.3f}x top speed (rolled {r['kk']:.3f})")
   check(max(r['chase'])<1,f"chasers stay slower than top speed ({r['chase']})")
   check(0<=r['caught']<=12,f"minnow chase bot catches the fleeing fish in {r['caught']:.2f} s (bound 12 s)")
+  # ---- v9: deep giants, eat on contact, silent push, big creatures chase, no size indicators ----
+  r=ev('''()=>{__sa.setLevel(0);const s=__sa.shark,W=innerWidth;let mx=0,n=0,g=0;
+     for(let k=0;k<40;k++){s.x=__sa.camX+W/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.9;__sa.respawnAll();for(const f of __sa.fish){if(f.off)continue;if(__sa.layerOf(f.y)!==2)continue;n++;if(f.giant)g++;mx=Math.max(mx,f.s*(f.kind==="shark"?2.5:1.6)/W)}}
+     return {mx,n,g}}''')
+  check(r['mx']>=.35 and 0<r['g']<.2*r['n'],f"v9: deep giants exist for a minnow (biggest {r['mx']:.2f} of screen width; {r['g']}/{r['n']} deep spawns giant)")
+  check(ev('()=>{const s=__sa.shark,H=innerHeight;let a=[0,0,0],c=[0,0,0];for(let k=0;k<30;k++)for(const L of [0,1,2]){__sa.setLevel(0);s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*[.1,.45,.9][L];__sa.respawnAll();for(const f of __sa.fish)if(!f.off&&__sa.layerOf(f.y)===L&&f.kind!=="plankton"){a[L]+=f.s/__sa.bite();c[L]++}}return a[2]/c[2]>a[1]/c[1]&&a[1]/c[1]>a[0]/c[0]}'),'v9: creatures relative to the minnow get bigger with depth')
+  def chaseTry(kind,k):
+    return ev(f'''()=>{{__sa.setLevel(0);__sa.clearFood();const s=__sa.shark;s.air=false;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.7;s.spd=0;
+      const i=__sa.placeFishAt(2,s.x+s.L*3,s.y,-1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*{k},"{kind}");f.tile=null;f.band=[0,Infinity];f.rest=0;let st=false;
+      __sa.sim(1.2,()=>{{__sa.touch.on=false;if(f.st==="chase")st=true}});return st}}''')
+  check(chaseTry('fish',2.2) and chaseTry('octo',2.2),'v9: any clearly bigger creature (not only sharks) chases a deep minnow')
+  check(not chaseTry('fish',1.0),'v9: a same-size creature does not chase')
+  src=open(os.path.join(ROOT,'game.js')).read()
+  check('Too small' not in src and 'strokeText("!"' not in src and '"#ff2a2a"' not in src,'v9: no "Too small" text, no red "!" marker, no red chaser arrows in game.js')
+  def bumpTry(kind,k):
+    return ev(f'''()=>{{__sa.god=false;__sa.setLevel(0);__sa.clearFood();const s=__sa.shark;s.air=false;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+200;s.ang=0;s.spd=0;
+      const i=__sa.placeFishAt(1,s.x,s.y+s.L*.15,1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*{k},"{kind}");f.tile=null;f.band=[0,Infinity];f.vx=0;f.vy=0;
+      const pops=__sa.pops.filter(p=>p.t>0).length;__sa.sim(.3,()=>{{__sa.touch.on=false}});const r={{state:__sa.state,why:__sa.endReason,pops:__sa.pops.filter(p=>p.t>0).map(p=>p.txt)}};__sa.god=true;return r}}''')
+  r=bumpTry('fish',1.0)
+  check(r['state']=='play' and not any('small' in t.lower() for t in r['pops']),f'v9: same-size fish only pushes, silently ({r})')
+  r=bumpTry('fish',1.6)
+  check(r['why']=='eaten',f'v9: a clearly bigger fish eats the minnow on body contact ({r["state"]}/{r["why"]})')
   check(not errs,f'no page errors {errs[:3]}')
   b.close()
 finally:
