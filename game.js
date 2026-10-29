@@ -101,13 +101,13 @@ function drawFish(g,s,col,tier,danger){g.lineJoin="round";const bh=s*[.24,.3,.33
  body();const gr=g.createLinearGradient(0,-bh,0,bh);gr.addColorStop(0,dark);gr.addColorStop(.35,col);gr.addColorStop(.62,tone(col,.45));gr.addColorStop(1,tone(col,.2));g.fillStyle=gr;g.fill();
  g.save();body();g.clip();
  if(tier>=2){g.fillStyle=tone(col,-.55);g.globalAlpha=.45;for(let i=0;i<3;i++){g.beginPath();g.ellipse(-s*.22+i*s*.2,-bh*.1,s*.035,bh*.9,.1,0,7);g.fill()}g.globalAlpha=1}
- let q=g.createRadialGradient(s*.2,-bh*.5,0,s*.2,-bh*.5,s*.6);q.addColorStop(0,"rgba(255,255,255,.4)");q.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=q;g.fillRect(-s,-s,2*s,2*s);
+ let q=g.createRadialGradient(s*.2,-bh*.5,0,s*.2,-bh*.5,s*.6);q.addColorStop(0,"rgba(210,235,255,.16)");q.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=q;g.fillRect(-s,-s,2*s,2*s);
  q=g.createLinearGradient(nose,0,tail,0);q.addColorStop(0,"rgba(0,0,0,0)");q.addColorStop(1,"rgba(0,10,20,.35)");g.fillStyle=q;g.fillRect(-s,-s,2*s,2*s);
  g.strokeStyle="rgba(0,0,0,.28)";g.lineWidth=Math.max(1,s*.025);g.beginPath();g.moveTo(s*.32,-bh*.6);g.quadraticCurveTo(s*.24,0,s*.32,bh*.6);g.stroke();
- g.fillStyle="rgba(255,255,255,.28)";g.beginPath();g.ellipse(s*.1,-bh*.45,s*.25,bh*.12,-.05,0,7);g.fill();g.restore();
+ g.restore();/* v10 gfx: no emoji gloss */
  fin([s*.2,bh*.35/s,s*.12,bh*.9/s,s*.02,bh*.75/s,s*.08,bh*.5/s,s*.2,bh*.35/s].map((v,i)=>i%2?v:v/s),"rgba(0,0,0,.18)");
- body();g.strokeStyle="rgba(0,10,20,.4)";g.lineWidth=Math.max(.8,s*.018);g.stroke();
- const ex=s*.44,ey=-bh*.25,er=s*(tier===3?.045:.055);g.fillStyle="#f0e6c0";g.beginPath();g.arc(ex,ey,er*1.25,0,7);g.fill();g.fillStyle="#080b0e";g.beginPath();g.arc(ex,ey,er,0,7);g.fill();g.fillStyle="rgba(255,255,255,.85)";g.beginPath();g.arc(ex+er*.35,ey-er*.35,er*.35,0,7);g.fill();
+ body();g.strokeStyle="rgba(0,10,20,.18)";g.lineWidth=Math.max(.6,s*.01);g.stroke();
+ const ex=s*.44,ey=-bh*.25,er=s*(tier===3?.03:.035);g.fillStyle="#7d7356";g.beginPath();g.arc(ex,ey,er*1.25,0,7);g.fill();g.fillStyle="#080b0e";g.beginPath();g.arc(ex,ey,er,0,7);g.fill();g.fillStyle="rgba(230,240,255,.35)";g.beginPath();g.arc(ex+er*.3,ey-er*.3,er*.2,0,7);g.fill();
  g.strokeStyle="rgba(0,0,0,.45)";g.lineWidth=Math.max(1,s*.02);g.beginPath();g.moveTo(nose,s*.03);g.lineTo(nose-s*(tier===3?.14:.07),s*.05+(tier===3?bh*.15:0));g.stroke()}
 // ---- SPECIES: our own original stylized sprites (shapes/colours loosely inspired by Florida reef & deep-sea species; no reference art used).
 // z: 0 shallow / small prey, 1 mid reef, 2 deeper reef (lower mid layer), 3 deep (drawn for "glow"-kind deep creatures). h = half body height / s.
@@ -169,13 +169,13 @@ function drawSpecies(g,s,p){g.lineJoin="round";g.lineCap="round";const L=p.lng||
  g.globalAlpha=1;
  if(!p.gulp){const sc=s*(p.lng?.035:.045);g.strokeStyle=p.z===3?"rgba(255,255,255,.12)":"rgba(0,0,0,.16)";g.lineWidth=Math.max(.5,s*.007);for(let r=0,y=-bh;y<bh;y+=sc*.8,r++)for(let x=nose-s*.18-(r%2)*sc*.5;x>tail;x-=sc){g.beginPath();g.arc(x,y,sc*.55,-1.2,1.2);g.stroke()}
   g.strokeStyle="rgba(255,255,255,.18)";g.lineWidth=Math.max(.6,s*.01);g.beginPath();g.moveTo(nose*.7,-bh*.05);g.quadraticCurveTo(0,bh*.08,tail,0);g.stroke()}// scale rows + lateral line
- let q=g.createRadialGradient(s*.2,-bh*.5,0,s*.2,-bh*.5,s*.6);q.addColorStop(0,"rgba(255,255,255,.38)");q.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=q;g.fillRect(-2*s,-s,4*s,2*s);
+ let q=g.createRadialGradient(s*.2,-bh*.5,0,s*.2,-bh*.5,s*.6);q.addColorStop(0,"rgba(210,235,255,.16)");q.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=q;g.fillRect(-2*s,-s,4*s,2*s);
  q=g.createLinearGradient(nose,0,tail,0);q.addColorStop(0,"rgba(0,0,0,0)");q.addColorStop(1,"rgba(0,10,20,.35)");g.fillStyle=q;g.fillRect(-2*s,-s,4*s,2*s);
  g.strokeStyle="rgba(0,0,0,.28)";g.lineWidth=Math.max(1,s*.025);g.beginPath();g.moveTo(s*.32,-bh*.6);g.quadraticCurveTo(s*.24,0,s*.32,bh*.6);g.stroke();
- g.fillStyle="rgba(255,255,255,.25)";g.beginPath();g.ellipse(s*.1,-bh*.45,s*.25,bh*.12,-.05,0,7);g.fill();g.restore();
+ g.restore();/* v10 gfx: no emoji gloss */
  if(p.spine){g.fillStyle="#fff";g.beginPath();g.ellipse(tail+s*.06,0,s*.04,s*.012,0,0,7);g.fill()}
  if(!p.lng)poly([.2,hh*.35,.12,hh*.9,.02,hh*.75,.08,hh*.5,.2,hh*.35],"rgba(0,0,0,.18)");
- body();g.strokeStyle="rgba(0,10,20,.4)";g.lineWidth=Math.max(.8,s*.018);g.stroke();
+ body();g.strokeStyle="rgba(0,10,20,.18)";g.lineWidth=Math.max(.6,s*.01);g.stroke();
  // jaws: fangs (stylized white points, no gore), parrot beak, pelican-eel gulper
  if(p.gulp){g.fillStyle=tone(col,.12);g.beginPath();g.moveTo(nose*.2,bh*.5);g.quadraticCurveTo(nose*.9,bh*3,nose*1.15,bh*.6);g.lineTo(nose,0);g.closePath();g.fill();g.strokeStyle="rgba(0,0,0,.5)";g.stroke()}
  if(p.fang){g.fillStyle="#f4f0e0";for(let i=0;i<4;i++){const x=nose-s*.03-i*s*.05;g.beginPath();g.moveTo(x,s*.01);g.lineTo(x-s*.015,s*.01+bh*(i%2?.25:.45));g.lineTo(x-s*.03,s*.01);g.fill()}}
@@ -183,7 +183,7 @@ function drawSpecies(g,s,p){g.lineJoin="round";g.lineCap="round";const L=p.lng||
  if(p.beak){g.fillStyle="#e9f2e8";g.beginPath();g.arc(nose-s*.02,s*.02,s*.04,-1.4,1.4);g.fill()}
  if(p.dome){g.fillStyle="rgba(220,240,255,.55)";g.beginPath();g.ellipse(s*.42,-bh*.55,s*.07,s*.05,0,0,7);g.fill()}
  if(p.barbel){g.strokeStyle=tone(p.c2,-.2);g.lineWidth=Math.max(1,s*.015);g.beginPath();g.moveTo(nose*.85,bh*.9);g.quadraticCurveTo(nose*.7,bh*3,nose*.95,bh*4.2);g.stroke()}
- const ex=p.snout?nose*.62:nose*(p.big?.66:.71),ey=-bh*(p.lng?.3:.25),er=s*p.eye;g.fillStyle="rgba(0,0,0,.35)";g.beginPath();g.arc(ex,ey,er*1.45,0,7);g.fill();{const ig=g.createRadialGradient(ex,ey,er*.6,ex,ey,er*1.3);ig.addColorStop(0,p.ring?p.c2:p.z===3?"#c8d0c0":"#e8c050");ig.addColorStop(1,p.ring?tone(p.c2,-.4):p.z===3?"#606858":"#8a5a20");g.fillStyle=ig;g.beginPath();g.arc(ex,ey,er*1.3,0,7);g.fill()}g.fillStyle="#04060a";g.beginPath();g.arc(ex,ey,er*.85,0,7);g.fill();g.fillStyle="rgba(255,255,255,.85)";g.beginPath();g.arc(ex+er*.35,ey-er*.35,er*.35,0,7);g.fill();
+ const ex=p.snout?nose*.62:nose*(p.big?.66:.71),ey=-bh*(p.lng?.3:.25),er=s*Math.min(.05,p.eye*.6);g.fillStyle="rgba(0,0,0,.35)";g.beginPath();g.arc(ex,ey,er*1.45,0,7);g.fill();{const ig=g.createRadialGradient(ex,ey,er*.6,ex,ey,er*1.3);ig.addColorStop(0,p.ring?p.c2:p.z===3?"#c8d0c0":"#e8c050");ig.addColorStop(1,p.ring?tone(p.c2,-.4):p.z===3?"#606858":"#8a5a20");g.fillStyle=ig;g.beginPath();g.arc(ex,ey,er*1.3,0,7);g.fill()}g.fillStyle="#04060a";g.beginPath();g.arc(ex,ey,er*.85,0,7);g.fill();g.fillStyle="rgba(230,240,255,.35)";g.beginPath();g.arc(ex+er*.3,ey-er*.3,er*.2,0,7);g.fill();
  if(!p.fang&&!p.gulp){g.strokeStyle="rgba(0,0,0,.45)";g.lineWidth=Math.max(1,s*.02);g.beginPath();g.moveTo(nose*(p.snout?1.08:1),s*.03);g.lineTo(nose-s*.07,s*.05);g.stroke()}}
 // the cheap lure / eye dot (baked into a tiny glow sprite, drawn with the halo pass): offset of the lit spot per deep species
 function spLure(p,s){const nose=s*.62*1.05,bh=s*p.h;return p.barbel?[nose*.95,bh*4.2]:p.gulp?[-s*.5*p.lng-s*.75,s*.05]:null}
@@ -316,7 +316,7 @@ function render3DShark(L,open,T){T=T||TYPES.white;if(T.name==="Great White"&&!/[
  g.save();sideSharkPath(g,L,open,T);g.clip();
  if(T.stripe){g.fillStyle=T.stripe;for(let i=0;i<14;i++){const x=-L*.5+i*L*.06;g.globalAlpha=(T.barA||.5)*(.4+.6*i/14);g.beginPath();g.ellipse(x,-h*.3,L*.01,h*.34,.12,0,7);g.fill();g.beginPath();g.ellipse(x+L*.03,-h*.05,L*.007,h*.16,.12,0,7);g.fill()}g.globalAlpha=1}
  let q=g.createLinearGradient(L*.5,0,-L*.65,0);q.addColorStop(0,"rgba(0,8,16,0)");q.addColorStop(.55,"rgba(0,8,16,.1)");q.addColorStop(1,"rgba(0,8,16,.5)");g.fillStyle=q;g.fillRect(-L,-h*3,L*2,h*6);
- q=g.createRadialGradient(L*.16,-h*.45,0,L*.16,-h*.45,L*.38);q.addColorStop(0,"rgba(255,255,255,.4)");q.addColorStop(.45,"rgba(255,255,255,.1)");q.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=q;g.fillRect(-L,-h*3,L*2,h*6);
+ q=g.createRadialGradient(L*.16,-h*.45,0,L*.16,-h*.45,L*.38);q.addColorStop(0,"rgba(210,235,255,.16)");q.addColorStop(.45,"rgba(255,255,255,.1)");q.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=q;g.fillRect(-L,-h*3,L*2,h*6);
  g.strokeStyle="rgba(200,240,255,.16)";g.lineWidth=Math.max(1,L*.006);for(let i=0;i<5;i++){const y=-h*(.75-i*.12);g.beginPath();g.moveTo(-L*.45,y);for(let x=-.45;x<.5;x+=.06)g.lineTo(L*x,y+Math.sin(x*40+i*2)*h*.05);g.stroke()}
  g.save();g.translate(0,h*.07);g.lineWidth=h*.09;g.strokeStyle="rgba(200,238,255,.42)";sideSharkPath(g,L,open,T);g.stroke();g.restore();
  g.save();g.translate(0,-h*.09);g.lineWidth=h*.14;g.strokeStyle="rgba(10,20,30,.28)";sideSharkPath(g,L,open,T);g.stroke();g.restore();
