@@ -2,7 +2,7 @@
 // Each build gets its own cache PREFIX+build. A new build is downloaded in the background, written only when EVERY file
 // fetched OK, and marked "pending". The switch happens on the next launch (navigation), never mid-play; old caches are then deleted.
 const PREFIX="sharkattack-v",META=PREFIX+"meta";
-const SHELL=["./","index.html","game.js?v=16","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png","art/title-art.webp","audio/title-cathedrale.ogg","audio/gameplay-chiptune.ogg"];
+const SHELL=["./","index.html","game.js?v=17","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png","art/title-art.webp","audio/title-cathedrale.ogg","audio/gameplay-chiptune.ogg"];
 const VERSION_URL="version.json";
 async function getMeta(){try{const c=await caches.open(META),r=await c.match("meta");return r?await r.json():{}}catch(e){return {}}}
 async function setMeta(m){const c=await caches.open(META);await c.put("meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}))}

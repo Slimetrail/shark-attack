@@ -117,6 +117,15 @@ try:
   check(abs(fk['near']-fk['far']*.9)<1e-6,f"fish near the bite limit are 10% slower ({fk['near']:.3f} vs {fk['far']:.3f})")
   check(max(r['chase'])<1,f"chasers stay slower than top speed ({r['chase']})")
   check(0<=r['caught']<=12,f"minnow chase bot catches the fleeing fish in {r['caught']:.2f} s (bound 12 s)")
+  # v10 item 6 dodge: only while sprinting (never tired), starts inside DODGE.R shark lengths, wiggle first, then sideways; never into the surface
+  dg=ev('''()=>{__sa.setLevel(2);const s=__sa.shark,H=innerHeight;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.5;s.air=false;s.spd=0;__sa.camY=s.y-H/2;__sa.sim(.05,()=>{s.spd=0});__sa.clearFood();
+    const D=__sa.DODGE,out={};const one=(tired,gap)=>{const i=__sa.placeFishAt(0,s.x+s.L*gap,s.y,1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*.5,"fish");f.tile=null;f.band=[__sa.SURF+20,Infinity];f.vx=0;f.vy=0;if(tired)f.chase=__sa.CREATURES.FLEE_BURST_S+.01;
+      let seen=[],mx=0;__sa.sim(.6,dt=>{s.spd=0;s.x=s.x;__sa.touch.on=false;seen.push(f.dg);if(f.dg===2){let d=Math.atan2(f.vy,f.vx)-Math.atan2(f.y-s.y,f.x-s.x);while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;mx=Math.max(mx,Math.abs(d))}});
+      __sa.clearFood();return {first:seen.findIndex(v=>v>0)>=0?seen[seen.findIndex(v=>v>0)]:0,any:seen.some(v=>v===2),mx:mx*180/Math.PI}};
+    out.sprint=one(false,1.5);out.tired=one(true,1.5);out.far=one(false,D.R+2);return out}''')
+  check(dg['sprint']['any'] and dg['sprint']['first']==1 and dg['sprint']['mx']>30,f"sprinting fish inside 2.5 shark lengths dodges: wiggle first, then turns {dg['sprint']['mx']:.0f} deg off the flee line")
+  check(not dg['tired']['any'],'a tired fish never dodges')
+  check(not dg['far']['any'],'no dodge while the shark is further than DODGE.R shark lengths')
   # ---- v9: deep giants, eat on contact, silent push, big creatures chase, no size indicators ----
   r=ev('''()=>{__sa.setLevel(0);const s=__sa.shark,W=innerWidth;let mx=0,n=0,g=0;
      for(let k=0;k<40;k++){s.x=__sa.camX+W/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.9;__sa.camY=s.y-innerHeight/2;__sa.respawnAll();for(const f of __sa.fish){if(f.off)continue;if(__sa.layerOf(f.y)!==2)continue;n++;if(f.giant)g++;mx=Math.max(mx,f.s*(f.kind==="shark"?2.5:1.6)/W)}}

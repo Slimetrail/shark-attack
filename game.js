@@ -30,6 +30,11 @@ const trueGrow=l=>GROW.START*Math.pow(GROW.STEP,l);
 // FOOD_SHARE: share of spawns forced smaller than you (so there is always food). SENSE: notice range (screen heights).
 // v10 fish speed (Dynamics): sprint = FLEE_SHALLOW..FLEE_DEEP by depth (0.60-0.70 shallow, 0.70-0.82 deep; FLEE_MIN..FLEE_MAX = 0.60-0.72 is the typical spawn range), +FLEE_LVL per shark level, capped FLEE_CAP; fish bigger than FLEE_NEAR_R of your bite (near the bite limit) x FLEE_NEAR_K. Only FISH tire; the shark never does. (old: rolled per spawn, 0.85-0.92; plankton just drifts at .15); after FLEE_BURST_S of sprinting it tires to FLEE_TIRED for FLEE_TIRED_S and CHASE_*: chasing speed, both × YOUR current top speed (chasers are always slower than your top speed).
 // GIVEUP_S: a chaser gives up after this long, then rests REST_S. GLOW_DEPTH: below this depth, glowing fish + big sharks.
+// v10 item 6 DODGE (Dynamics Lead design, tuned with tests/measure_flee.py): only while sprinting, never tired. Shark within R shark lengths + cooldown ready ->
+// WIG s readable wiggle, then the fish snaps sideways to the flee line (GAIN instead of the normal 2.2) for DUR s, away from the side the shark is turning to,
+// then flees again. Same flee speed (fish stay slower than the shark). Never turns into the surface or the floor.
+const DODGE={ON:true,TIRED:false,R:2.5,WIG:.15,GAIN:7,ANG_SHALLOW:60,ANG_DEEP:80,CD_SHALLOW:1.4,CD_DEEP:.8,ZIG_P:.25,ZIG_AT:.25,DUR:.45,
+ SMALL_Q:.35,SMALL:{ang:85,dur:.35,cd:.8},MID:{ang:55,dur:.55,cd:1.2},NEAR_Q:.7,NEAR:{ang:40,dur:.45,cdS:2.5},CD_LVL:.03,CD_MIN:.6};
 const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.60,FLEE_MAX:.72,FLEE_SHALLOW:[.60,.70],FLEE_DEEP:[.70,.82],FLEE_LVL:.01,FLEE_CAP:.85,FLEE_NEAR_R:.7,FLEE_NEAR_K:.9,FLEE_BURST_S:1.2,FLEE_TIRED:.40,FLEE_TIRED_S:1.6,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,DIVER_BAND:1.1,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
 // DIVERS + AMBUSH. The 3-hit lose rule and the ambush odds/timing are OUR choice, to confirm with Jeremy.
 // GAME MODES. "timed" = 60 s round, 3 net hits = Caught!. "endless" = no timer, ends only when eaten (Gulp!);
@@ -461,7 +466,7 @@ function spSprite(p,s){const L=p.lng||1,pad=8,w=(s*(.5*L+.85)+pad)*2,c=mk(w*DPR,
  if(p.z===3&&!lp){q.fillStyle="rgba(120,220,255,.9)";for(let i=0;i<5;i++){q.beginPath();q.arc(s*(.3-i*.15),s*p.h*.75,s*.018,0,7);q.fill()}}// photophore dots
  c.base=s;c.sp=p.n;return c}
 function rnd(a,b){return a+Math.random()*(b-a)}
-function setCreature(f,sz,kind){f.off=false;f.fu=Math.random();f.fk=CREATURES.FLEE_MIN+f.fu*(CREATURES.FLEE_MAX-CREATURES.FLEE_MIN);if(!f.band)f.band=[SURF+6,Infinity];f.s=sz;f.kind=kind;f.tier=tierOf(sz);f.chase=0;f.rest=0;f.bump=0;f.st="";f.pal=kind==="shark"?Math.min(2,Math.floor(rnd(0,3))):kind==="glow"?Math.floor(rnd(0,GLOW_PAL.length)):0;if(kind==="fish"||kind==="shark"||kind==="glow")f.band=[SURF+6,Infinity]}
+function setCreature(f,sz,kind){f.off=false;f.fu=Math.random();f.fk=CREATURES.FLEE_MIN+f.fu*(CREATURES.FLEE_MAX-CREATURES.FLEE_MIN);if(!f.band)f.band=[SURF+6,Infinity];f.s=sz;f.kind=kind;f.tier=tierOf(sz);f.chase=0;f.rest=0;f.bump=0;f.st="";f.dg=0;f.dt=0;f.dcd=0;f.dn=0;f.pal=kind==="shark"?Math.min(2,Math.floor(rnd(0,3))):kind==="glow"?Math.floor(rnd(0,GLOW_PAL.length)):0;if(kind==="fish"||kind==="shark"||kind==="glow")f.band=[SURF+6,Infinity]}
 // ---- SLIDING TILE POOL: 9 tiles (3x3, one screen each) around the camera. When the camera crosses a tile edge, tiles that fall
 // out of the window are recycled to the new edge with fresh scenery, and the creatures they own get fresh spawns. Only these
 // tiles' creatures exist (update + draw); anything that leaves the window is respawned into its home tile.
@@ -614,6 +619,19 @@ const BODY={HEAD:.48,TAIL:.55,R:.12,FR:.3};
 function onBody(f){const c=Math.cos(shark.ang),sn=Math.sin(shark.ang),L=shark.L,dx=f.x-shark.x,dy=f.y-shark.y;let u=dx*c+dy*sn;const v=-dx*sn+dy*c;
  u=Math.max(-L*BODY.TAIL,Math.min(L*BODY.HEAD,u));const px=dx-u*c,py=dy-u*sn,r=L*BODY.R+f.s*lk(f)*BODY.FR;return px*px+py*py<r*r}
 function mouth(){const k=shark.L*.48;return [shark.x+Math.cos(shark.ang)*k,shark.y+Math.sin(shark.ang)*k]}
+// v10 item 6: per-fish dodge state machine. f.dg 0 none / 1 wiggle / 2 sideways snap; f.da = turn from the flee line (rad); f.dcd cooldown; f.dn dodges this chase
+function dodge(f,dt,sprint,dist,L,tvx,tvy,v){const D=DODGE;if(!D.ON||(!sprint&&!D.TIRED)){f.dg=0;return}
+ const q=f.s/bite(),near=q>D.NEAR_Q,dd=Math.max(0,Math.min(1,depthOf(f.y)));
+ if(f.dg===0){if(f.dcd>0||dist>D.R*L||(near&&f.dn>0))return;f.dg=1;f.dt=0;f.dn++;D.n=(D.n||0)+1;
+  const C=q<D.SMALL_Q?D.SMALL:near?D.NEAR:D.MID,base=D.ANG_SHALLOW+(D.ANG_DEEP-D.ANG_SHALLOW)*dd;
+  const ang=near?C.ang:Math.min(90,C.ang+(base-D.ANG_SHALLOW)*.5);/* size sets the angle, depth adds up to +10 deg */
+  f.ddur=near?D.DUR:C.dur;f.dzig=dd>.5&&Math.random()<D.ZIG_P;
+  const cd=near?C.cdS:(D.CD_SHALLOW+(D.CD_DEEP-D.CD_SHALLOW)*dd)*C.cd;f.dcd=Math.max(D.CD_MIN,cd-D.CD_LVL*shark.lvl)+D.WIG+f.ddur;
+  const ts=touch.on?Math.sign(angDiff(shark.ang,touch.dir)):0;let side=ts?-ts:(Math.random()<.5?-1:1);/* away from the side the shark turns to */
+  const fa=Math.atan2(tvy,tvx),ny=a=>Math.sin(fa+a),b0=Math.max(SURF+f.s*.6,f.band[0]),b1=Math.min(BED-f.s*.6,f.band[1]),m=L*1.2;
+  const bad=a=>(ny(a)<-.2&&f.y-b0<m)||(ny(a)>.2&&b1-f.y<m);let a=side*ang*Math.PI/180;if(bad(a)){a=-a;if(bad(a))a=0}f.da=a;return}
+ f.dt+=dt;if(f.dg===1){f.ph+=dt*40;if(f.dt>=D.WIG){f.dg=2;f.dt=0}return}
+ if(f.dzig&&f.dt>=D.ZIG_AT){f.dzig=false;f.da=-f.da}if(f.dt>=f.ddur){f.dg=0}}
 function angDiff(a,b){let d=b-a;while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;return d}
 function power(){const max=sharkMax(shark.lvl);return Math.min(1,LAUNCH.K*(shark.spd/max)*(shark.run/H))}
 function canLaunch(){return shark.spd>=sharkMax(shark.lvl)*LAUNCH.MIN_SPEED&&power()>=LAUNCH.MIN_POWER}
@@ -689,10 +707,11 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
  for(const f of fish){if(f.off)continue;f.ph+=dt*3;const dx=f.x-shark.x,dy=f.y-shark.y,d2=dx*dx+dy*dy,r=rel(f),dist=Math.sqrt(d2)||1;const eater=f.kind!=="plankton"&&f.kind!=="star"&&f.s/bite()>=EAT.RATIO;f.danger=eater;if(f.rest>0)f.rest-=dt;
   let tvx=f.vx>=0?Math.max(20,Math.abs(f.vx)):-Math.max(20,Math.abs(f.vx)),tvy=0;f.st="";
   const food=r<0;// v9b (Jeremy): a Size 1 shark eats any fish clearly smaller than its bite (before: plankton only, which left tiny fish next to it uneatable)
-  if(!shark.air&&dist<sense){if(food&&f.kind!=="star"){f.chase+=dt;if(f.chase>CR.FLEE_BURST_S+CR.FLEE_TIRED_S)f.chase=0;const v=smax*(f.kind==="plankton"?.15:f.chase<CR.FLEE_BURST_S?fleeK(f):CR.FLEE_TIRED);/* sprint, then tire briefly */tvx=dx/dist*v;tvy=dy/dist*v;f.st="flee"}
+  if(!shark.air&&dist<sense){if(food&&f.kind!=="star"){if(f.chase===0)f.dn=0;f.chase+=dt;if(f.chase>CR.FLEE_BURST_S+CR.FLEE_TIRED_S)f.chase=0;const sprint=f.chase<CR.FLEE_BURST_S,v=smax*(f.kind==="plankton"?.15:sprint?fleeK(f):CR.FLEE_TIRED);/* sprint, then tire briefly */tvx=dx/dist*v;tvy=dy/dist*v;f.st="flee";
+    if(f.kind!=="plankton")dodge(f,dt,sprint,dist,L,tvx,tvy,v);if(f.dg===2){const a=Math.atan2(tvy,tvx)+f.da;tvx=Math.cos(a)*v;tvy=Math.sin(a)*v}}
    else if(eater&&f.rest<=0&&depthOf(f.y)>=CR.CHASE_MIN_D){const dd=depthOf(f.y),v=smax*(CR.CHASE_SHALLOW+(CR.CHASE_DEEP-CR.CHASE_SHALLOW)*dd);tvx=-dx/dist*v;tvy=-dy/dist*v;f.st="chase";f.chase+=dt;if(f.chase>=CR.GIVEUP_S){f.chase=0;f.rest=CR.REST_S}}}
   else if(f.chase>0)f.chase=Math.max(0,f.chase-dt);
-  if(f.st){const k=Math.min(1,dt*2.2);f.vx+=(tvx-f.vx)*k;f.vy+=(tvy-f.vy)*k}else{f.vy*=.97;if(Math.abs(f.vx)<20)f.vx=(f.vx<0?-1:1)*30}
+  if(f.dcd>0)f.dcd-=dt;if(f.st!=="flee"&&f.dg){f.dg=0}if(f.st){const k=Math.min(1,dt*(f.dg===2?DODGE.GAIN:2.2));f.vx+=(tvx-f.vx)*k;f.vy+=(tvy-f.vy)*k}else{f.vy*=.97;if(Math.abs(f.vx)<20)f.vx=(f.vx<0?-1:1)*30}
   f.x+=f.vx*dt;f.y+=(f.vy+(f.kind==="star"?0:Math.sin(f.ph)*8))*dt;{const b0=Math.max(SURF+f.s*.6,f.band[0]),b1=f.band[1];if(f.y<b0){f.y=b0;f.vy=Math.abs(f.vy)}else if(f.y>b1){f.y=b1;f.vy=-Math.abs(f.vy)}}// layer-locked
   if(!inWindow(f.x,f.y)){spawnFish(f,true,f.tile);continue}if(f.bump>0)f.bump-=dt;
   if(shark.air)continue;
@@ -731,7 +750,7 @@ function drawPlay(t){
  let onScr=0;for(const f of fish){if(f.off||f.y<top||f.y>bot||f.x<camX-f.s*3||f.x>camX+W+f.s*3)continue;onScr++;let s,sc;const flip=f.vx<0?-1:1;X.globalAlpha=dimAt(f.x,f.y);
   if(f.kind==="shark"){const sp=sharkSpr[f.pal];s=f.st==="chase"&&Math.sin(t*8+f.ph)>0?sp.o:sp;sc=(f.s*lk(f)*2.5)/sp.L;X.setTransform(DPR*flip*sc,0,0,DPR*sc,(f.x-camX)*DPR,(f.y-camY)*DPR);X.rotate(Math.max(-.5,Math.min(.5,f.vy/(Math.abs(f.vx)+40)))*flip);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2-sp.L*.05+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}
   else{s=f.sp>=0&&(f.kind==="fish"||f.kind==="glow")?specSpr[f.sp]:f.kind==="glow"?glowSpr[f.pal]:f.kind==="plankton"?plankSpr[f.pal]:f.kind==="angler"?anglerSpr:f.kind==="octo"?octoSpr[f.pal]:f.kind==="star"?starSpr[f.pal]:fishSpr[f.tier][f.pal];sc=f.s*lk(f)/s.base;
-   const wob=f.kind==="octo"?1+Math.sin(t*3+f.ph)*.06:1;X.setTransform(DPR*flip*sc,0,0,DPR*sc*wob,(f.x-camX)*DPR,(f.y-camY)*DPR);if(f.kind==="star")X.rotate(f.ph*.05);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}}
+   const wob=f.kind==="octo"?1+Math.sin(t*3+f.ph)*.06:1;X.setTransform(DPR*flip*sc,0,0,DPR*sc*wob,(f.x-camX)*DPR,(f.y-camY)*DPR);if(f.dg===1)X.rotate(Math.sin(f.dt*70)*.22);/* v10: readable dodge wiggle */if(f.kind==="star")X.rotate(f.ph*.05);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}}
  X.globalAlpha=1;busy=divers.length>0||amb.on||onScr>14;
  wT();
  for(const s of surf){if(s.zip>0||SURF>bot)continue;const sp=surfSpr[s.k],dw=sp.width/DPR,dh=sp.height/DPR,y=SURF+Math.sin(s.ph)*2;{const k=surfK();X.setTransform((s.vx<0?-DPR:DPR)*k,0,0,DPR*k,(s.x-camX)*DPR,(y-camY)*DPR)}X.drawImage(sp,-dw/2,-dh*.89,dw,dh)}
@@ -860,7 +879,7 @@ if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceW
 // ---------- test hooks ----------
 window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
  get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
- get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},WORLD,ZONES,GROW,CREATURES,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
+ get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti,kind){const f=fish[0];kind=kind||(shark.lvl===0?"plankton":"fish");setCreature(f,kind==="plankton"?bite()*.4:TIERS[ti||0].s,kind);f.band=[SURF+6,Infinity];f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>!q.used)||fish[0];setCreature(f,TIERS[ti].s,"fish");f.band=[SURF+6,Infinity];f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},
