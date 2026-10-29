@@ -9,7 +9,7 @@ BOT=r'''(wig)=>{const S=__sa,s=S.shark,W=innerWidth,H=innerHeight;let mode="hunt
   if(S.amb.on&&S.amb.phase==="come"&&!ambSeen){ambSeen=true;st.amb++;ambT0=t}if(!S.amb.on)ambSeen=false;
   if(s.stun>0){wt+=dt;if(wig&&wt>1/wig){wt=0;S.struggle(W*S.DIV.STRUGGLE_PX)}return}
   let ax=0,ay=0;const L=s.L;
-  for(const f of S.fish)if(S.rel(f)>0){const dx=s.x-f.x,dy=s.y-f.y,d=Math.hypot(dx,dy);if(d<L*2.2+f.s){ax+=dx/d*(1/Math.max(.3,d/L));ay+=dy/d*(1/Math.max(.3,d/L))}}
+  for(const f of S.fish)if(!f.off&&f.kind!=="plankton"&&f.kind!=="star"&&f.s/S.bite()>=S.EAT.RATIO*.92){/* v9: size judged from data (f.s vs bite), there is no on-screen indicator */const dx=s.x-f.x,dy=s.y-f.y,d=Math.hypot(dx,dy);if(d<L*2.2+f.s){ax+=dx/d*(1/Math.max(.3,d/L));ay+=dy/d*(1/Math.max(.3,d/L))}}
   for(const d of S.divers)if(d.grace<=0){const dx=s.x-d.x,dy=s.y-d.y,q=Math.hypot(dx,dy);if(q<H*.3){ax+=dx/q*1.5;ay+=dy/q*1.5}}
   if(Math.hypot(ax,ay)>.4){T.dir=Math.atan2(ay,ax);T.drive=1;return}
   const cx=S.camX,cy=S.camY,sf=S.surf.filter(q=>q.zip<=0&&q.x>cx+40&&q.x<cx+W-40);/* v8 endless world: everything is camera-relative */

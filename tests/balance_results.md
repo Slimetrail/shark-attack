@@ -11,3 +11,16 @@ Changes: growth NEED_BASE 5→3, NEED_PER_LVL 2→1; prey flee 0.85–0.92× sha
 (0.55× for 1.1 s). Bots: camera-relative, aim with the mouth (the old bot orbited plankton
 inside its turn circle — that was why the white looked stuck at lvl 0), rise when stalled at a depth limit.
 The bot's surfer-leap is crude, so real players likely catch surfers sooner; not tested with people.
+
+## v9 (grow + get eaten, no indicators) — bots judge size from data (f.s / bite())
+balance.py (Timed, 25 rounds/type): BALANCE OK. Wiggling bot reaches time-up 19/19/22 of 25 (white/hammer/tiger), eaten 6/6/3; early losses ≤2.
+Reaches surfer size in 18–21/25, median 18–28 s; catches a surfer in 2–7/25, median 29–49 s (v8: 25–32 s / 41–50 s).
+balance_endless.py (30 games/type): ENDLESS BALANCE OK. Good bot: surfer size median 19–31 s; first surfer 16–27/30, median 76–93 s.
+balance_v9.py (8 rounds/type; diver = heads below 70% depth from the start, shallow = stays above 22%):
+| mode | bot | eaten (of 24) | survived | eaten at depth <.3/.3-.6/>.6 | reached surfer size |
+|---|---|---|---|---|---|
+| Timed 80 s | early diver | 10 | 14 | 0/6/4 | 1/24 |
+| Timed 80 s | shallow | 1 | 23 | 0/0/1 | 23/24 (median 17–27 s) |
+| Endless 180 s | early diver | 18 | 6 | 0/5/13 | 7/24 |
+| Endless 180 s | shallow | 2 | 22 | 1/0/1 | 22/24 |
+A diving minnow is in real danger (≈40% eaten in a Timed round, median ~45 s in) but usually survives a short dive; it grows very slowly down there (plankton only).
