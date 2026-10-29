@@ -384,7 +384,7 @@ let bg=null,sprC=null,sprO=null,fishSpr=[],surfSpr=[],title=null,tFront=null,tFr
 const need=l=>GROW.NEED_BASE+GROW.NEED_PER_LVL*l;
 const ptsOf=f=>f.kind==="plankton"?1:Math.max(1,Math.round(1+3*f.s/bite()))*(f.kind==="fish"?1:f.kind==="angler"?4:2),growOf=f=>GROW.REL*f.s/bite();
 let specSpr=[],camX=0,gradSpr=null,sunSpr=null,decoSpr=null,tiles=[],tileC={x:1e9,y:1e9},plankSpr=[],anglerSpr=null,octoSpr=[],starSpr=[],lureSpr=null,spawnStats={n:0,wrong:0,byKind:{}},depthHintT=0;
-let haloSpr=[],worldK=1/GROW.START,sizeK=1,camY=0,WORLD_H=4000,gradW=null,raysSpr=null,skySpr=null,floorSpr=null,ventSpr=null,vigSpr=null,bgSpr=null,busy=false,sharkSpr=[],glowSpr=[],deco=[],snow=[],fsRot=false;
+let haloSpr=[],worldK=1/GROW.START,sizeK=1,camY=0,WORLD_H=4000,gradW=null,raysSpr=null,fogSpr=null,skySpr=null,floorSpr=null,ventSpr=null,vigSpr=null,bgSpr=null,busy=false,sharkSpr=[],glowSpr=[],deco=[],snow=[],fsRot=false;
 const depthOf=y=>Math.max(0,Math.min(1,(y-SURF)/(BED-SURF)));
 const depthRaw=y=>(y-SURF)/(BED-SURF);
 const layerOf=y=>{const d=depthRaw(y);return d<LAYERS.TOP?0:d<LAYERS.MID?1:2};
@@ -412,14 +412,18 @@ function buildSprites(){
  SURF=Math.round(H*WORLD.SKY);WORLD_H=Math.round(H*WORLD.SCREENS);BED=Math.round(WORLD_H-H*WORLD.FLOOR*.62);
  // whole-world water gradient (drawn each frame through the camera transform: 1 fill)
  // COLOR-SHIFT FAKE DEPTH: one baked 1px-wide gradient (light at the surface -> dark cap), drawn each frame as ONE stretched fill
- gradSpr=mk(1,512);{const g=gradSpr.getContext("2d"),gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,"#2cc0ec");gr.addColorStop(.07,"#1597cc");gr.addColorStop(.22,"#0b6299");gr.addColorStop(.4,"#0a3a6a");gr.addColorStop(.6,"#081f44");gr.addColorStop(.8,"#060f26");gr.addColorStop(1,CAP_COL);g.fillStyle=gr;g.fillRect(0,0,1,512)}
+ fogSpr=mk(1,512);{const g=fogSpr.getContext("2d"),gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,"rgba(20,110,170,.10)");gr.addColorStop(.3,"rgba(8,50,105,.30)");gr.addColorStop(.7,"rgba(4,20,55,.45)");gr.addColorStop(1,"rgba(2,8,24,.55)");g.fillStyle=gr;g.fillRect(0,0,1,512)}
+ gradSpr=mk(1,512);{const g=gradSpr.getContext("2d"),gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,"#2aa9d8");gr.addColorStop(.06,"#1683bb");gr.addColorStop(.2,"#0c5590");gr.addColorStop(.38,"#0a3668");gr.addColorStop(.58,"#071d45");gr.addColorStop(.8,"#050e28");gr.addColorStop(1,CAP_COL);g.fillStyle=gr;g.fillRect(0,0,1,512)}
  skySpr=mk(W*DPR,SURF*DPR);{const g=skySpr.getContext("2d");g.scale(DPR,DPR);let gr=g.createLinearGradient(0,0,0,SURF);gr.addColorStop(0,"#5ab8f5");gr.addColorStop(.7,"#a8e0ff");gr.addColorStop(1,"#e4f7ff");g.fillStyle=gr;g.fillRect(0,0,W,SURF);
   gr=g.createRadialGradient(W*.84,SURF*.38,4,W*.84,SURF*.38,SURF*.5);gr.addColorStop(0,"rgba(255,250,200,1)");gr.addColorStop(.25,"rgba(255,240,170,.9)");gr.addColorStop(1,"rgba(255,240,170,0)");g.fillStyle=gr;g.fillRect(0,0,W,SURF);
   for(const [x,y,r] of[[.12,.35,14],[.17,.3,20],[.23,.36,13],[.5,.22,10],[.55,.2,15],[.6,.24,11]]){const cg=g.createLinearGradient(0,SURF*y-r,0,SURF*y+r);cg.addColorStop(0,"#fff");cg.addColorStop(1,"#d6ecf7");g.fillStyle=cg;g.beginPath();g.arc(W*x,SURF*y,r,0,7);g.fill()}
   g.fillStyle="#3c7da6";g.beginPath();g.moveTo(0,SURF);for(let x=0;x<=W*.3;x+=W*.05)g.lineTo(x,SURF-6-Math.sin(x*.03)*5-(x<W*.15?10:0));g.lineTo(W*.3,SURF);g.fill()}// distant island
- raysSpr=mk(W*.5,H*.7);{const g=raysSpr.getContext("2d"),w=raysSpr.width,h=raysSpr.height;for(let i=0;i<7;i++){const x=w*(i/7+.03),gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,"rgba(255,255,230,.22)");gr.addColorStop(1,"rgba(255,255,230,0)");g.fillStyle=gr;g.beginPath();g.moveTo(x,0);g.lineTo(x+w*.06,0);g.lineTo(x+w*.02+w*.12,h);g.lineTo(x-w*.08,h);g.closePath();g.fill()}}
+ raysSpr=mk(W*.5,H*.7);{const g=raysSpr.getContext("2d"),w=raysSpr.width,h=raysSpr.height;/* v10 gfx step 2: soft baked god rays (blurred once, no hard edges) */try{g.filter="blur("+Math.round(w*.025)+"px)"}catch(_){}
+  for(let i=0;i<6;i++){const x=w*(i/6+.05+Math.random()*.04),wd=w*(.03+Math.random()*.05),gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,"rgba(215,242,255,.30)");gr.addColorStop(.55,"rgba(190,230,255,.10)");gr.addColorStop(1,"rgba(190,230,255,0)");g.fillStyle=gr;g.beginPath();g.moveTo(x,0);g.lineTo(x+wd,0);g.lineTo(x+wd*1.6+w*.06,h);g.lineTo(x-wd*.6-w*.04,h);g.closePath();g.fill()}g.filter="none"}
  sunSpr=mk(W*DPR,H*.9*DPR);{const g=sunSpr.getContext("2d");g.scale(DPR,DPR);for(let i=0;i<2;i++)g.drawImage(raysSpr,i*W*.5,0,W*.5,H*.7);
-  g.strokeStyle="rgba(220,250,255,.07)";g.lineWidth=2;for(let i=0;i<70;i++){const x=rnd(30,W-30),y=Math.pow(Math.random(),1.6)*H*.85,r=rnd(10,26);g.beginPath();g.moveTo(x-r,y);g.quadraticCurveTo(x,y-r*.5,x+r,y+rnd(-4,4));g.quadraticCurveTo(x+r*.4,y+r*.5,x-r*.2,y+r*.3);g.stroke()}}
+  /* caustics: soft net of light just under the surface, baked once, fades with depth (no swoosh marks) */const cg=mk(W,H*.22),c=cg.getContext("2d");c.strokeStyle="rgba(200,240,255,.10)";c.lineWidth=1.6;
+  for(let r=0;r<5;r++)for(let i=0;i<Math.round(W/34);i++){const x=i*34+rnd(-10,10),y=r*H*.045+rnd(0,12);c.beginPath();c.moveTo(x,y);c.bezierCurveTo(x+12,y-8,x+22,y+9,x+36,y+rnd(-4,4));c.stroke()}
+  const fm=g.createLinearGradient(0,0,0,H*.22);fm.addColorStop(0,"rgba(0,0,0,1)");fm.addColorStop(1,"rgba(0,0,0,0)");c.globalCompositeOperation="destination-in";c.fillStyle=fm;c.fillRect(0,0,W,H*.22);g.globalAlpha=.9;try{g.filter="blur(1.2px)"}catch(_){}g.drawImage(cg,0,2);g.filter="none";g.globalAlpha=1}
  vigSpr=mk(512,512);{const g=vigSpr.getContext("2d"),gr=g.createRadialGradient(256,256,20,256,256,128);gr.addColorStop(0,"rgba(0,0,8,0)");gr.addColorStop(.45,"rgba(0,0,8,.25)");gr.addColorStop(1,"rgba(0,0,8,.97)");g.fillStyle=gr;g.fillRect(0,0,512,512)}
  // volcanic floor (pre-rendered once): dark basalt, glowing lava cracks
  {const fh=Math.round(H*.45);floorSpr=mk(W*DPR,fh*DPR);const g=floorSpr.getContext("2d");g.scale(DPR,DPR);const pts=[],n=Math.max(8,Math.round(W/30)),pw=W/n;for(let i=0;i<=n;i++){const x=i*pw;pts.push([x,i===n?pts[0][1]:40-Math.abs(Math.sin(x/W*Math.PI*3)*30)-Math.random()*16+(i%6===0?-30:0)])}
@@ -805,10 +809,10 @@ function drawWater(t){darkSetup();X.setTransform(1,0,0,1,0,0);const top=camY,bot
  // color-shift fake depth: ONE stretched fill of the baked gradient for the visible water, flat dark cap below it
  {const w0=Math.max(SURF,top),w1=Math.min(CAPY,bot);if(w1>w0){const k=512/(CAPY-SURF);X.imageSmoothingEnabled=false;X.drawImage(gradSpr,0,(w0-SURF)*k,1,Math.max(.01,(w1-w0)*k),0,Math.floor((w0-top)*DPR),cw,Math.ceil((w1-w0)*DPR)+1);X.imageSmoothingEnabled=true}
   if(bot>CAPY){const y=Math.max(CAPY,top);X.fillStyle=CAP_COL;X.fillRect(0,Math.floor((y-top)*DPR),cw,Math.ceil((bot-y)*DPR)+1)}}
- if(FX>=1&&top<SURF+H*.9&&bot>SURF){const o=Math.round((((camX*.6)%W)+W)%W*DPR),y=Math.round((SURF-top)*DPR);X.drawImage(sunSpr,-o,y);X.drawImage(sunSpr,sunSpr.width-o,y)}
+ if(FX>=1&&top<SURF+H*.9&&bot>SURF){const o=Math.round((((camX*.6+t*6)%W)+W)%W*DPR),y=Math.round((SURF-top)*DPR);X.drawImage(sunSpr,-o,y);X.drawImage(sunSpr,sunSpr.width-o,y)}
  // scenery from the tile pool (only nearby tiles exist)
  for(const T of tiles)for(const o of T.deco){const sp=decoSpr[o.k],x=o.x-camX,y=o.y-top;if(x+sp.w*o.s<0||x-sp.w*o.s>W||y+sp.h*o.s<0||y-sp.h*o.s>H)continue;const sc=o.s;X.setTransform(sc,0,0,sc,x*DPR,y*DPR);X.globalAlpha=dimAt(o.x,o.y);const T=trim(sp);X.drawImage(T,-sp.ox*DPR+T.ox,-sp.oy*DPR+T.oy)}X.globalAlpha=1;
- X.setTransform(1,0,0,1,0,0);
+ X.setTransform(1,0,0,1,0,0);if(FX>=1&&!busy&&fogSpr&&bot>SURF){X.imageSmoothingEnabled=false;const w0=Math.max(SURF,top),k=512/(BED+H*.35-SURF),h0=Math.max(.01,Math.min(512,(Math.min(bot,BED+H*.35)-w0)*k));if(h0>.01)X.drawImage(fogSpr,0,Math.min(511,(w0-SURF)*k),1,h0,0,Math.floor((w0-top)*DPR),C.width,Math.ceil(h0/k*DPR)+1);X.imageSmoothingEnabled=true}// v10 gfx step 2 (skipped on a busy screen to stay in the perf budget): depth fog (one stretched baked gradient) over the scenery
  // seabed strip far down (decorative, tileable, no wall: the shark swims past it into the dark below)
  const fy=BED-40;if(bot>fy&&top<fy+floorSpr.fh){const k0=Math.floor(camX/W);{const fh2=Math.round(floorSpr.height*FLOOR_CUT),yy=Math.round((fy-top)*DPR);for(let k=k0;k<=k0+1;k++)X.drawImage(floorSpr,0,0,floorSpr.width,fh2,Math.round((k*W-camX)*DPR),yy,floorSpr.width,fh2);X.fillStyle=CAP_COL;X.fillRect(0,yy+fh2-1,C.width,floorSpr.height-fh2+1);// below the cut the rock is flat cap colour: cheap solid fill
   if(DK.per){const n=12,sw=C.width/n;X.fillStyle="rgb(0,0,8)";for(let i=0;i<n;i++){X.globalAlpha=vigA(camX+(i+.5)*sw/DPR,fy+60);X.fillRect(Math.floor(i*sw),yy,Math.ceil(sw)+1,fh2)}X.globalAlpha=1}}// cheap solid overlay strips darken the seabed
@@ -817,7 +821,7 @@ function drawWater(t){darkSetup();X.setTransform(1,0,0,1,0,0);const top=camY,bot
  // floating particles (screen space, parallax)
  X.setTransform(DPR,0,0,DPR,0,0);const d0=depthOf(camY+H/2),n=FX===0?0:busy||FX===1?14:snow.length;X.fillStyle=d0<.3?"rgba(230,250,255,.35)":"rgba(200,210,230,.35)";
  for(let i=0;i<n;i++){const p=snow[i],x=(((p.x*W-camX*.5)%W)+W)%W,y=(((p.y*H-t*p.sp*(d0<.3?-1:1)-camY*.5)%H)+H)%H,r=p.r*(d0<.3?1.6:1);if(y+top<SURF)continue;X.fillRect(x-r,y-r,r*2,r*2)}
- const sy=SURF-top;if(sy>-10&&sy<H+10){X.strokeStyle="rgba(220,248,255,.5)";X.lineWidth=3;X.lineCap="round";X.beginPath();const wn=busy?Math.ceil(waves.length/2):waves.length;for(let i=0;i<wn;i++){const w=waves[i],x=((((w.x+t*w.sp)*(W+80)-camX)%(W+80))+W+80)%(W+80)-40,y=sy+20+w.y*H*.5+Math.sin(t+w.x*9)*6;X.moveTo(x,y);X.quadraticCurveTo(x+w.w*.5,y-6,x+w.w,y)}X.stroke();
+ const sy=SURF-top;if(sy>-10&&sy<H+10){X.lineCap="round";/* v10 gfx step 2: white swoosh marks dropped */
   X.strokeStyle="#e8fbff";X.lineWidth=4;X.beginPath();const st=busy?46:24,x0=-(((camX%st)+st)%st);for(let x=x0;x<=W+st;x+=st){const y=sy+Math.sin(t*2+(x+camX)*.05)*2.5;x===x0?X.moveTo(x,y):X.lineTo(x,y)}X.stroke()}}
 function drawFx(dt,screen){X.setTransform(DPR,0,0,DPR,screen?0:-camX*DPR,screen?0:-camY*DPR);X.fillStyle="#e8fbff";X.strokeStyle=P.ink;X.lineWidth=1.5;for(const p of parts)if(p.t>0){const r=3+p.t*8;X.beginPath();X.arc(p.x,p.y,r,0,7);X.fill();X.stroke()}
  X.textAlign="center";X.textBaseline="middle";X.lineJoin="round";for(const p of pops)if(p.t>0){p.t-=dt*1.1;p.y-=dt*40;X.globalAlpha=Math.min(1,p.t*2);X.font="900 24px system-ui,sans-serif";X.lineWidth=6;X.strokeStyle=P.ink;X.strokeText(p.txt,p.x,p.y);X.fillStyle=P.yel;X.fillText(p.txt,p.x,p.y)}X.globalAlpha=1;X.textAlign="left"}
