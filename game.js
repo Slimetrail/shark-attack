@@ -3,7 +3,7 @@
 // ======================= EASY-TO-CHANGE SETTINGS =======================
 // ROUND_SECONDS: round length. 60 s is the DEFAULT and is NOT YET CONFIRMED by Jeremy. Test override: ?round=N
 const ROUND_SECONDS=(()=>{const m=/[?&]round=(\d+(\.\d+)?)/.exec(location.search);return m?+m[1]:60})();
-const N_SURF=3,MAX_LEVEL=10,MAX_PARTS=30,BEST_KEY="sharkAttack_best",SND_KEY="sharkAttack_sound",CALM_KEY="sharkAttack_calm",TYPE_KEY="sharkAttack_type",HINT_KEY="sharkAttack_hinted";
+const N_SURF=3,MAX_LEVEL=10,MAX_PARTS=30,BEST_KEY="sharkAttack_best",SND_KEY="sharkAttack_sound",SONGS_KEY="sharkAttack_songs",SFX_KEY="sharkAttack_sfx",CALM_KEY="sharkAttack_calm",TYPE_KEY="sharkAttack_type",HINT_KEY="sharkAttack_hinted";
 // Fish tiers: small / medium / big / giant. Fish clearly bigger than the shark eat it (v9: no markers; judge size by eye).
 const TIERS=[{s:16,pts:1,grow:1,col:"#ffd23f",n:8},{s:28,pts:2,grow:2,col:"#7be04a",n:3},{s:44,pts:3,grow:3,col:"#b06cff",n:1},{s:62,pts:5,grow:4,col:"#ff7a1e",n:1}];
 const N_FISH=TIERS.reduce((a,t)=>a+t.n,0);
@@ -527,7 +527,7 @@ function placeAll(){for(const T of tiles)T.tx=1e9;updTiles(true,true);for(const 
 // ---------- audio (one AudioContext, synthesized SFX, capped voices) ----------
 const FAST_SFX={AT:.7,COOL:1.5};// bubbles when speed rises past 70% of max (upward crossing only), at most once per 1.5 s
 const MAX_VOICES=8;
-let AC=null,soundOn=localStorage.getItem(SND_KEY)!=="0",sfx=null,noiseBuf=null,voices=0,music={title:null,game:null,cur:null},chip={buf:null,src:null,bus:null,t0:0,failed:false,want:false},placeholder=null,phT0=0;
+let AC=null,soundOn=localStorage.getItem(SND_KEY)!=="0",songsOn=(k=>k===null?soundOn:k!=="0")(localStorage.getItem(SONGS_KEY)),fxOn=(k=>k===null?soundOn:k!=="0")(localStorage.getItem(SFX_KEY)),/* v10 item 13: separate saved switches; an old save with no switch keys copies the old Sound setting (old off = both off) */sfx=null,noiseBuf=null,voices=0,music={title:null,game:null,cur:null},chip={buf:null,src:null,bus:null,t0:0,failed:false,want:false},placeholder=null,phT0=0;
 const sfxCount={chomp:0,bubbles:0,gulp:0,played:0};// test hooks: requested count per sound; "played" = actually sounded (unmuted)
 function initAudio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();sfx=AC.createGain();sfx.gain.value=.3;/* v10 item 11: SFX bus .45 -> .3 so music sits above */sfx.connect(AC.destination);
   noiseBuf=AC.createBuffer(1,Math.floor(AC.sampleRate*.12),AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)}catch(e){AC=null}
@@ -539,10 +539,10 @@ function initAudio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudio
 const CHIP_URL="audio/play-swim-piano.ogg",MUSIC_VOL={title:.5,game:.5};/* v10: both files -16 LUFS, peaks -1.3/-1.9 dBFS; .5 sits above the .3 SFX bus */// game track is ~9 dB louder than the title file, so it plays lower to sit under the SFX
 function loadChip(){if(!AC||chip.buf||chip.loading)return;chip.loading=true;fetch(CHIP_URL).then(r=>{if(!r.ok)throw new Error("chip "+r.status);return r.arrayBuffer()})
  .then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{chip.buf=buf;if(chip.want&&placeholder){phStop();chipStart()}}).catch(()=>{chip.failed=true})}
-function chipStart(){if(!AC||!chip.buf||chip.src)return;const bus=AC.createGain(),t=AC.currentTime;bus.gain.setValueAtTime(0,t);bus.gain.linearRampToValueAtTime(soundOn?MUSIC_VOL.game:0,t+.6);bus.connect(AC.destination);
+function chipStart(){if(!AC||!chip.buf||chip.src)return;const bus=AC.createGain(),t=AC.currentTime;bus.gain.setValueAtTime(0,t);bus.gain.linearRampToValueAtTime(musOn()?MUSIC_VOL.game:0,t+.6);bus.connect(AC.destination);
  const src=AC.createBufferSource();src.buffer=chip.buf;src.loop=true;src.connect(bus);src.start(t);chip.src=src;chip.bus=bus;chip.t0=t}
 function chipStop(){if(!chip.src)return;const s=chip.src,b=chip.bus;try{b.gain.setTargetAtTime(0,AC.currentTime,.15);s.stop(AC.currentTime+.8);setTimeout(()=>b.disconnect(),1000)}catch(e){}chip.src=null;chip.bus=null}
-function voice(dur){if(!AC||!soundOn||voices>=MAX_VOICES)return false;voices++;setTimeout(()=>voices--,dur*1000+60);sfxCount.played++;return true}
+function voice(dur){if(!AC||!soundOn||!fxOn||voices>=MAX_VOICES)return false;voices++;setTimeout(()=>voices--,dur*1000+60);sfxCount.played++;return true}
 function blip(f0,f1,dur,type,vol,delay){if(!voice(dur+(delay||0)))return;const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||"square";o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);
  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol||.3,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(sfx);o.start(t);o.stop(t+dur+.02)}
 function noise(dur,vol,freq){if(!voice(dur))return;const t=AC.currentTime,s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=noiseBuf;f.type="bandpass";f.frequency.value=freq||1800;f.Q.value=.8;
@@ -558,17 +558,20 @@ const SFX={
  perfect(){blip(1047,1568,.12,"square",.15)},end(){[784,659,523,392].forEach((f,i)=>blip(f,f*.98,.2,"triangle",.25,i*.16))}};
 // FALLBACK only (used if the chiptune file fails to load/decode): tiny ORIGINAL 8-bit loop (not Debussy, not the real track) at BEAT.PLACEHOLDER_BPM, cheap look-ahead scheduler.
 const PH_NOTES=[63,70,75,79, 61,68,73,77, 60,67,72,75, 58,65,70,74];const PH_BASS=[39,37,36,34];
-function phStart(){if(!AC||placeholder)return;const bus=AC.createGain();bus.gain.value=soundOn?.1:0;bus.connect(AC.destination);let step=0,next=AC.currentTime+.05;phT0=next;const st=30/BEAT.PLACEHOLDER_BPM;
+function phStart(){if(!AC||placeholder)return;const bus=AC.createGain();bus.gain.value=musOn()?.1:0;bus.connect(AC.destination);let step=0,next=AC.currentTime+.05;phT0=next;const st=30/BEAT.PLACEHOLDER_BPM;
  const tick=()=>{while(next<AC.currentTime+.25){const m=440*Math.pow(2,(PH_NOTES[step%16]-69)/12),o=AC.createOscillator(),g=AC.createGain();o.type="square";o.frequency.value=m;g.gain.setValueAtTime(.5,next);g.gain.exponentialRampToValueAtTime(.01,next+st*.8);o.connect(g);g.connect(bus);o.start(next);o.stop(next+st*.85);
    if(step%4===0){const b=AC.createOscillator(),g2=AC.createGain();b.type="triangle";b.frequency.value=440*Math.pow(2,(PH_BASS[(step>>2)%4]-69)/12);g2.gain.setValueAtTime(.9,next);g2.gain.linearRampToValueAtTime(0,next+st*3.8);b.connect(g2);g2.connect(bus);b.start(next);b.stop(next+st*3.9)}
    step++;next+=st}};placeholder={bus,id:setInterval(tick,100)};tick()}
 function phStop(){if(!placeholder)return;clearInterval(placeholder.id);const b=placeholder.bus;try{b.gain.setTargetAtTime(0,AC.currentTime,.2);setTimeout(()=>b.disconnect(),800)}catch(e){}placeholder=null}
 let fadeId=0;
 function playMusic(which){const id=++fadeId,from=music.cur,to=which==="title"?music.title:null;chip.want=which==="game";
- if(which==="game"){if(chip.buf)chipStart();else phStart()}else{phStop();chipStop()}music.cur=to;if(to&&soundOn)to.play().catch(()=>{});
- let k=0;const step=()=>{if(id!==fadeId)return;k+=.1;if(from&&from!==to)from.volume=Math.max(0,from.volume-.1);if(to)to.volume=soundOn?Math.min(MUSIC_VOL.title,k*MUSIC_VOL.title):0;if(k<1)setTimeout(step,60);else if(from&&from!==to)from.pause()};step()}
-function setSound(on){soundOn=on;localStorage.setItem(SND_KEY,on?"1":"0");$("snd").textContent=on?"🔊 Sound on":"🔈 Sound off";if(placeholder)placeholder.bus.gain.value=on?.1:0;if(chip.bus){chip.bus.gain.cancelScheduledValues(AC.currentTime);chip.bus.gain.value=on?MUSIC_VOL.game:0}
- for(const a of[music.title])if(a){if(on&&a===music.cur){a.volume=MUSIC_VOL.title;a.play().catch(()=>{})}else a.volume=0}}
+ if(which==="game"){if(chip.buf)chipStart();else phStart()}else{phStop();chipStop()}music.cur=to;if(to&&musOn())to.play().catch(()=>{});
+ let k=0;const step=()=>{if(id!==fadeId)return;k+=.1;if(from&&from!==to)from.volume=Math.max(0,from.volume-.1);if(to)to.volume=musOn()?Math.min(MUSIC_VOL.title,k*MUSIC_VOL.title):0;if(k<1)setTimeout(step,60);else if(from&&from!==to)from.pause()};step()}
+function musOn(){return soundOn&&songsOn}
+function setSound(on){soundOn=on;localStorage.setItem(SND_KEY,on?"1":"0");$("snd").textContent=on?"🔊 Sound on":"🔈 Sound off";
+ if($("songs"))$("songs").textContent=musOn()?"🎵 Songs on":"🎵 Songs off";if($("fx"))$("fx").textContent=soundOn&&fxOn?"🔔 Effects on":"🔕 Effects off";
+ const m=musOn();if(placeholder)placeholder.bus.gain.value=m?.1:0;if(chip.bus){chip.bus.gain.cancelScheduledValues(AC.currentTime);chip.bus.gain.value=m?MUSIC_VOL.game:0}
+ for(const a of[music.title])if(a){if(m&&a===music.cur){a.volume=MUSIC_VOL.title;a.play().catch(()=>{})}else a.volume=0}}
 
 // ---------- title ----------
 // Intro (v10): the shark swims past the words, turns and swims back around the title (over the top), then dives away.
@@ -846,7 +849,7 @@ function adaptStep(dt){if(dt>=.1)return;adapt.t+=dt;adapt.n++;adapt.sum+=dt;if(a
  else if(ms<ADAPT.FAST_MS&&++adapt.good>=ADAPT.GOOD_WIN){adapt.good=0;if(FX<Math.min(1,FX0))FX++;else if(RSK<1){RSK=Math.min(1,RSK/ADAPT.RS_STEP);resize(1)}else if(FX<FX0)FX++;else return;adapt.log.push({ms:Math.round(ms),fx:FX,rs:+(RS0*RSK).toFixed(3),up:1})}}
 function startLoop(){if(!raf){last=performance.now();raf=requestAnimationFrame(frame)}}
 function stopLoop(){cancelAnimationFrame(raf);raf=0}
-document.addEventListener("visibilitychange",()=>{if(document.hidden){stopLoop();if(music.cur)music.cur.pause();if(AC)AC.suspend()}else{startLoop();if(AC)AC.resume();if(music.cur&&soundOn)music.cur.play().catch(()=>{})}});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){stopLoop();if(music.cur)music.cur.pause();if(AC)AC.suspend()}else{startLoop();if(AC)AC.resume();if(music.cur&&musOn())music.cur.play().catch(()=>{})}});
 
 // ---------- UI ----------
 function hideAll(){for(const id of["titleUi","overUi","credUi","pickUi","tap"])$(id).classList.add("hide")}
@@ -874,7 +877,10 @@ for(const k of MODES)$("mode_"+k).onclick=()=>setMode(k);setMode(mode);
 $("pickBack").onclick=()=>{state="title";show("titleUi")};
 $("again").onclick=()=>startGame();
 $("home").onclick=()=>{buildSprites();startTitle();playMusic("title")};
-$("snd").onclick=()=>setSound(!soundOn);
+$("snd").onclick=()=>{if(!soundOn&&!songsOn&&!fxOn){songsOn=fxOn=true;localStorage.setItem(SONGS_KEY,"1");localStorage.setItem(SFX_KEY,"1")}setSound(!soundOn)};/* master switch: turning sound on with both sub-switches off turns both back on */
+function setSongs(v){songsOn=v;localStorage.setItem(SONGS_KEY,v?"1":"0");if(v&&!soundOn){soundOn=true;localStorage.setItem(SND_KEY,"1")}setSound(soundOn)}
+function setFx(v){fxOn=v;localStorage.setItem(SFX_KEY,v?"1":"0");if(v&&!soundOn){soundOn=true;localStorage.setItem(SND_KEY,"1")}setSound(soundOn)}
+$("songs").onclick=()=>setSongs(!musOn());$("fx").onclick=()=>setFx(!(soundOn&&fxOn));
 function setCalm(v){calm=v;localStorage.setItem(CALM_KEY,v?"1":"0");$("calm").textContent=v?"🌙 Calm (no shake)":"🌊 Shake on"}setCalm(calm);$("calm").onclick=()=>setCalm(!calm);
 $("cred").onclick=()=>{state="credits";show("credUi")};
 $("credBack").onclick=()=>{state="title";show("titleUi")};
@@ -887,7 +893,7 @@ if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceW
 
 // ---------- test hooks ----------
 window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
- get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
+ get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get songsOn(){return songsOn},get fxOn(){return fxOn},get musOn(){return musOn()},get titleMusicPlaying(){return !!(music.title&&!music.title.paused)},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
  get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti,kind){const f=fish[0];kind=kind||(shark.lvl===0?"plankton":"fish");setCreature(f,kind==="plankton"?bite()*.4:TIERS[ti||0].s,kind);f.band=[SURF+6,Infinity];f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
