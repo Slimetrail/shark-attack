@@ -8,7 +8,7 @@ const N_SURF=3,MAX_LEVEL=10,MAX_PARTS=30,BEST_KEY="sharkAttack_best",SND_KEY="sh
 const TIERS=[{s:16,pts:1,grow:1,col:"#ffd23f",n:8},{s:28,pts:2,grow:2,col:"#7be04a",n:3},{s:44,pts:3,grow:3,col:"#b06cff",n:1},{s:62,pts:5,grow:4,col:"#ff7a1e",n:1}];
 const N_FISH=TIERS.reduce((a,t)=>a+t.n,0);
 // Steering: the finger's SLIDE direction = swim direction. Each px slid adds "drive" (speed); drive fades when the finger rests.
-const STEER={MIN:.2,FULL:.25,DIR_PX:1.5,LEASH_COS:-.17,DRIVE_DECAY:.5,TURN:12,ACC:1.8,DEC:1.2};// v10 ANALOG: drive = distance of the finger from its FIRST touch point / (FULL x screen width), 0..1. Held = no decay (the shark never tires; top speed depends only on size). DRIVE_DECAY only after the finger lifts (back to the MIN idle drift).
+const STEER={MIN:.2,FULL:.25,DIR_PX:1.5,DRIVE_DECAY:.5,TURN:12,ACC:1.8,DEC:1.2};// v10 ANALOG: drive = distance of the finger from its FIRST touch point / (FULL x screen width), 0..1. Held = no decay (the shark never tires; top speed depends only on size). DRIVE_DECAY only after the finger lifts (back to the MIN idle drift).
 // Launch: heading up through the surface. power = LAUNCH.K * (speed/max) * (run-up distance at speed / screen height), capped at 1.
 const LAUNCH={K:2.2,MIN_POWER:.22,MIN_SPEED:.45,UP:-.35,H_MAX:.32,G:1.6,COOL:.3};// H_MAX: max height as fraction of screen height, G: gravity in screen-heights/s^2
 const SURFERS=[{kind:"kneel",pts:3,hy:16},{kind:"stand",pts:5,hy:46}];// hy: how high above the water the surfer's catch point is
@@ -825,13 +825,13 @@ function hideAll(){for(const id of["titleUi","overUi","credUi","pickUi","tap"])$
 function show(id){hideAll();$(id).classList.remove("hide")}
 // steering (v10 ANALOG, Jeremy): speed = how far the finger is from its FIRST touch point (tiny move = slow, FULL x screen width or more =
 // top speed for its size). Direction = where the finger is moving, used at once (no 3 px dead zone, no 55/45 lag; 1.5 px of movement is enough,
-// which also stops pixel jitter from twitching it). Turning back on yourself drags the start point along, so the speed is kept, not lost.
+// which also stops pixel jitter from twitching it). Item 7 (Jeremy): the start point stays fixed where the finger first touched, so dragging back toward it slows the shark; STEER.FULL (fraction of screen width for full speed) is the one knob.
 C.addEventListener("pointerdown",e=>{if(state!=="play")return;e.preventDefault();initAudio();touch.on=true;touch.x=touch.x0=e.clientX;touch.y=touch.y0=e.clientY;touch.ax=0;touch.ay=0;touch.dir=shark.ang;touch.drive=0;touch.lastMove=performance.now();try{C.setPointerCapture(e.pointerId)}catch(_){}});
 C.addEventListener("pointermove",e=>{if(!touch.on)return;const mx=e.clientX-touch.x,my=e.clientY-touch.y,md=Math.hypot(mx,my);touch.x=e.clientX;touch.y=e.clientY;if(md<=0)return;
  if(shark.stun>0){struggle(md);touch.x0=e.clientX;touch.y0=e.clientY;touch.ax=touch.ay=0;return}// netted: wiggles shorten the stun; steering restarts from where the finger is
  touch.ax+=mx;touch.ay+=my;const am=Math.hypot(touch.ax,touch.ay);
  if(am>=STEER.DIR_PX){const ux=touch.ax/am,uy=touch.ay/am;touch.dir=Math.atan2(uy,ux);touch.ax=touch.ay=0;
-  const ox=e.clientX-touch.x0,oy=e.clientY-touch.y0,od=Math.hypot(ox,oy);if(od>0&&(ox*ux+oy*uy)/od<STEER.LEASH_COS){const k=Math.min(od,W*STEER.FULL);touch.x0=e.clientX-ux*k;touch.y0=e.clientY-uy*k}}// turned back: keep the speed
+  }// v10 item 7: the start point stays FIXED (no leash); dragging back toward it lowers the drive below
  touch.drive=Math.min(1,Math.hypot(e.clientX-touch.x0,e.clientY-touch.y0)/(W*STEER.FULL));touch.lastMove=performance.now()});
 const up=()=>{touch.on=false};C.addEventListener("pointerup",up);C.addEventListener("pointercancel",up);
 document.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});document.addEventListener("gesturestart",e=>e.preventDefault());document.addEventListener("contextmenu",e=>e.preventDefault());// no long-press menu
