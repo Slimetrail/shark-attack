@@ -97,7 +97,7 @@ try:
       for(let k=0;k<200;k++){const x=Math.floor(Math.random()*c.width),y=Math.floor(c.height*(.45+Math.random()*.1));const i=(y*c.width+x)*4;ls.push(.3*im[i]+.59*im[i+1]+.11*im[i+2])}ls.sort((a,b)=>a-b);out.push(ls[100])}__sa.respawnAll();return out}''')
   check(r[0]>r[1]>r[2]>=r[3]-2,f'water darkens with depth (median luma surface/mid/deep/cap {[round(x) for x in r]})')
   check(r[0]-r[2]>60 and r[3]<20,'surface clearly lighter, deep cap near black')
-  # D) prey flee speeds + bounded minnow chase bot: a small fish flees at 0.85-0.92x YOUR top speed, a bigger shark chases slower than
+  # D) prey flee speeds + bounded minnow chase bot: a small fish flees at 0.60-0.85x YOUR top speed (v10: by depth + level, cap .85; tires to .40), a bigger shark chases slower than
   # your top speed, and a bot steering straight at a fleeing minnow-sized fish catches it within 12 s of game time.
   # v9: the start gap is s.L*1.25 (was H*.25 = 1.25 x the old fixed drawn length) because the drawn shark now grows per stage.
   r=ev('''()=>{__sa.setLevel(3);const s=__sa.shark,W=innerWidth,H=innerHeight;s.x=__sa.camX+W/2;s.y=__sa.SURF+H*.8;s.air=false;s.spd=0;__sa.camY=s.y-H/2;__sa.respawnAll();
@@ -108,8 +108,13 @@ try:
       Object.assign(__sa.touch,{on:true,dir:Math.atan2(f.y-s.y,f.x-s.x),drive:1,lastMove:performance.now()+9e9})});
     __sa.touch.on=false;const fks=__sa.fish.map(q=>q.fk).filter(v=>v!==undefined);
     return {kk,ratio:mx/top,caught,fmin:Math.min(...fks),fmax:Math.max(...fks),chase:[__sa.CREATURES.CHASE_SHALLOW,__sa.CREATURES.CHASE_DEEP]}}''')
-  check(.85<=r['fmin'] and r['fmax']<=.92,f"every creature's flee factor in 0.85-0.92 ({r['fmin']:.3f}-{r['fmax']:.3f})")
-  check(.8<=r['ratio']<=.925,f"fleeing fish peaks at {r['ratio']:.3f}x top speed (rolled {r['kk']:.3f})")
+  check(.60<=r['fmin'] and r['fmax']<=.72,f"every creature's base flee roll in 0.60-0.72 ({r['fmin']:.3f}-{r['fmax']:.3f})")
+  check(.55<=r['ratio']<=.86,f"fleeing fish peaks at {r['ratio']:.3f}x top speed (v10 band .60-.85, never at top speed)")
+  C=ev('__sa.CREATURES');check(C['FLEE_BURST_S']==1.2 and C['FLEE_TIRED']==.4 and C['FLEE_TIRED_S']==1.6 and C['FLEE_SHALLOW']==[.6,.7] and C['FLEE_DEEP']==[.7,.82] and C['FLEE_CAP']==.85,'v10 fish speed numbers: sprint 1.2 s, tired .40 for 1.6 s, shallow .60-.70, deep .70-.82, cap .85')
+  fk=ev('''()=>{const f=__sa.fish[0],o={y:f.y,s:f.s,fu:f.fu},out=[];for(const lv of [0,5,10]){__sa.setLevel(lv);for(const d of [0,1]){f.y=__sa.SURF+(__sa.BED-__sa.SURF)*d;f.fu=1;f.s=__sa.bite()*.3;out.push(__sa.fleeK(f))}}
+    __sa.setLevel(3);f.y=__sa.SURF+10;f.fu=0;f.s=__sa.bite()*.3;const far=__sa.fleeK(f);f.s=__sa.bite()*.8;const near=__sa.fleeK(f);Object.assign(f,o);__sa.setLevel(3);return {out,far,near}}''')
+  check(abs(fk['out'][0]-.70)<1e-6 and abs(fk['out'][1]-.82)<1e-6 and abs(fk['out'][2]-.75)<1e-6 and max(fk['out'])<=.85+1e-9,f"flee factor: shallow/deep tops .70/.82, +.01 per level, capped .85 ({[round(x,3) for x in fk['out']]})")
+  check(abs(fk['near']-fk['far']*.9)<1e-6,f"fish near the bite limit are 10% slower ({fk['near']:.3f} vs {fk['far']:.3f})")
   check(max(r['chase'])<1,f"chasers stay slower than top speed ({r['chase']})")
   check(0<=r['caught']<=12,f"minnow chase bot catches the fleeing fish in {r['caught']:.2f} s (bound 12 s)")
   # ---- v9: deep giants, eat on contact, silent push, big creatures chase, no size indicators ----
