@@ -418,11 +418,11 @@ function sharkSkin(c,L){if(!c||!c.getContext)return c;const g=c.getContext("2d")
  let z=L|0;const r=()=>(z=(z*16807+7)%2147483647)/2147483647;g.strokeStyle="#20282E";g.lineCap="round";for(let i=0;i<26;i++){const x=ox+L*(-.5+r()*.95),y=oy+h*(-.6+r()*.9),a=r()*.8-.4,l=L*(.01+r()*.03);g.globalAlpha=.25+r()*.3;g.lineWidth=Math.max(.6,L*.0025);g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}// 20-30 small scars
  g.globalAlpha=.55;g.strokeStyle="#0e151b";g.lineWidth=Math.max(1,L*.005);for(let i=0;i<5;i++){const x=ox+L*(.25-i*.027);g.beginPath();g.moveTo(x,oy-h*.2);g.quadraticCurveTo(x-L*.012,oy+h*.04,x-L*.004,oy+h*.28);g.stroke()}// gill slits, darker inner edge
  g.restore();return c}
-function fishSkin(c,a){if(!c||!c.getContext)return;const g=c.getContext("2d");g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";const H2=c.height;
+function fishSkin(c,a){if(!c||!c.getContext)return;const g=c.getContext("2d"),H2=c.height;g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";
+ g.globalAlpha=.3*a;g.fillStyle="#5f6a70";g.fillRect(0,0,c.width,H2);// desaturate: pull bold colours toward murk grey (patterns ~50% contrast)
  g.globalAlpha=.15;g.fillStyle=g.createPattern(texScale(),"repeat");g.fillRect(0,0,c.width,H2);// shared scale tile at 15%
- g.globalAlpha=1;const gr=g.createLinearGradient(0,0,0,H2);gr.addColorStop(0,"rgba(6,14,22,"+(.42*a)+")");gr.addColorStop(.5,"rgba(20,32,42,"+(.22*a)+")");gr.addColorStop(1,"rgba(60,70,80,"+(.1*a)+")");g.fillStyle=gr;g.fillRect(0,0,c.width,H2);// darker back, muted belly
- g.globalCompositeOperation="saturation";g.globalAlpha=.4*a;g.fillStyle="#808080";g.fillRect(0,0,c.width,H2);g.globalCompositeOperation="destination-in";g.globalAlpha=1;g.restore();
- g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";g.globalAlpha=.05;g.fillStyle=g.createPattern(texGrain(),"repeat");g.fillRect(0,0,c.width,H2);g.restore()}
+ g.globalAlpha=1;const gr=g.createLinearGradient(0,0,0,H2);gr.addColorStop(0,"rgba(6,14,22,"+(.45*a)+")");gr.addColorStop(.5,"rgba(20,32,42,"+(.15*a)+")");gr.addColorStop(1,"rgba(60,70,80,"+(.05*a)+")");g.fillStyle=gr;g.fillRect(0,0,c.width,H2);// darker back, lighter belly
+ g.globalAlpha=.05;g.fillStyle=g.createPattern(texGrain(),"repeat");g.fillRect(0,0,c.width,H2);g.restore()}
 function buildSprites(){
  SURF=Math.round(H*WORLD.SKY);WORLD_H=Math.round(H*WORLD.SCREENS);BED=Math.round(WORLD_H-H*WORLD.FLOOR*.62);
  // whole-world water gradient (drawn each frame through the camera transform: 1 fill)
@@ -474,7 +474,7 @@ function buildSprites(){
  sharkSpr=SHARK_PALS.map(T=>{const L=170,c=sharkSkin(render3DShark(L*DPR,false,T),L*DPR);c.L=L;c.o=sharkSkin(render3DShark(L*DPR,true,T),L*DPR);return c});
  surfSpr=[0,1].map(k=>{const s=60,c=mk(s*1.5*DPR,s*1.1*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(s*.75,s*.98);drawSurfer(q,s,k);return c});
  {/* v10 gfx step 3: darker, natural painted look baked into creature + surfer sprites */const nat=(c,a,col)=>{if(!c||!c.getContext)return;const g=c.getContext("2d");g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";g.globalAlpha=a;g.fillStyle=col||"#0a1a2a";g.fillRect(0,0,c.width,c.height);g.restore()};
-  fishSpr.forEach(r=>r.forEach(c=>nat(c,.34)));specSpr.forEach(c=>nat(c,.3));plankSpr.forEach(c=>nat(c,.25));nat(anglerSpr,.3);octoSpr.forEach(c=>nat(c,.42));starSpr.forEach(c=>nat(c,.5,"#141a22"));glowSpr.forEach(c=>nat(c,.32,"#06121e"));surfSpr.forEach(c=>nat(c,.14,"#20303a"))}
+  fishSpr.forEach(r=>r.forEach(c=>nat(c,.34)));specSpr.forEach(c=>nat(c,.3));plankSpr.forEach(c=>nat(c,.25));fishSpr.forEach(r=>r.forEach(c=>fishSkin(c,1)));specSpr.forEach(c=>fishSkin(c,.9));plankSpr.forEach(c=>fishSkin(c,.6));/* v10 item 12 step 2 */nat(anglerSpr,.3);octoSpr.forEach(c=>nat(c,.42));starSpr.forEach(c=>nat(c,.5,"#141a22"));glowSpr.forEach(c=>nat(c,.32,"#06121e"));surfSpr.forEach(c=>nat(c,.14,"#20303a"))}
  const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;const L=Math.min(H*.9,420);buildTitleShark();warmSprites()}
 // v9: crop + mip every creature sprite up front (the bigger drawn world hit lazy getImageData crops mid-play = first-encounter stutter)
 function warmSprites(){const all=[].concat(...fishSpr,glowSpr,specSpr,plankSpr,octoSpr,starSpr,[anglerSpr],sharkSpr,sharkSpr.map(c=>c.o));for(const c of all)if(c&&c.width)mip(trim(c),.02)}
