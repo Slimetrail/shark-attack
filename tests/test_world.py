@@ -110,10 +110,10 @@ try:
     return {kk,ratio:mx/top,caught,fmin:Math.min(...fks),fmax:Math.max(...fks),chase:[__sa.CREATURES.CHASE_SHALLOW,__sa.CREATURES.CHASE_DEEP]}}''')
   check(.60<=r['fmin'] and r['fmax']<=.72,f"every creature's base flee roll in 0.60-0.72 ({r['fmin']:.3f}-{r['fmax']:.3f})")
   check(.55<=r['ratio']<=.86,f"fleeing fish peaks at {r['ratio']:.3f}x top speed (v10 band .60-.85, never at top speed)")
-  C=ev('__sa.CREATURES');check(C['FLEE_BURST_S']==1.2 and C['FLEE_TIRED']==.4 and C['FLEE_TIRED_S']==1.6 and C['FLEE_SHALLOW']==[.6,.7] and C['FLEE_DEEP']==[.7,.82] and C['FLEE_CAP']==.85,'v10 fish speed numbers: sprint 1.2 s, tired .40 for 1.6 s, shallow .60-.70, deep .70-.82, cap .85')
+  C=ev('__sa.CREATURES');check(C['FLEE_BURST_S']==1.8 and C['FLEE_TIRED']==.65 and C['FLEE_TIRED_S']==.8 and C['FLEE_SHALLOW']==[.74,.8] and C['FLEE_DEEP']==[.8,.88] and C['FLEE_CAP']==.9 and C['FLEE_CAP']<1,'v10 build 18 fish speed numbers: sprint 1.8 s, tired .65 for .8 s, shallow .74-.80, deep .80-.88, cap .90 (under shark top speed)')
   fk=ev('''()=>{const f=__sa.fish[0],o={y:f.y,s:f.s,fu:f.fu},out=[];for(const lv of [0,5,10]){__sa.setLevel(lv);for(const d of [0,1]){f.y=__sa.SURF+(__sa.BED-__sa.SURF)*d;f.fu=1;f.s=__sa.bite()*.3;out.push(__sa.fleeK(f))}}
     __sa.setLevel(3);f.y=__sa.SURF+10;f.fu=0;f.s=__sa.bite()*.3;const far=__sa.fleeK(f);f.s=__sa.bite()*.8;const near=__sa.fleeK(f);Object.assign(f,o);__sa.setLevel(3);return {out,far,near}}''')
-  check(abs(fk['out'][0]-.70)<1e-6 and abs(fk['out'][1]-.82)<1e-6 and abs(fk['out'][2]-.75)<1e-6 and max(fk['out'])<=.85+1e-9,f"flee factor: shallow/deep tops .70/.82, +.01 per level, capped .85 ({[round(x,3) for x in fk['out']]})")
+  check(abs(fk['out'][0]-.80)<1e-6 and abs(fk['out'][1]-.88)<1e-6 and abs(fk['out'][2]-.85)<1e-6 and max(fk['out'])<=.90+1e-9,f"flee factor: shallow/deep tops .80/.88, +.01 per level, capped .90 ({[round(x,3) for x in fk['out']]})")
   check(abs(fk['near']-fk['far']*.9)<1e-6,f"fish near the bite limit are 10% slower ({fk['near']:.3f} vs {fk['far']:.3f})")
   check(max(r['chase'])<1,f"chasers stay slower than top speed ({r['chase']})")
   check(0<=r['caught']<=12,f"minnow chase bot catches the fleeing fish in {r['caught']:.2f} s (bound 12 s)")
@@ -134,7 +134,7 @@ try:
   r=ev('()=>{const s=__sa.shark,H=innerHeight;let a=[[],[],[]];for(let k=0;k<40;k++)for(const L of [0,1,2]){__sa.setLevel(0);s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*[.1,.45,.9][L];__sa.camY=s.y-innerHeight/2;__sa.respawnAll();for(const f of __sa.fish)if(!f.off&&__sa.layerOf(f.y)===L&&f.kind!=="plankton")a[L].push(f.s*__sa.lk(f)/__sa.bite())/* v9c: drawn size (giants keep their old on-screen size) */}const q=(v,p)=>{v.sort((x,y)=>x-y);return v[Math.floor(v.length*p)]};return [0,1,2].map(L=>q(a[L],.9))}');check(r[2]>r[1]*1.1 and r[1]>r[0]*1.5,f'v9: the big creatures (90th pct size vs your bite) get bigger with depth for a minnow ({r[0]:.2f}/{r[1]:.2f}/{r[2]:.2f})')
   def chaseTry(kind,k):
     return ev(f'''()=>{{__sa.setLevel(0);__sa.clearFood();const s=__sa.shark;s.air=false;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.7;s.spd=0;
-      const i=__sa.placeFishAt(2,s.x+s.L*3,s.y,-1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*{k},"{kind}");f.tile=null;f.band=[0,Infinity];f.rest=0;let st=false;
+      const i=__sa.placeFishAt(2,s.x+s.L*2.2,/* inside the 2.4 L notice range (3 L relied on idle drift reaching it in 1.2 s) */s.y,-1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*{k},"{kind}");f.tile=null;f.band=[0,Infinity];f.rest=0;let st=false;
       __sa.sim(1.2,()=>{{__sa.touch.on=false;if(f.st==="chase")st=true}});return st}}''')
   check(chaseTry('fish',2.2) and chaseTry('octo',2.2),'v9: any clearly bigger creature (not only sharks) chases a deep minnow')
   check(not chaseTry('fish',1.0),'v9: a same-size creature does not chase')
