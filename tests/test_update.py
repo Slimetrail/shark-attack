@@ -79,6 +79,14 @@ try:
   # 5) offline: zero network
   cx.set_offline(True);seen=[];h=lambda r:seen.append(r.url);srvlog_before=len(reqs);pg.reload();pg.wait_for_timeout(1500)
   check(ev('__sa.BUILD')=='b2','offline launch served from cache');cx.set_offline(False)
+  # 5b) TEST manifest is fullscreen-ready; every SHELL file sits in the offline cache; game starts from the cache with the network off
+  import json as _j,re as _re;mf=_j.load(open(os.path.join(TD,'manifest.webmanifest')))
+  check(mf.get('display')=='fullscreen' and mf.get('display_override')==['fullscreen','standalone'] and mf.get('orientation')=='landscape' and mf.get('id')=='/shark-attack-test/' and len(mf.get('icons',[]))>=3,f"TEST manifest: fullscreen + display_override, landscape, id, icons ({mf.get('display')},{mf.get('display_override')})")
+  ih=open(os.path.join(TD,'index.html')).read();check('apple-mobile-web-app-capable' in ih and 'viewport-fit=cover' in ih,'index.html: apple-mobile-web-app-capable + viewport-fit=cover')
+  shell=_j.loads(_re.search(r'const SHELL=(\[.*?\]);',open(os.path.join(TD,'sw.js')).read()).group(1))
+  miss=ev('async(sh)=>{const ks=await caches.keys(),out=[];for(const u of sh){let ok=false;for(const k of ks){const c=await caches.open(k);if(await c.match(u,{ignoreSearch:true})){ok=true;break}}if(!ok)out.push(u)}return out}',shell)
+  check(len(shell)>=9 and not miss,f'every SHELL file is in the offline cache ({len(shell)} files, missing {miss})')
+  cx.set_offline(True);pg.reload();pg.wait_for_timeout(400);play();pg.wait_for_timeout(600);check(ev('__sa.state')=='play','game starts offline from the cache');cx.set_offline(False)
   # 6) live game separate
   pg2=cx.new_page();pg2.goto(LIVE);pg2.wait_for_function('caches.keys().then(k=>k.includes("sharkattack-v8"))',timeout=10000);pg2.wait_for_timeout(500)
   r2=pg2.evaluate('navigator.serviceWorker.getRegistration().then(r=>r&&r.scope)');k=keys()

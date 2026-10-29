@@ -43,7 +43,7 @@ def idx(s):
  return s
 edit('index.html',idx)
 def man(s):
- m=json.loads(s);m.update(name="Shark Attack TEST",short_name="SA TEST",id="/shark-attack-test/",start_url="./",scope="./",theme_color="#ff7a00");return json.dumps(m)
+ m=json.loads(s);m.update(name="Shark Attack TEST",short_name="SA TEST",id="/shark-attack-test/",start_url="./",scope="./",theme_color="#ff7a00",display="fullscreen",display_override=["fullscreen","standalone"]);return json.dumps(m)
 edit('manifest.webmanifest',man)
 FONT=next((f for f in['/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf','/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'] if os.path.exists(f)),None)
 def ribbon(p,mask):
