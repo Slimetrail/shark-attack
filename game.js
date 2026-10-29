@@ -36,8 +36,8 @@ const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.0
 // net hits only stun + cost growth there (OUR reading of Jeremy's "does not end until you are eaten").
 // v8b world: endless left/right/down (only the surface is a boundary). Depth layers (fractions of SURF..BED, BED = start of the dark cap):
 const LAYERS={TOP:.3,MID:.62};// top < .3 <= mid < .62 <= deep (deep continues forever below)
-const DEPTH_LIMIT={BASE:.2,PER_LVL:.11,FREE_LVL:8,PUSH:4};// how deep each stage may swim (soft limit); stage 8+ = no limit
-const allowedD=l=>l>=DEPTH_LIMIT.FREE_LVL?Infinity:DEPTH_LIMIT.BASE+DEPTH_LIMIT.PER_LVL*l;
+// v9: no depth lock. Every stage may dive anywhere; the danger (big creatures that eat you) is the limit.
+const DEPTH_LIMIT={FREE_LVL:0};const allowedD=l=>Infinity;
 // depth-locked spawn tables (weights per layer). Fish = small fish on top, mid fish in the middle; deep = glow fish, anglerfish, octopus, starfish (seabed strip)
 const SPAWN=[[["plankton",.45],["fish",.55]],[["fish",.84],["shark",.16]],[["glow",.4],["octo",.16],["angler",.08],["shark",.36]]];
 const ALLOWED={plankton:[0],fish:[0,1],shark:[1,2],glow:[2],octo:[2],angler:[2],star:[2]};
@@ -615,9 +615,7 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
   // surface: launch if fast with enough run-up, else bump back down with a ripple
   if(shark.y-L*.08<=SURF){if(Math.sin(shark.ang)<LAUNCH.UP&&shark.cool<=0&&canLaunch())launch();
    else{shark.y=SURF+L*.08;const sn=Math.sin(shark.ang);if(sn<-.5){shark.ang=-shark.ang;shark.spd*=.75;shark.run*=.5;SFX.ripple();addPop(shark.x,SURF+10,"splish");spark(shark.x,SURF,0)}else if(sn<0)shark.ang=Math.cos(shark.ang)>=0?0:Math.PI}}// steep: bump down; shallow: glide along the surface without losing speed
-  // soft depth limit: small sharks are pushed back up ("Too small to go deeper"); grows with stage, gone at stage 8
-  if(!shark.air){const ad=allowedD(shark.lvl);if(ad<Infinity){const ym=SURF+ad*(BED-SURF);if(shark.y>ym){shark.y-=(shark.y-ym)*Math.min(1,dt*DEPTH_LIMIT.PUSH);if(Math.sin(shark.ang)>0)shark.spd*=Math.exp(-dt*3);
-    if(shark.y>ym+L*.1&&depthHintT<=0){depthHintT=2.5;addPop(shark.x,shark.y+L*.5,"Too small to go deeper")}}}}}
+  }
  if(depthHintT>0)depthHintT-=dt;
  {const k=Math.min(1,dt*WORLD.CAM_EASE),tc=Math.max(0,shark.y-H*.5);if(Math.abs(tc-camY)>H*1.2||Math.abs(shark.x-W/2-camX)>W*1.2){camY=tc;camX=shark.x-W/2}else{camY+=(tc-camY)*k;camX+=(shark.x-W/2-camX)*k}}updTiles();// big jump (teleport) = snap
  updDivers(dt);if(state!=="play")return;

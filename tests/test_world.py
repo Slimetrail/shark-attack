@@ -55,15 +55,13 @@ try:
   check(r[0]<r[1]<r[2],f'deeper means bigger prey (avg size top/mid/deep {r[0]:.1f}/{r[1]:.1f}/{r[2]:.1f})')
   # surfers need stage 6 (checked with real leaps in test_v8) -> constant here
   check(ev('__sa.GROW.SURF_LVL')==6,'surfers need stage 6')
-  # minnow: soft depth limit with hint; limit grows with stage
-  ad=ev('()=>{const o=[];for(let l=0;l<=9;l++)o.push(__sa.allowedD(l));return o}')
-  A=[9e9 if a is None else a for a in ad]
-  check(all(A[i]<=A[i+1] for i in range(9)) and A[0]<ev('__sa.LAYERS.TOP') and A[9]>1,f'allowed depth grows with stage {[round(a,2) if a is not None else "inf" for a in ad]}')
+  # v9 (Jeremy): NO depth lock. Replaces the old "allowed depth grows with stage / minnow stays shallow / hint" checks:
+  # a minnow swimming straight down reaches the deep layer and never sees "Too small to go deeper".
   r=ev('''()=>{__sa.setLevel(0);const s=__sa.shark,H=innerHeight;s.air=false;s.cool=1;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+40;s.spd=0;let mx=0,hint=false;
-     __sa.sim(8,()=>{Object.assign(__sa.touch,{on:true,dir:1.5708,drive:1,lastMove:performance.now()+9e9});mx=Math.max(mx,s.y);if(__sa.pops.some(p=>p.t>0&&p.txt==="Too small to go deeper"))hint=true});__sa.touch.on=false;
-     return {d:(mx-__sa.SURF)/(__sa.BED-__sa.SURF),ad:__sa.allowedD(0),top:__sa.LAYERS.TOP,hint}}''')
-  check(r['d']<r['ad']+.05 and r['d']<r['top'],f'minnow stays in the shallow band (max depth {r["d"]:.2f}, limit {r["ad"]:.2f})')
-  check(r['hint'],'minnow pushing deeper shows "Too small to go deeper"')
+     __sa.sim(14,()=>{Object.assign(__sa.touch,{on:true,dir:1.5708,drive:1,lastMove:performance.now()+9e9});mx=Math.max(mx,s.y);if(__sa.pops.some(p=>p.t>0&&p.txt==="Too small to go deeper"))hint=true});__sa.touch.on=false;
+     return {d:(mx-__sa.SURF)/(__sa.BED-__sa.SURF),mid:__sa.LAYERS.MID,hint,inf:__sa.allowedD(0)===Infinity}}''')
+  check(r['inf'] and r['d']>r['mid'],f'v9: minnow can dive into the deep layer (max depth {r["d"]:.2f} > {r["mid"]})')
+  check(not r['hint'],'v9: no "Too small to go deeper" hint')
   # minnow eats only plankton
   def eatTry(lvl,kind,k):
     return ev(f'''()=>{{__sa.setLevel({lvl});__sa.clearFood();const s=__sa.shark;s.air=false;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+60;s.ang=0;s.spd=__sa.maxSpeed()*.5;const f=__sa.fish[1];__sa.setCreature(f,__sa.bite()*{k},"{kind}");f.band=[0,1e9];
