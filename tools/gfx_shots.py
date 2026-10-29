@@ -25,10 +25,13 @@ try:
    ta=os.path.join(ROOT,'title-art-crop-preview.png')
    if os.path.exists(ta):
     po=Image.open(ta).convert('RGB');po=po.resize((round(po.width*H/po.height),H));sb=Image.new('RGB',(po.width+sh.width+20,H),(10,10,14));sb.paste(po,(0,0));sb.paste(sh,(po.width+20,0));sb.save(f'{OUT}/{LBL}-side-by-side-title-art.png')
-  cx,pg=game(b,915,412,2.625);cdp=cx.new_cdp_session(pg);cdp.send('Emulation.setCPUThrottlingRate',{'rate':4})
-  for name,frac in (('mid',.45),('deep',.85)):
-   place(pg,frac);pg.mouse.move(400,200);pg.mouse.down();pg.mouse.move(520,205,steps=4);pg.wait_for_timeout(800);pg.evaluate('__sa.perf.reset()')
-   for i in range(25):pg.mouse.move(520+(i%5)*10,205+((i//5)%2)*40-20);pg.wait_for_timeout(200)
-   pg.mouse.up();r=pg.evaluate('({f:__sa.perf.frames,js:__sa.perf.js,dt:__sa.perf.dtSum})');res[name]={'fps':round(r['f']/max(r['dt'],1e-6),1),'ms_per_frame_js':round(r['js']/max(r['f'],1),2)}
-  print(LBL,'4x slow CPU, 915x412 @2.625:',json.dumps(res));b.close()
+  for (VW,VH,VD) in ((915,412,2.625),(844,390,3)):
+   res={}
+   cx,pg=game(b,VW,VH,VD);cdp=cx.new_cdp_session(pg);cdp.send('Emulation.setCPUThrottlingRate',{'rate':4})
+   for name,frac in (('mid',.45),('deep',.85)):
+    place(pg,frac);pg.mouse.move(400,200);pg.mouse.down();pg.mouse.move(520,205,steps=4);pg.wait_for_timeout(800);pg.evaluate('__sa.perf.reset()')
+    for i in range(25):pg.mouse.move(520+(i%5)*10,205+((i//5)%2)*40-20);pg.wait_for_timeout(200)
+    pg.mouse.up();r=pg.evaluate('({f:__sa.perf.frames,js:__sa.perf.js,dt:__sa.perf.dtSum})');res[name]={'fps':round(r['f']/max(r['dt'],1e-6),1),'ms_per_frame_js':round(r['js']/max(r['f'],1),2)}
+   print(LBL,f'4x slow CPU, {VW}x{VH} @{VD}:',json.dumps(res));cx.close()
+  b.close()
 finally: srv.kill()

@@ -408,6 +408,21 @@ const sharkMax=l=>Math.min(W,H)*.75*(1+.04*l)*trait("speed");
 const FISH_PAL=["#ffd23f","#7be04a","#ff7a9c","#5fd0ff","#ff9f1c","#c48bff"],DEEP_PAL=["#6c7fa8","#8a6fb0","#5e8c8a"],GLOW_PAL=["#3dfcff","#ff4fd8","#b6ff3d"];
 const SHARK_PALS_OLD=[{body:"#55606e",hi:"#7f8b99",belly:"#cfd6dc",ext:"#1f262e",stripe:null,hammer:false},{body:"#3d4a5c",hi:"#5d6b80",belly:"#b9c2cc",ext:"#141a22",stripe:null,hammer:true},{body:"#2a2f3a",hi:"#4a5162",belly:"#8f97a3",ext:"#0b0e13",stripe:"#5b2a1a",hammer:false}];
 function tierOf(sz){return sz<22?0:sz<36?1:sz<54?2:3}
+// v10 item 12 (Graphics Lead plan): shared baked textures, made once, applied with source-atop so they stay inside each sprite
+let _grain=null,_scale=null;function texGrain(){if(!_grain){_grain=mk(64,64);const g=_grain.getContext("2d"),d=g.createImageData(64,64);let z=1234567;for(let i=0;i<d.data.length;i+=4){z=(z*1103515245+12345)&0x7fffffff;const v=z%2?255:0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=((z>>8)%160)+40}g.putImageData(d,0,0)}return _grain}
+function texScale(){if(!_scale){_scale=mk(12,8);const g=_scale.getContext("2d");g.strokeStyle="rgba(0,0,0,.9)";g.lineWidth=1;for(const [x,y] of[[0,0],[6,4],[12,0],[0,8],[12,8]]){g.beginPath();g.arc(x,y,4.5,0,Math.PI);g.stroke()}g.strokeStyle="rgba(255,255,255,.5)";for(const [x,y] of[[0,-1],[6,3],[12,-1],[0,7],[12,7]]){g.beginPath();g.arc(x,y,4.5,.3,Math.PI-.3);g.stroke()}}return _scale}
+function sharkSkin(c,L){if(!c||!c.getContext)return c;const g=c.getContext("2d"),h=L*.2,ox=c.width/2+L*.05,oy=c.height*.56;g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";
+ let gr=g.createLinearGradient(0,oy-h*.9,0,oy+h*.7);gr.addColorStop(0,"rgba(8,14,20,.5)");gr.addColorStop(.35,"rgba(10,18,26,.32)");gr.addColorStop(.55,"rgba(20,30,38,.12)");gr.addColorStop(1,"rgba(30,40,48,.22)");g.fillStyle=gr;g.fillRect(0,0,c.width,c.height);// baked countershade: dark back, muted belly, less clean light
+ gr=g.createLinearGradient(0,oy-h*.95,0,oy-h*.55);gr.addColorStop(0,"rgba(150,180,200,.14)");gr.addColorStop(1,"rgba(150,180,200,0)");g.fillStyle=gr;g.fillRect(0,0,c.width,oy-h*.5);// only light: thin rim from above
+ g.globalAlpha=.06;g.fillStyle=g.createPattern(texGrain(),"repeat");g.fillRect(0,0,c.width,c.height);g.globalAlpha=1;// skin grain 6%
+ let z=L|0;const r=()=>(z=(z*16807+7)%2147483647)/2147483647;g.strokeStyle="#20282E";g.lineCap="round";for(let i=0;i<26;i++){const x=ox+L*(-.5+r()*.95),y=oy+h*(-.6+r()*.9),a=r()*.8-.4,l=L*(.01+r()*.03);g.globalAlpha=.25+r()*.3;g.lineWidth=Math.max(.6,L*.0025);g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}// 20-30 small scars
+ g.globalAlpha=.55;g.strokeStyle="#0e151b";g.lineWidth=Math.max(1,L*.005);for(let i=0;i<5;i++){const x=ox+L*(.25-i*.027);g.beginPath();g.moveTo(x,oy-h*.2);g.quadraticCurveTo(x-L*.012,oy+h*.04,x-L*.004,oy+h*.28);g.stroke()}// gill slits, darker inner edge
+ g.restore();return c}
+function fishSkin(c,a){if(!c||!c.getContext)return;const g=c.getContext("2d");g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";const H2=c.height;
+ g.globalAlpha=.15;g.fillStyle=g.createPattern(texScale(),"repeat");g.fillRect(0,0,c.width,H2);// shared scale tile at 15%
+ g.globalAlpha=1;const gr=g.createLinearGradient(0,0,0,H2);gr.addColorStop(0,"rgba(6,14,22,"+(.42*a)+")");gr.addColorStop(.5,"rgba(20,32,42,"+(.22*a)+")");gr.addColorStop(1,"rgba(60,70,80,"+(.1*a)+")");g.fillStyle=gr;g.fillRect(0,0,c.width,H2);// darker back, muted belly
+ g.globalCompositeOperation="saturation";g.globalAlpha=.4*a;g.fillStyle="#808080";g.fillRect(0,0,c.width,H2);g.globalCompositeOperation="destination-in";g.globalAlpha=1;g.restore();
+ g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";g.globalAlpha=.05;g.fillStyle=g.createPattern(texGrain(),"repeat");g.fillRect(0,0,c.width,H2);g.restore()}
 function buildSprites(){
  SURF=Math.round(H*WORLD.SKY);WORLD_H=Math.round(H*WORLD.SCREENS);BED=Math.round(WORLD_H-H*WORLD.FLOOR*.62);
  // whole-world water gradient (drawn each frame through the camera transform: 1 fill)
@@ -456,7 +471,7 @@ function buildSprites(){
  anglerSpr=crit(q=>drawAngler(q,FB),22);lureSpr=mk(64,64);{const g=lureSpr.getContext("2d"),gr=g.createRadialGradient(32,32,1,32,32,32);gr.addColorStop(0,"rgba(255,250,190,1)");gr.addColorStop(.3,"rgba(255,230,120,.55)");gr.addColorStop(1,"rgba(255,220,90,0)");g.fillStyle=gr;g.fillRect(0,0,64,64)}
  octoSpr=["#c2475d","#a85bd0"].map(col=>crit(q=>drawOcto(q,FB,col),8));
  starSpr=["#ff8a3d","#ff5f8f","#ffc23d"].map(col=>crit(q=>drawStar(q,FB,col),6));
- sharkSpr=SHARK_PALS.map(T=>{const L=170,c=render3DShark(L*DPR,false,T);c.L=L;c.o=render3DShark(L*DPR,true,T);return c});
+ sharkSpr=SHARK_PALS.map(T=>{const L=170,c=sharkSkin(render3DShark(L*DPR,false,T),L*DPR);c.L=L;c.o=sharkSkin(render3DShark(L*DPR,true,T),L*DPR);return c});
  surfSpr=[0,1].map(k=>{const s=60,c=mk(s*1.5*DPR,s*1.1*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(s*.75,s*.98);drawSurfer(q,s,k);return c});
  {/* v10 gfx step 3: darker, natural painted look baked into creature + surfer sprites */const nat=(c,a,col)=>{if(!c||!c.getContext)return;const g=c.getContext("2d");g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";g.globalAlpha=a;g.fillStyle=col||"#0a1a2a";g.fillRect(0,0,c.width,c.height);g.restore()};
   fishSpr.forEach(r=>r.forEach(c=>nat(c,.34)));specSpr.forEach(c=>nat(c,.3));plankSpr.forEach(c=>nat(c,.25));nat(anglerSpr,.3);octoSpr.forEach(c=>nat(c,.42));starSpr.forEach(c=>nat(c,.5,"#141a22"));glowSpr.forEach(c=>nat(c,.32,"#06121e"));surfSpr.forEach(c=>nat(c,.14,"#20303a"))}
@@ -464,7 +479,7 @@ function buildSprites(){
 // v9: crop + mip every creature sprite up front (the bigger drawn world hit lazy getImageData crops mid-play = first-encounter stutter)
 function warmSprites(){const all=[].concat(...fishSpr,glowSpr,specSpr,plankSpr,octoSpr,starSpr,[anglerSpr],sharkSpr,sharkSpr.map(c=>c.o));for(const c of all)if(c&&c.width)mip(trim(c),.02)}
 function titleW(){return Math.min(W*.56,H*1.15,560)}
-function buildShark(keep){const L=sharkL(shark.lvl);shark.Lt=L;if(!keep||!(shark.L>0))shark.L=L;const TT=Object.assign({},TYPES[sType],{barA:Math.max(.18,.62-shark.lvl*.045)});sprC=render3DShark(L*DPR,false,TT);sprO=render3DShark(L*DPR,true,TT);// tiger bars fade with growth
+function buildShark(keep){const L=sharkL(shark.lvl);shark.Lt=L;if(!keep||!(shark.L>0))shark.L=L;const TT=Object.assign({},TYPES[sType],{barA:Math.max(.18,.62-shark.lvl*.045)});sprC=sharkSkin(render3DShark(L*DPR,false,TT),L*DPR);sprO=sharkSkin(render3DShark(L*DPR,true,TT),L*DPR);// tiger bars fade with growth
 sprC.L=sprO.L=L}
 let _st=-1;function safeTop(){if(_st<0){const d=document.createElement("div");d.style.cssText="position:fixed;top:env(safe-area-inset-top);";document.body.appendChild(d);_st=d.getBoundingClientRect().top||0;d.remove()}return _st}
 function resize(keep){DPR=Math.max(.5,Math.min(DPR_CAP,window.devicePixelRatio||1)*RS0*RSK);W=innerWidth;H=innerHeight;C.width=Math.round(W*DPR);C.height=Math.round(H*DPR);if(!keep)buildSprites();if(state!=="play")placeAll()}
