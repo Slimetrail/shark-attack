@@ -1,4 +1,4 @@
-# v6 tests: landscape, deep world with camera, depth zones, volcanic floor, flee/chase creatures, slowed growth, side-view intro bite (v8 F).
+# v6 tests: landscape, deep world with camera, depth zones, volcanic floor, flee/chase creatures, slowed growth, side-view intro swim-around + title picture, no bite (v10).
 # Run: python3 tests/test_v6.py   (port 8883, headless Chromium, landscape phone sizes)
 import os,sys,json,subprocess,time,math
 from playwright.sync_api import sync_playwright
@@ -14,8 +14,8 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch()
   man=json.load(open(os.path.join(ROOT,'manifest.webmanifest')));check(man['orientation']=='landscape','manifest orientation landscape')
-  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"10"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=10' in sw,'service worker cache bumped to v8 (sharkattack-v + build 8)')
-  check('game.js?v=10' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=10')
+  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"11"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=11' in sw and 'art/title-art.webp' in sw,'service worker cache bumped (build 11, title art cached)')
+  check('game.js?v=11' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=11')
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap')
   pg.wait_for_function('__sa.titleT>0.1',timeout=5000);t0=pg.evaluate('__sa.titleT');pg.click('#start');pg.wait_for_timeout(250)
   check(t0<0.8 and pg.is_visible('.pick'),f'intro: Start works mid-intro (tapped at {t0:.2f}s)');cx.close()
@@ -25,22 +25,26 @@ try:
     pg.on('request',lambda r:outside.append(r.url) if not r.url.startswith(URL) else None)
     ev=pg.evaluate;tag=f'{w}x{h}'
     pg.goto(URL);pg.wait_for_timeout(300);check(not pg.is_visible('#rot'),f'{tag}: no rotate prompt in landscape');pg.click('#tap')
-    hs=[];bite=None;shots={0.6:'before',1.62:'mid'}
+    hs=[];arts=[];torn=[];c0=ev('__sa.sfxCount.chomp');shots={0.6:'before',1.62:'mid'}
     while True:
-      st=ev('({t:__sa.titleT,s:__sa.titleShark,b:__sa.titleBite,done:window.__saTitleDone})')
-      if st['done'] or st['t']>2.4: break
+      st=ev('({t:__sa.titleT,s:__sa.titleShark,a:__sa.titleArt,torn:__sa.titleTorn,done:window.__saTitleDone,r:__sa.titleRect})')
+      arts.append((st['t'],st['a']));torn.append(st['torn'])
+      if st['done'] or st['t']>4: break
       if st['s'] and st['t']>0.2 and st['t']<2.1: hs.append((st['t'],st['s']['head'],st['s']['headY'],st['s']['dir']))
-      if bite is None and st['t']>=1.72 and st['s']: bite=(st['s']['head'],st['s']['headY'],st['b'])
+      if st['s'] and 1.6<st['t']<1.95: hs.append(('over',st['s']['headY'],st['r']['y']+st['r']['h']*.5))
       for k in list(shots):
         if st['t']>=k:
           if w==915: pg.screenshot(path=f'{SHOTS}/v8d-title-{shots[k]}.png')
           del shots[k]
       pg.wait_for_timeout(30)
-    vis=[x for x in hs if x[0]>0.45]
-    check(len(vis)>5 and all(0<=hx<=w and 0<=hy<=h for _,hx,hy,_ in vis),f'{tag}: intro shark head stays on screen while it passes, turns and bites ({len(vis)} samples)')
+    over=[x for x in hs if x[0]=='over'];hs=[x for x in hs if x[0]!='over'];vis=[x for x in hs if x[0]>0.45]
+    check(len(vis)>5 and all(0<=hx<=w and 0<=hy<=h for _,hx,hy,_ in vis),f'{tag}: intro shark head stays on screen while it passes, turns and swims around ({len(vis)} samples)')
     check(any(d>0.9 for *_,d in hs) and any(d<-0.9 for *_,d in hs),f'{tag}: intro shark swims past one way, then turns back')
-    check(bite is not None and abs(bite[0]-bite[2][0])<40 and abs(bite[1]-bite[2][1])<60,f'{tag}: shark head is on the bite spot when it bites')
+    check(over and all(hy<cy for _,hy,cy in over),f'{tag}: shark swims back around (over) the title, not into it ({len(over)} samples)')
+    check(not any(torn) and ev('__sa.sfxCount.chomp')==c0,f'{tag}: title is never bitten or torn, no chomp sound in the intro')
+    check(all(a==0 for tt,a in arts if tt<2.6) and any(a>0 for tt,a in arts),f'{tag}: title picture appears only after the swim')
     pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
+    check(ev('__sa.titleArtOK') and ev('__sa.titleArt')==1 and not ev('__sa.titleTorn'),f'{tag}: picture fully shown when intro is done, title untorn')
     if w==915: pg.screenshot(path=f'{SHOTS}/v8d-title-after.png')
     check(pg.is_visible('#start') and pg.locator('#start').bounding_box()['y']+pg.locator('#start').bounding_box()['height']<=h,f'{tag}: start button on screen')
     pg.click('#start');pg.wait_for_timeout(250)

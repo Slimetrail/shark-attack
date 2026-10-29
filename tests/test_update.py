@@ -13,7 +13,7 @@ WEB=tempfile.mkdtemp(prefix='sa-upd-');TD=os.path.join(WEB,'shark-attack-test')
 subprocess.check_call([sys.executable,os.path.join(ROOT,'tools/make_test_build.py'),'--worktree','--out',TD,'--build','b1','7'],stdout=subprocess.DEVNULL)
 os.makedirs(os.path.join(WEB,'shark-attack'))
 for f in ['index.html','game.js','sw.js','manifest.webmanifest','version.json']:shutil.copy(os.path.join(ROOT,f),os.path.join(WEB,'shark-attack',f))
-for d in ['icons','audio']:shutil.copytree(os.path.join(ROOT,d),os.path.join(WEB,'shark-attack',d))
+for d in ['icons','audio','art']:shutil.copytree(os.path.join(ROOT,d),os.path.join(WEB,'shark-attack',d))
 def set_build(b,marker=None):
   open(os.path.join(TD,'version.json'),'w').write(json.dumps({"build":b}))
   p=os.path.join(TD,'index.html');s=open(p).read();s=re.sub(r'<meta name="build" content="[^"]*">',f'<meta name="build" content="{b}">',s);open(p,'w').write(s)
@@ -43,7 +43,7 @@ try:
   check(reg==URL,f'SW scope is {reg}')
   check(ev('document.title')=='Shark Attack TEST' and 'TEST v7' in ev('document.getElementById("testTag").textContent'),'title "Shark Attack TEST" + "TEST v7" label')
   check(ev('fetch("manifest.webmanifest").then(r=>r.json()).then(m=>m.name+"|"+m.short_name+"|"+m.id)')=='Shark Attack TEST|SA TEST|/shark-attack-test/','manifest name/short_name/id')
-  n=ev('caches.open("sa-test-b1").then(c=>c.keys()).then(k=>k.length)');check(n==9,f'installed cache sa-test-b1 holds all 9 files ({n})')
+  n=ev('caches.open("sa-test-b1").then(c=>c.keys()).then(k=>k.length)');check(n==10,f"installed cache sa-test-b1 holds all 10 files ({n})")
   check(not any(k.startswith('sharkattack-') for k in keys()) and not ev('Object.keys(localStorage).some(k=>k.startsWith("sharkAttack_"))'),'no live cache or storage names used by TEST')
   check(not ev('caches.open("sa-test-b1").then(c=>c.keys()).then(k=>k.some(r=>r.url.includes("version.json")))'),'version.json never cached')
   pg.reload();pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000);pg.wait_for_timeout(300)
@@ -57,7 +57,7 @@ try:
   play();ev('window.__keep=1');nv=len(navs);t0=time.time();ok=False;st=[]
   while time.time()-t0<15:
     st.append(ev('__sa.state'));
-    if 'sa-test-b2' in keys() and ev('caches.open("sa-test-b2").then(c=>c.keys()).then(k=>k.length)')==9:ok=True;break
+    if 'sa-test-b2' in keys() and ev('caches.open("sa-test-b2").then(c=>c.keys()).then(k=>k.length)')==10:ok=True;break
     pg.wait_for_timeout(200)
   pg.wait_for_timeout(500)
   print('  meta:',ev('caches.open("sa-test-meta").then(c=>c.match("meta")).then(r=>r.text())'))

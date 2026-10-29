@@ -285,13 +285,6 @@ function render3DTitle(w){const fs=Math.floor(w*.17),c=mk(w,fs*2.7),g=c.getConte
   const gr=g.createLinearGradient(0,y-fs*.5,0,y+fs*.5);gr.addColorStop(0,"#fff27a");gr.addColorStop(.5,"#ffcc33");gr.addColorStop(.51,"#ff9f1c");gr.addColorStop(1,"#f06a12");g.fillStyle=gr;g.fillText(t,w/2,y);
   g.save();g.globalCompositeOperation="source-atop";g.fillStyle="rgba(255,255,255,.35)";g.fillRect(0,y-fs*.45,w,fs*.18);g.restore()}
  return c}
-function biteTitle(c,cx,cy,r){// cartoon bite: scalloped chunk removed + dark rim
- const g=c.getContext("2d");g.save();g.globalCompositeOperation="destination-out";g.beginPath();
- for(let i=0;i<6;i++){const a=-Math.PI/2+(i-2.5)*.42;g.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);g.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,r*.42,0,7)}
- g.arc(cx,cy+r*.15,r*.95,0,7);g.fill();g.restore();
- g.save();g.globalCompositeOperation="source-atop";g.strokeStyle=P.ink;g.lineWidth=r*.18;g.beginPath();
- for(let i=0;i<6;i++){const a=-Math.PI/2+(i-2.5)*.42;g.moveTo(cx+Math.cos(a)*r+r*.42,cy+Math.sin(a)*r);g.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,r*.42,0,7)}g.arc(cx,cy+r*.15,r*.95,0,7);g.stroke();g.restore()}
-
 // head-on shark for the intro: mouth WIDE open toward the viewer (open) or snapped shut (closed). Pre-rendered once.
 function renderFrontShark(S,open){const c=mk(S*1.2,S*1.1),g=c.getContext("2d");g.translate(c.width/2,c.height*.48);g.lineJoin="round";const k=S/400;
  const head=()=>{g.beginPath();g.moveTo(-200*k,-10*k);g.bezierCurveTo(-210*k,-150*k,-90*k,-205*k,0,-205*k);g.bezierCurveTo(90*k,-205*k,210*k,-150*k,200*k,-10*k);g.bezierCurveTo(195*k,110*k,110*k,190*k,0,195*k);g.bezierCurveTo(-110*k,190*k,-195*k,110*k,-200*k,-10*k);g.closePath()};
@@ -510,42 +503,40 @@ function setSound(on){soundOn=on;localStorage.setItem(SND_KEY,on?"1":"0");$("snd
  for(const a of[music.title])if(a){if(on&&a===music.cur){a.volume=MUSIC_VOL.title;a.play().catch(()=>{})}else a.volume=0}}
 
 // ---------- title ----------
-// Intro (v8 F): the shark swims past the words, turns, comes back and bites "ATTACK"; the torn letters hang.
-// Everything is baked into ONE title layer when the bite lands; tap/Start works at any time.
-const T={t:0,bitten:false,done:false,k:0,sr:null};const TITLE_TOP_PAD=6,TITLE_PASS=1.05,TITLE_TURN=1.45,TITLE_BITE_AT=1.8,TITLE_SWIM=2.6;
+// Intro (v10): the shark swims past the words, turns and swims back around the title (over the top), then dives away.
+// It NEVER bites: no tear, no CHOMP, no shake, no chomp sound. Then Jeremy's title picture fades in (0.7 s) and stays.
+// The picture is preloaded once and baked to a screen-sized layer on resize; if it fails to load the 3D title stays.
+const T={t:0,bitten:false,torn:false,done:false,k:0,sr:null,art:0};const TITLE_TOP_PAD=6,TITLE_PASS=1.05,TITLE_TURN=1.45,TITLE_OVER=2.05,TITLE_SWIM=2.6,TITLE_ART_FADE=.7;
+const TITLE_ART=new Image();let artOK=false,artFail=false,artC=null,artKey="";TITLE_ART.onload=()=>{artOK=true;artKey=""};TITLE_ART.onerror=()=>{artFail=true};TITLE_ART.src="art/title-art.webp";
+function artRect(){const iw=TITLE_ART.naturalWidth||938,ih=TITLE_ART.naturalHeight||1396,a=iw/ih;
+ if(W<H){let w=W,h=w/a;if(h>H){h=H;w=h*a}return {x:(W-w)/2,y:Math.max(0,Math.min(safeTop(),H-h)),w,h,port:true}}// portrait: full width, keep aspect
+ const h=H,w=h*a;return {x:Math.max(0,Math.min(W*.25-w/2,W*.26-w)),y:0,w,h,port:false}}// landscape: picture at the left, buttons stay readable in the middle
+function bakeArt(){const r=artRect(),key=W+"x"+H+"@"+DPR;if(artC&&artKey===key)return artC;artKey=key;const c=mk(W*DPR,H*DPR),g=c.getContext("2d");g.scale(DPR,DPR);
+ g.fillStyle="#040d16";g.fillRect(0,0,W,H);g.drawImage(TITLE_ART,r.x,r.y,r.w,r.h);
+ if(r.port){const y0=H*.62,gr=g.createLinearGradient(0,y0,0,H);gr.addColorStop(0,"rgba(2,8,14,0)");gr.addColorStop(.35,"rgba(2,8,14,.55)");gr.addColorStop(1,"rgba(2,8,14,.85)");g.fillStyle=gr;g.fillRect(0,y0,W,H-y0)}// darker lower area behind the buttons
+ else{const x0=r.x+r.w-r.w*.15,gr=g.createLinearGradient(x0,0,x0+r.w*.3,0);gr.addColorStop(0,"rgba(4,13,22,0)");gr.addColorStop(1,"rgba(4,13,22,1)");g.fillStyle=gr;g.fillRect(x0,0,r.w*.3,H)}
+ artC=c;return c}
 let tSideO=null,tSideC=null;
 function buildTitleShark(){const L=Math.min(titleW()*.62,H*.55,330);tSideO=render3DShark(L*DPR,true,TYPES[sType]);tSideC=render3DShark(L*DPR,false,TYPES[sType]);tSideO.L=tSideC.L=L}
-function startTitle(){state="title";camY=0;camX=0;T.t=0;T.bitten=false;T.done=false;T.sr=null;window.__saTitleDone=false;const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;buildTitleShark();show("titleUi")}
+function startTitle(){state="title";camY=0;camX=0;T.t=0;T.bitten=false;T.torn=false;T.done=false;T.sr=null;T.art=0;window.__saTitleDone=false;const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;buildTitleShark();show("titleUi")}
 function titleRect(){const tw=title.dw,th=title.height*(tw/title.width);return {x:(W-tw)/2,y:Math.max(safeTop()+10,H*.09),w:tw,h:th}}
-function titleBite(){const fs=Math.floor(title.width*.17),g=title.getContext("2d");g.font=`900 ${fs}px system-ui,"Arial Black",sans-serif`;
- const word="ATTACK",tot=g.measureText(word).width,x0=title.width/2-tot/2,y=fs*1.95,lx=i=>x0+g.measureText(word.slice(0,i)).width;
- return {fs,y,lx,cx:lx(4)*.35+lx(5)*.65,cy:y-fs*.38,r:fs*.3}}
-function tearTitle(){// bake: bite out of the "C", the "K" torn loose and hanging, the 2nd "A" knocked crooked
- const c=title,g=c.getContext("2d"),B=titleBite(),{fs,y,lx}=B;
- const piece=(i0,i1,px,py,rot)=>{const x0=lx(i0)+fs*.01,x1=lx(i1)+(i1>5?fs*.1:-fs*.01),y0=y-fs*.62,h=fs*1.3,w=x1-x0,tmp=mk(w,h),tg=tmp.getContext("2d");tg.drawImage(c,x0,y0,w,h,0,0,w,h);
-  g.clearRect(x0,y0,w,h);g.save();g.translate(px,py);g.rotate(rot);g.drawImage(tmp,x0-px,y0-py);g.restore()};
- piece(5,6,lx(6)-fs*.02,y-fs*.42,-.5);// K hangs from its top-right corner
- piece(3,4,lx(3)+fs*.3,y+fs*.45,-.12);// A tilts on its foot
- biteTitle(c,B.cx,B.cy,B.r);
- g.save();g.globalCompositeOperation="destination-out";g.beginPath();const tx=lx(6)-fs*.04;// ragged tear where the K ripped off
- for(let k=0;k<7;k++){const yy=y-fs*.5+k*fs*.15;g.moveTo(tx,yy);g.lineTo(tx+fs*(k%2?.1:.03),yy+fs*.075);g.lineTo(tx,yy+fs*.15)}g.fill();g.restore();return B}
-function titleBiteXY(){const r=titleRect(),B=titleBite(),k=r.w/title.width;return [r.x+B.cx*k,r.y+B.cy*k]}
 function updTitle(dt){T.t+=dt;
- if(!T.bitten&&T.t>=TITLE_BITE_AT){T.bitten=true;const [bx,by]=titleBiteXY();tearTitle();SFX.chomp();if(!calm)shake=.25;addPop(bx,by+40,"CHOMP!");for(let i=0;i<14;i++)spark(bx,by,1)}
- if(shake>0){shake-=dt;C.style.transform=shake>0?`translate(${(Math.random()-.5)*8}px,${(Math.random()-.5)*8}px)`:""}
- if(!T.done&&T.t>TITLE_SWIM+.3){T.done=true;window.__saTitleDone=true}}
-function titleShark(){// path: in from the left past the words, turn at the right (head kept on screen), lunge back to the bite, then dive away
- const r=titleRect(),L=tSideO.L,[bx,by]=titleBiteXY(),t=T.t,yw=r.y+r.h*.78,xr=Math.min(W-L*.62,r.x+r.w+L*.1);
+ if(T.t>=TITLE_SWIM&&artOK)T.art=Math.min(1,T.art+dt/TITLE_ART_FADE);
+ const end=artOK?TITLE_SWIM+TITLE_ART_FADE+.05:TITLE_SWIM+.3;
+ if(!T.done&&(T.t>end||(artFail&&T.t>TITLE_SWIM+.3)||(!artOK&&T.t>TITLE_SWIM+1.5))){T.done=true;window.__saTitleDone=true}}
+function titleShark(){// path: in from the left past the words, turn at the right (head kept on screen), swim back OVER the title (mouth shut), then dive away down-left
+ const r=titleRect(),L=tSideO.L,t=T.t,yw=r.y+r.h*.78,xr=Math.min(W-L*.62,r.x+r.w+L*.1),yo=Math.max(r.y-L*.02,L*.2),xl=Math.max(L*.62,r.x-L*.1);
  if(t<TITLE_PASS){const p=t/TITLE_PASS,e=p*(2-p);return {x:-L*.6+(xr+L*.6)*e,y:yw+Math.sin(p*6)*6,dir:1,open:false}}
- if(t<TITLE_TURN){const p=(t-TITLE_PASS)/(TITLE_TURN-TITLE_PASS);return {x:xr+Math.sin(p*Math.PI)*L*.08,y:yw-p*(yw-by)*.3,dir:Math.cos(p*Math.PI),open:false}}
- const hx=bx+L*.5,y1=yw-(yw-by)*.3;// body centre when the nose is on the bite
- if(t<TITLE_BITE_AT){const p=(t-TITLE_TURN)/(TITLE_BITE_AT-TITLE_TURN),e=p*p;return {x:xr+(hx-xr)*e,y:y1+(by+L*.03-y1)*e,dir:-1,open:p>.35}}
- const p=Math.min(1,(t-TITLE_BITE_AT)/(TITLE_SWIM-TITLE_BITE_AT));return {x:hx-p*p*(hx+L*.7),y:by+L*.03+p*p*H*.45,dir:-1,open:false,a:1-Math.max(0,p-.6)/.4}}
-function drawTitle(t){const r=titleRect();
- X.drawImage(title,r.x,r.y+(T.t<TITLE_SWIM?0:Math.sin(t*1.5)*3),r.w,r.h);
- if(T.t<TITLE_SWIM+.05){const q=titleShark(),s=q.open?tSideO:tSideC,dw=s.width/DPR,dh=s.height/DPR,L=s.L;X.save();X.globalAlpha=q.a==null?1:Math.max(0,q.a);X.translate(q.x,q.y);X.scale(Math.abs(q.dir)<.08?.08*Math.sign(q.dir||1):q.dir,1);X.drawImage(s,-dw/2-L*.05,-dh/2,dw,dh);X.restore();
+ if(t<TITLE_TURN){const p=(t-TITLE_PASS)/(TITLE_TURN-TITLE_PASS);return {x:xr+Math.sin(p*Math.PI)*L*.08,y:yw+(yo-yw)*p*.5,dir:Math.cos(p*Math.PI),open:false}}
+ const y1=yw+(yo-yw)*.5;
+ if(t<TITLE_OVER){const p=(t-TITLE_TURN)/(TITLE_OVER-TITLE_TURN),e=p*(2-p);return {x:xr+(xl-xr)*p,y:y1+(yo-y1)*Math.sin(Math.min(1,e*1.4)*Math.PI/2),dir:-1,open:false}}
+ const p=Math.min(1,(t-TITLE_OVER)/(TITLE_SWIM-TITLE_OVER));return {x:xl-p*p*(xl+L*.7),y:yo+p*p*H*.6,dir:-1,open:false,a:1-Math.max(0,p-.6)/.4}}
+function drawTitle(t){const r=titleRect(),bob=(T.t<TITLE_SWIM||calm)?0:Math.sin(t*1.5)*3;
+ if(T.art<1){X.globalAlpha=1-T.art;X.drawImage(title,r.x,r.y+bob,r.w,r.h);X.globalAlpha=1}// old 3D words cross-fade out as the picture comes in
+ if(T.art>0){X.globalAlpha=T.art;X.drawImage(bakeArt(),0,0,W,H);X.globalAlpha=1}
+ if(T.t<TITLE_SWIM+.05){const q=titleShark(),s=tSideC,dw=s.width/DPR,dh=s.height/DPR,L=s.L;X.save();X.globalAlpha=q.a==null?1:Math.max(0,q.a);X.translate(q.x,q.y);X.scale(Math.abs(q.dir)<.08?.08*Math.sign(q.dir||1):q.dir,1);X.drawImage(s,-dw/2-L*.05,-dh/2,dw,dh);X.restore();
   const hx=q.x+q.dir*L*.5;T.sr={x:q.x,y:q.y,head:hx,headY:q.y,L,dir:q.dir}}
- if(T.t>=TITLE_SWIM){const fx=W/2+Math.cos(t*.6)*W*.3,fy=SURF;X.fillStyle=TYPES[sType].body;X.strokeStyle=P.ink;X.lineWidth=3;X.beginPath();X.moveTo(fx-16,fy);X.lineTo(fx+(Math.sin(t*.6)>0?-6:6),fy-30);X.lineTo(fx+16,fy);X.closePath();X.fill();X.stroke()}}
+ if(T.t>=TITLE_SWIM&&T.art<=0){const fx=W/2+Math.cos(t*.6)*W*.3,fy=SURF;X.fillStyle=TYPES[sType].body;X.strokeStyle=P.ink;X.lineWidth=3;X.beginPath();X.moveTo(fx-16,fy);X.lineTo(fx+(Math.sin(t*.6)>0?-6:6),fy-30);X.lineTo(fx+16,fy);X.closePath();X.fill();X.stroke()}}
 
 // ---------- play ----------
 let lastBub=-9,wasFast=false;
@@ -808,7 +799,7 @@ if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceW
 // ---------- test hooks ----------
 window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
  get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
- get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},WORLD,ZONES,GROW,CREATURES,depthOf,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleBite(){return titleBiteXY()},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,BITE:TITLE_BITE_AT,SWIM:TITLE_SWIM},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
+ get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},WORLD,ZONES,GROW,CREATURES,depthOf,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti,kind){const f=fish[0];kind=kind||(shark.lvl===0?"plankton":"fish");setCreature(f,kind==="plankton"?bite()*.4:TIERS[ti||0].s,kind);f.band=[SURF+6,Infinity];f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>!q.used)||fish[0];setCreature(f,TIERS[ti].s,"fish");f.band=[SURF+6,Infinity];f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},
