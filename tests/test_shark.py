@@ -91,7 +91,7 @@ try:
   stage(pg,.04,-math.pi/2,'__sa.maxSpeed()*.25');s0=ev(pg,'__sa.score')
   for i in range(10): ev(pg,'__sa.placeSurfer(0,__sa.shark.x+Math.cos(__sa.shark.ang)*__sa.shark.L*.48,0)');pg.wait_for_timeout(30)
   check(ev(pg,'__sa.score')==s0,'slow shark at the surface only bumps a surfer (no catch)')
-  stage(pg,.06,-math.pi/2,'__sa.maxSpeed()');ev(pg,'__sa.shark.run=innerHeight*.5;__sa.touch.on=true;__sa.touch.dir=-Math.PI/2;__sa.touch.drive=1;__sa.touch.lastMove=performance.now()+9e9')
+  stage(pg,.06,-math.pi/2,'__sa.maxSpeed()');ev(pg,'__sa.setLevel(__sa.GROW.SURF_LVL);__sa.shark.run=innerHeight*.5;__sa.touch.on=true;__sa.touch.dir=-Math.PI/2;__sa.touch.drive=1;__sa.touch.lastMove=performance.now()+9e9')
   pg.wait_for_function('__sa.shark.air',timeout=1500);ev(pg,'__sa.touch.on=false;__sa.surf[0].zip=0');s0=ev(pg,'__sa.score')
   for i in range(40):
     ev(pg,'__sa.surf[0].zip>0||__sa.placeSurfer(0,__sa.shark.x+Math.cos(__sa.shark.ang)*__sa.shark.L*.48,0)');pg.wait_for_timeout(20)
@@ -106,10 +106,10 @@ try:
     res.append((round((l['air']-l['base'])*1000),l['assisted'],round(o['offMs'])))
   check(all(abs(d)<=80 for d,_,_ in res) and any(a for _,a,_ in res) and all(off<=45+LAND_FRAME_SLACK for d,a,off in res if a),f'beat assist: airtime nudged <=80 ms, assisted landings on the beat (nudge ms, assisted, land offset ms) {res}')
   # fish growth + chomp sfx hook
-  stage(pg,.5,0);ev(pg,'__sa.setLevel(0)');L0=ev(pg,'__sa.shark.Lt');v0=ev(pg,'__sa.maxSpeed()');c0=ev(pg,'__sa.sfxCount.chomp')
+  stage(pg,.5,0);ev(pg,'__sa.setLevel(0)');L0=ev(pg,'__sa.worldK');D0=ev(pg,'__sa.shark.L');v0=ev(pg,'__sa.maxSpeed()');c0=ev(pg,'__sa.sfxCount.chomp')
   for i in range(20): ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(60)
   check(ev(pg,'__sa.sfxCount.chomp')>=c0+6,'eating a fish triggers the chomp sound hook')
-  check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.shark.Lt')>L0 and ev(pg,'__sa.maxSpeed()')>v0,'eating ~16 small fish grows the shark one size step (slowed v6 growth) and speeds it up')
+  pg.wait_for_timeout(1500);check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.worldK')<L0 and ev(pg,'__sa.shark.L')>D0*1.1 and ev(pg,'__sa.maxSpeed()')>v0,'eating small fish grows the shark (v9: drawn shark grows, world shrinks by the rest) and speeds it up')
   ev(pg,'__sa.feed(9999)');check(ev(pg,'__sa.shark.lvl')==ev(pg,'__sa.MAX_LEVEL'),'size capped at MAX_LEVEL')
   # bubbles on fast crossing with cooldown
   def go_fast():
@@ -117,26 +117,26 @@ try:
     pg.wait_for_function('__sa.shark.spd>__sa.maxSpeed()*.75',timeout=3000);ev(pg,'__sa.touch.on=false;__sa.shark.ang=Math.PI')
   stage(pg,.5,0);pg.wait_for_timeout(1600);b0=ev(pg,'__sa.sfxCount.bubbles');go_fast();b1=ev(pg,'__sa.sfxCount.bubbles');go_fast();b2=ev(pg,'__sa.sfxCount.bubbles');pg.wait_for_timeout(1600);go_fast();b3=ev(pg,'__sa.sfxCount.bubbles')
   check(b1==b0+1 and b2==b1 and b3==b2+1,f'bubbles once per fast crossing, cooldown respected ({b0},{b1},{b2},{b3})')
-  # danger tint toggles
-  stage(pg,.7,0);ev(pg,'__sa.setLevel(0)');i3=ev(pg,'__sa.placeFishAt(3,innerWidth*.8,__sa.SURF+90,-1)');pg.wait_for_timeout(100);d0=ev(pg,f'__sa.fish[{i3}].danger')
+  # v9: no red tint/'!' marker any more; the data flag (eater) still flips once the shark outgrows it
+  stage(pg,.7,0);ev(pg,'__sa.setLevel(0)');i3=ev(pg,'()=>{const i=__sa.placeFishAt(3,innerWidth*.8,__sa.SURF+90,-1);__sa.setCreature(__sa.fish[i],__sa.bite()*2,"shark");return i}');pg.wait_for_timeout(100);d0=ev(pg,f'__sa.fish[{i3}].danger')
   pg.screenshot(path=f'{SHOTS}/danger-fish.png')
   ev(pg,'__sa.setLevel(10)');pg.wait_for_timeout(100);d1=ev(pg,f'__sa.fish[{i3}].danger')
-  check(d0 and not d1,f'giant fish tinted red/danger while bigger, becomes food once the shark outgrows it ({d0}->{d1})')
+  check(d0 and not d1,f'bigger shark is an eater (data only, no marker) while bigger, becomes food once the shark outgrows it ({d0}->{d1})')
   # leaping shark is safe from big fish (arc only)
   stage(pg,.06,-math.pi/2,'__sa.maxSpeed()');ev(pg,'__sa.setLevel(0);__sa.shark.run=innerHeight*.5;__sa.touch.on=true;__sa.touch.dir=-Math.PI/2;__sa.touch.drive=1;__sa.touch.lastMove=performance.now()+9e9')
   pg.wait_for_function('__sa.shark.air',timeout=1500);ev(pg,'__sa.touch.on=false');ev(pg,'__sa.placeFishAt(3,__sa.shark.x+20,__sa.shark.y,-1)');pg.wait_for_timeout(80)
   check(ev(pg,'__sa.state')=='play','leaping shark is safe from a big fish during the arc');ev(pg,'__sa.clearFood()');pg.wait_for_function('!__sa.shark.air',timeout=3000)
   # big fish eats shark -> Gulp!
-  stage(pg,.5,0);ev(pg,'__sa.setLevel(0)');ev(pg,'()=>{const s=__sa.shark;s.spd=0;__sa.placeFishAt(3,s.x+110,s.y,-160)}')
-  pg.wait_for_function("__sa.state==='over'",timeout=3000)
-  check(ev(pg,'__sa.endReason')=='eaten' and pg.inner_text('#reason')=='Gulp!' and pg.is_visible('#again') and pg.is_visible('#final'),'bigger fish eats the shark -> end screen says "Gulp!", shows score + Play again')
+  stage(pg,.5,0);ev(pg,'__sa.setLevel(0)');ev(pg,'()=>{const s=__sa.shark;s.spd=0;const i=__sa.placeFishAt(3,s.x+110,s.y,-160);__sa.setCreature(__sa.fish[i],__sa.bite()*2,"shark")}')
+  pg.wait_for_function("__sa.state==='over'",timeout=5000)
+  check(ev(pg,'__sa.endReason')=='eaten' and pg.inner_text('#reason')=='Gulp!' and pg.is_visible('#again') and pg.is_visible('#final'),'bigger shark eats the shark -> end screen says "Gulp!", shows score + Play again')
   check(ev(pg,'__sa.sfxCount.gulp')>=1,'gulp sound hook fires on the Gulp! screen')
   pg.wait_for_timeout(300);pg.screenshot(path=f'{SHOTS}/score-gulp.png')
   pg.click('#again');pg.wait_for_timeout(200);check(ev(pg,'__sa.state')=='play' and ev(pg,'__sa.score')==0,'Play again restarts')
   # mute silences all three
   ev(pg,'__sa.timeLeft=0');pg.wait_for_timeout(200);pg.click('#home');pg.wait_for_timeout(200);pg.click('#snd');play(pg,'hammer')
   p0=ev(pg,'__sa.sfxCount.played');stage(pg,.5,0);ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(100);pg.wait_for_timeout(1600);go_fast()
-  ev(pg,'()=>{const s=__sa.shark;s.spd=0;s.ang=0;s.y=__sa.SURF+innerHeight*.45;__sa.setLevel(0);__sa.placeFishAt(3,s.x+110,s.y,-160)}');pg.wait_for_function("__sa.state==='over'",timeout=3000)
+  ev(pg,'()=>{const s=__sa.shark;s.spd=0;s.ang=0;s.y=__sa.SURF+innerHeight*.45;__sa.setLevel(0);const i=__sa.placeFishAt(3,s.x+110,s.y,-160);__sa.setCreature(__sa.fish[i],__sa.bite()*2,"shark")}');pg.wait_for_function("__sa.state==='over'",timeout=5000)
   check(ev(pg,'__sa.sfxCount.played')==p0 and ev(pg,'__sa.sfxCount.chomp')>0,'mute silences chomp, bubbles and gulp (hooks fire, nothing sounds)')
   pg.click('#home');pg.wait_for_timeout(200);pg.click('#snd')
   # perf
@@ -180,8 +180,8 @@ try:
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v7.1' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v7.1 (v7-fs bump)')
-  check('audio/gameplay-chiptune.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v7.1").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
+  check('sharkattack-v8' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v8')
+  check('audio/gameplay-chiptune.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v8").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
   pg.wait_for_function('__sa.chip',timeout=8000);pg.wait_for_timeout(300)
   check(ev(pg,'__sa.chipPlaying') and not ev(pg,'__sa.placeholder'),'offline: real chiptune plays from cache (placeholder not used)')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()

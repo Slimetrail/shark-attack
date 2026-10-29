@@ -44,7 +44,7 @@ try:
   ev(pg,'localStorage.removeItem("sharkAttack_best_endless")');ev(pg,'__sa.setAmbushForce(null)')
   check(ev(pg,'__sa.state')=='play','still playing before the end')
   pg.evaluate('()=>gameOver("eaten")')
-  pg.wait_for_timeout(300)
+  pg.wait_for_function('__sa.state==="over"',timeout=4000);pg.wait_for_timeout(100)
   check(ev(pg,'__sa.state')=='over' and pg.inner_text('#reason')=='Gulp!','endless ends with Gulp! when eaten')
   st=pg.inner_text('#stats');check('Surfers eaten: 206' in st and 'Survived' in st,f'endless score screen shows surfers + time survived ({st})')
   check('Endless' in pg.inner_text('#bestTxt') and ev(pg,'+localStorage.getItem("sharkAttack_best_endless")')==ev(pg,'__sa.score'),'endless best saved separately')

@@ -9,7 +9,7 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
 - **Landing on the beat:** if a landing comes within ±80 ms of the music beat, it gets nudged onto the beat for a +1 perfect bonus. The beat follows the gameplay track's eighth-note pulse, `BEAT.CHIPTUNE_BPM` = 80, so a beat every 0.75 s. `PLACEHOLDER_BPM` (100) is only used by the fallback loop.
 - **Fish:**
   - Eat smaller fish to fill the growth meter. The shark grows in size steps (max 10) and gets a little faster each step.
-  - Fish bigger than you are tinted red and marked "!". If one catches you, it's **Gulp!** and the round ends.
+  - Nothing marks which fish are bigger than you (v9): judge size by eye. If a clearly bigger creature touches you, it's **Gulp!** and the round ends.
   - Fish the same size as you just bump you.
   - You're safe from fish only while you're in the air.
 - **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!", "Gulp!" or "Caught!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
@@ -26,7 +26,7 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
   - **The 3rd net hit ends the round with "Caught!".**
 - **Ambush:** a big dark shark, 1.6× your current size, may come for you while you're stunned.
   - Hit 1 never brings one. Hit 2 brings one half the time (`AMBUSH_CHANCE` 0.5). Hit 3 always would, but it ends the round first.
-  - It comes in from the far edge with a red "!" and a warning sound, and reaches you 1.35 s after the hit (`AMBUSH_ARRIVE_MS`).
+  - It comes in from the far edge (faded in, with a warning sound; v9: no "!" marker), and reaches you 1.35 s after the hit (`AMBUSH_ARRIVE_MS`).
   - A hit that brings an ambush stuns you for 2 s (`AMBUSH_STUN_MS`) so the threat is real. Wiggle or drag to break free: every 1/5 screen width of finger travel takes 0.25 s off the stun (`STRUGGLE_SHORTEN_MS`), so about 3 quick wiggles gets you out in time.
   - If you're still stunned when it arrives, it's **Gulp!**. If you got free, it circles off and leaves after 3 s.
   - It can't eat a shark that isn't stunned or is mid-leap. Only one comes at a time, with 6 s between ambushes (`AMBUSH_COOLDOWN_MS`).
@@ -113,3 +113,22 @@ Jeremy asked for "a continue game that does not end until you are eaten and dive
 - **Volcanic floor**: at most `MAX_BIG` (3) sharks near you, spawns spread out (`SPREAD_PX`), glowing fish are always food-sized (`GLOW_MAX` .84 of your bite). Chasing starts in the Twilight zone (`CHASE_MIN_D` .3) and deep chasers are a bit slower (`CHASE_DEEP` .7).
 - Cache `sharkattack-v7`, `game.js?v=7`.
 - Tests: the diver perf check now asserts it is measuring real play (it used to time the game-over screen, which is capped at 30 fps); beat-assist landing tolerance allows 2 frames of measurement slack (`LAND_FRAME_SLACK`); balance_endless runs 30 games per type.
+
+## Endless ocean + realism (v8)
+
+- **World**: endless sideways (3×3 tile pool, depth-locked spawns, camera snap). Bots and tests are camera-relative.
+- **Look**: our own baked reef and deep species (`SPECIES`, `drawSpecies`; groupers with long bodies, big mouths, heavy heads; longer parrotfish, hogfish, wrasse, squirrelfish with pelvic fins and dorsal spines; anglers with a baked lure, octopus, starfish). Reference photos in /workspace/refs were only looked at, never loaded or traced. Great white (countershading), tiger (bars fade as it grows), hammerhead (cephalofoil, eyes at the tips). The red danger ring is gone; danger fish keep the "!". NPC tilt is clamped to ±0.5 rad.
+- **Prey** (`CREATURES.FLEE_MIN/MAX`): fleeing fish swim at 0.85–0.92× your top speed and tire after `FLEE_BURST_S` (to `FLEE_TIRED` for `FLEE_TIRED_S`), so a minnow can catch them.
+- **Growth** (`GROW`): next size needs 3 + 1 × size (retuned so Timed is winnable). Sim results: `tests/balance_results.md`.
+- **Intro**: the shark swims past "SHARK ATTACK", turns, comes back and bites the C; the K is torn off and hangs, the A is knocked crooked — all baked into the one title layer (`tearTitle`). Start works at any time.
+- **Quality**: `?rs=0.5..2` render scale, `?fx=0..3` effects, `?dprcap=`, `?adapt=0` to switch off adaptive quality (`ADAPT`: drops fx, then render scale to 0.6, when frames average >21 ms). Grid: `tests/perf_ceiling.py` → `tests/perf_ceiling_results.md` (a desktop proxy, not a phone). Recommended Galaxy S26 Ultra default = the shipped one (DPR cap 2, rs 1, fx 2, adapt on).
+- Cache `sharkattack-v8`, `game.js?v=8`. Tests: test_shark, test_divers, test_feel, test_modes, test_v6, test_v8, test_update, test_world, plus balance.py and balance_endless.py. Not tested on a real phone.
+
+## Grow and get eaten (v9)
+- **No depth lock.** Every stage can swim anywhere (endless world, depth-locked spawn tables and creature zones are kept). Danger is the limit.
+- **Your shark visibly grows**: drawn length ×1.15 per stage (`DRAW.STEP`), capped at ×1.52 (`DRAW.CAP`, reached at stage 4; was 1.75 but the 3× bigger drawn world failed the deep busy-screen perf test), eased in over ~0.4 s with a squash-pulse, a ring and sparks (the "BIGGER!" pop is your own growth, not a size hint about others). The world now shrinks only by the rest of the true growth (`wK = drawK/trueGrow`), so food/danger ratios are unchanged. No camera zoom was needed: at the cap the shark is ~0.3× screen height. Hitboxes use the drawn `shark.L`. Creature notice range also scales with the drawn shark (`SENSE_L`).
+- **Bigger creatures eat you.** Any creature (not plankton or starfish) with size ≥ 1.3× your bite (`EAT.RATIO`) eats you on body contact (red puff, "eaten"). 0.87–1.3× = same size: a silent push. Smaller: food as before (minnow: plankton only). Every eater inside the notice range below 30% depth chases at 0.6–0.7× your top speed and gives up after a while (flee/chase speed rules unchanged).
+- **Deeper = bigger.** In the deep layer, non-prey creatures grow up to ×2.2 with depth for small sharks (`DEEP.GROW`, fades out by stage 6; capped at half the screen height). Rare **giants** (sharks/octopus, ~3–10% of deep spawns for a minnow, fading out by stage 6, one at a time; other very big ones max 2 around) are 3.8–5.5× your drawn length, up to 0.6× screen width: about half the screen for a minnow.
+- **Removed size/danger indicators** (Jeremy: "the player judges size by eye"): the red "!" over bigger fish/chasers; the red "!" on the incoming ambush shark; red off-screen arrows pointing at chasers; the "Too small!" pop when bumping a same-size/bigger fish; the "Too small!" pop when a too-small shark leaps into a surfer; the "Too small to go deeper" hint (with the depth lock). There never was a diving score bonus; none added. Kept: red death puff, normal score, the control tip "Swim down to build speed…", the orange diver arrows/"Divers!" banner (not size-related), the "boing" surfer bump.
+- **Balance**: bots judge size from data (`f.s / bite()`), see `tests/balance_v9.py` (early-diver vs shallow bot) and `tests/balance_results.md`.
+- Perf: all creature sprites are cropped + mip-mapped at sprite build time (`warmSprites`); the bigger drawn world otherwise hit lazy crops mid-play.
