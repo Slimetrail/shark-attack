@@ -527,3 +527,11 @@ window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES
  DIV:{DIVER_TRIGGER_SURFERS,DIVER_SPEED_FRACTION,DIVER_DETECT_RANGE,DIVER_GIVEUP_MS,DIVER_GRACE_MS,DIVER_COOLDOWN_MS,DIVER_SAFE_AFTER_STUN_MS,DIVER_NET_REACH,DIVER_CATCHES_TO_LOSE,DIVER_MAX,STUN_MS,AMBUSH_STUN_MS,AMBUSH_ON_HIT,AMBUSH_CHANCE,AMBUSH_ARRIVE_MS,AMBUSH_COOLDOWN_MS,STRUGGLE_SHORTEN_MS,STRUGGLE_PX,AMBUSHER_SIZE,AMBUSHER_LEAVE_MS},
  render3DShark,sim(sec,bot,step){step=step||1/60;const n=Math.round(sec/step);let i=0;for(;i<n&&state==="play";i++){if(bot)bot(step);updPlay(step)}return i*step},startAs(t,m){sType=t;if(m)setMode(m);startGame()},setMode,get mode(){return mode},get fasterT(){return fasterT},get elapsed(){return elapsed},MODE:{MODES,DIVER_SPEEDUP_PER_SURFER,DIVER_SPEED_CAP,DIVER_SPEEDUP_HINT_EVERY},surferCaught,spawnDiver,diverSpeed,netHit,struggle,setAmbushForce(v){window.__saAmbushForce=v},
  setLevel(l){shark.lvl=l;shark.meter=0;buildShark();shark.Lt=shark.L}};
+
+// Install button + landscape lock (like Dino Colossus). Hidden when already installed; no per-frame cost.
+(function(){try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock("landscape").catch(()=>{})}catch(e){}
+ const b=document.getElementById("instb"),t=document.getElementById("insth");if(!b)return;let dp=null;
+ const inst=()=>matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||navigator.standalone===true;
+ const hide=()=>{b.classList.add("hide");t.classList.add("hide")};if(inst())hide();
+ addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e});addEventListener("appinstalled",hide);
+ b.onclick=async e=>{e.stopPropagation();if(dp){dp.prompt();const r=await dp.userChoice;dp=null;if(r.outcome==="accepted")hide()}else{const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);t.textContent=ios?"On iPhone: tap Share, then Add to Home Screen.":"Tap ⋮ in Chrome, then Add to Home screen / Install app.";t.classList.remove("hide")}}})();

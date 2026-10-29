@@ -14,7 +14,7 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch()
   man=json.load(open(os.path.join(ROOT,'manifest.webmanifest')));check(man['orientation']=='landscape','manifest orientation landscape')
-  sw=open(os.path.join(ROOT,'sw.js')).read();check('VER="7"' in sw and 'game.js?v=7' in sw,'service worker cache bumped to v7')
+  sw=open(os.path.join(ROOT,'sw.js')).read();check('VER="7.1"' in sw and 'game.js?v=7' in sw,'service worker cache bumped to v7.1 (v7-fs)')
   check('game.js?v=7' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=7')
   for w,h in [(915,412),(844,390)]:
     cx=b.new_context(viewport={'width':w,'height':h},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True,service_workers='block');pg=cx.new_page();errs=[];outside=[]
