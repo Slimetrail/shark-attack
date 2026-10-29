@@ -552,7 +552,7 @@ const SFX={
  gulp(){sfxCount.gulp++;blip(260,110,.16,"sine",.4);blip(180,70,.22,"sine",.4,.17);blip(500,900,.07,"sine",.15,.42)},// cartoon "gul-ulp" + tiny pop
  pop(){blip(500,1200,.09,"triangle",.3);blip(900,1600,.08,"triangle",.22,.07)},
  grow(){[523,659,784,1047].forEach((f,i)=>blip(f,f,.12,"square",.16,i*.09))},
- splash(){noise(.12,.3,900)},launch(){blip(180,520,.18,"triangle",.25)},ripple(){blip(300,420,.08,"sine",.15)},bump(){blip(220,180,.06,"triangle",.18)},
+ splash(){noise(.12,.09,900)}/* v10 item 11: wave splash cut to 30% (was .3) */,launch(){blip(180,520,.18,"triangle",.25)},ripple(){blip(300,420,.08,"sine",.15)},bump(){blip(220,180,.06,"triangle",.18)},
  divers(){[880,660,880,660].forEach((f,i)=>blip(f,f,.11,"square",.14,i*.13))},net(){noise(.1,.25,1400);blip(400,200,.2,"triangle",.25)},ambush(){blip(110,90,.5,"sawtooth",.16);blip(130,100,.45,"sawtooth",.12,.3)},caught(){[523,494,466,440].forEach((f,i)=>blip(f,f,.18,"triangle",.25,i*.15))},
  perfect(){blip(1047,1568,.12,"square",.15)},end(){[784,659,523,392].forEach((f,i)=>blip(f,f*.98,.2,"triangle",.25,i*.16))}};
 // FALLBACK only (used if the chiptune file fails to load/decode): tiny ORIGINAL 8-bit loop (not Debussy, not the real track) at BEAT.PLACEHOLDER_BPM, cheap look-ahead scheduler.
