@@ -340,7 +340,7 @@ function bandOf(L){const y=d=>SURF+d*(BED-SURF);return L===0?[SURF+6,y(LAYERS.TO
 // without a camera zoom); the world shrinks only by the rest of the true growth (wK), so relative sizes are unchanged.
 const DEEP={GROW:1.2,RAMP:.35,FADE_LVL:6,MAX_W:.45,BIG_W:.35,BIG_N:2,GIANT_P:.07,GIANT_MIN:3.8,GIANT_MAX:5.5,GIANT_MAXW:.6};// v9: deep creatures grow with depth (×1+GROW below the mid layer); rare giants up to ~half the screen for a minnow
 const EAT={RATIO:1.3};// v9: a creature this much bigger than your bite EATS you on contact; .87-1.3 = same size (push); smaller = food
-const DRAW={BASE:.2,STEP:1.15,CAP:1.75,EASE:5,POP_S:.4};const drawK=l=>Math.min(DRAW.CAP,Math.pow(DRAW.STEP,l)),wK=l=>drawK(l)/trueGrow(l);
+const DRAW={BASE:.2,STEP:1.15,CAP:1.52,EASE:5,POP_S:.4};const drawK=l=>Math.min(DRAW.CAP,Math.pow(DRAW.STEP,l)),wK=l=>drawK(l)/trueGrow(l);
 const sharkL=l=>Math.min(W,H)*DRAW.BASE*drawK(l)*trait("size");
 const bite=()=>shark.L*.4;
 function setWorldK(k){const r=k/worldK;if(r!==1)for(const f of fish)f.s*=r;worldK=k}
@@ -448,7 +448,7 @@ function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;
  if(kind==="shark"&&P0){let n=0;for(const q of fish)if(q!==f&&!q.off&&q.kind==="shark"&&Math.abs(q.y-f.y)<H*.8&&Math.abs(q.x-f.x)<W*1.6)n++;if(n<C.MAX_BIG&&Math.abs(f.y-shark.y)<H*.8){n=0;for(const q of fish)if(q!==f&&!q.off&&q.kind==="shark"&&Math.abs(q.y-shark.y)<H*.8)n++}if(n>=C.MAX_BIG)kind=L===2?"glow":"fish"}// cap near the spawn AND near you
  if(kind==="glow"&&P0)sz=Math.min(sz,bite()*C.GLOW_MAX);
  if(P0&&L===2&&kind!=="glow"&&kind!=="star"&&kind!=="plankton"){const g=Math.min(1,Math.max(0,(d-LAYERS.MID)/DEEP.RAMP));if(sz>bite()*.9)sz*=1+DEEP.GROW*g*Math.max(0,1-shark.lvl/DEEP.FADE_LVL);{const ln=kind==="shark"?2.5:1.6;sz=Math.min(sz,W*DEEP.MAX_W/ln);if(sz*ln>W*DEEP.BIG_W&&fish.filter(q=>q!==f&&!q.off&&!q.giant&&q.s*(q.kind==="shark"?2.5:1.6)>W*DEEP.BIG_W).length>=DEEP.BIG_N)sz=W*DEEP.BIG_W/ln}/* at most BIG_N very big ones around (perf, and so giants stay special) *//* deeper = bigger for a small player (fades out as you grow: perf + you are the big one by then) *//* deeper = bigger (not the prey share) */
-  if((kind==="shark"||kind==="octo")&&Math.random()<DEEP.GIANT_P*(.4+g)&&!fish.some(q=>q!==f&&!q.off&&q.giant)){/* one giant at a time */const vl=Math.min(W*DEEP.GIANT_MAXW,shark.L*rnd(DEEP.GIANT_MIN,DEEP.GIANT_MAX));sz=vl/(kind==="shark"?2.5:1.6);f.giant=true}else f.giant=false}else f.giant=false
+  if((kind==="shark"||kind==="octo")&&Math.random()<DEEP.GIANT_P*(.4+g)*Math.max(0,1-shark.lvl/DEEP.FADE_LVL)&&!fish.some(q=>q!==f&&!q.off&&q.giant)){/* one giant at a time */const vl=Math.min(W*DEEP.GIANT_MAXW,shark.L*rnd(DEEP.GIANT_MIN,DEEP.GIANT_MAX));sz=vl/(kind==="shark"?2.5:1.6);f.giant=true}else f.giant=false}else f.giant=false
  setCreature(f,Math.max(kind==="plankton"?2:C.SIZE_MIN*worldK,sz),kind);
  f.pal=kind==="fish"?Math.floor(rnd(0,L===1?FISH_PAL.length+3:FISH_PAL.length)):kind==="plankton"?Math.floor(rnd(0,2)):kind==="octo"?Math.floor(rnd(0,2)):kind==="star"?Math.floor(rnd(0,3)):f.pal;
  f.sp=-1;if(kind==="fish"){const z=L===0?0:(sz>bite()*.9||depthOf(f.y)>(LAYERS.TOP+LAYERS.MID)/2)?2:1,lst=SP_Z[z];f.sp=lst[Math.floor(Math.random()*lst.length)]}
