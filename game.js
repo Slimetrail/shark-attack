@@ -384,7 +384,7 @@ let bg=null,sprC=null,sprO=null,fishSpr=[],surfSpr=[],title=null,tFront=null,tFr
 const need=l=>GROW.NEED_BASE+GROW.NEED_PER_LVL*l;
 const ptsOf=f=>f.kind==="plankton"?1:Math.max(1,Math.round(1+3*f.s/bite()))*(f.kind==="fish"?1:f.kind==="angler"?4:2),growOf=f=>GROW.REL*f.s/bite();
 let specSpr=[],camX=0,gradSpr=null,sunSpr=null,decoSpr=null,tiles=[],tileC={x:1e9,y:1e9},plankSpr=[],anglerSpr=null,octoSpr=[],starSpr=[],lureSpr=null,spawnStats={n:0,wrong:0,byKind:{}},depthHintT=0;
-let haloSpr=[],worldK=1/GROW.START,sizeK=1,camY=0,WORLD_H=4000,gradW=null,raysSpr=null,fogSpr=null,skySpr=null,floorSpr=null,ventSpr=null,vigSpr=null,bgSpr=null,busy=false,sharkSpr=[],glowSpr=[],deco=[],snow=[],fsRot=false;
+let haloSpr=[],worldK=1/GROW.START,sizeK=1,camY=0,WORLD_H=4000,gradW=null,raysSpr=null,fogSpr=null,skySpr=null,floorSpr=null,ventSpr=null,vigSpr=null,gradeSpr=null,bgSpr=null,busy=false,sharkSpr=[],glowSpr=[],deco=[],snow=[],fsRot=false;
 const depthOf=y=>Math.max(0,Math.min(1,(y-SURF)/(BED-SURF)));
 const depthRaw=y=>(y-SURF)/(BED-SURF);
 const layerOf=y=>{const d=depthRaw(y);return d<LAYERS.TOP?0:d<LAYERS.MID?1:2};
@@ -424,6 +424,7 @@ function buildSprites(){
   /* caustics: soft net of light just under the surface, baked once, fades with depth (no swoosh marks) */const cg=mk(W,H*.22),c=cg.getContext("2d");c.strokeStyle="rgba(200,240,255,.10)";c.lineWidth=1.6;
   for(let r=0;r<5;r++)for(let i=0;i<Math.round(W/34);i++){const x=i*34+rnd(-10,10),y=r*H*.045+rnd(0,12);c.beginPath();c.moveTo(x,y);c.bezierCurveTo(x+12,y-8,x+22,y+9,x+36,y+rnd(-4,4));c.stroke()}
   const fm=g.createLinearGradient(0,0,0,H*.22);fm.addColorStop(0,"rgba(0,0,0,1)");fm.addColorStop(1,"rgba(0,0,0,0)");c.globalCompositeOperation="destination-in";c.fillStyle=fm;c.fillRect(0,0,W,H*.22);g.globalAlpha=.9;try{g.filter="blur(1.2px)"}catch(_){}g.drawImage(cg,0,2);g.filter="none";g.globalAlpha=1}
+ /* v10 gfx step 4: baked edge vignette + cool colour grade, one drawImage per frame */gradeSpr=mk(256,144);{const g=gradeSpr.getContext("2d"),gr=g.createRadialGradient(128,72,30,128,72,150);gr.addColorStop(0,"rgba(0,18,36,.06)");gr.addColorStop(.55,"rgba(0,12,28,.16)");gr.addColorStop(1,"rgba(0,4,12,.55)");g.fillStyle=gr;g.fillRect(0,0,256,144)}
  vigSpr=mk(512,512);{const g=vigSpr.getContext("2d"),gr=g.createRadialGradient(256,256,20,256,256,128);gr.addColorStop(0,"rgba(0,0,8,0)");gr.addColorStop(.45,"rgba(0,0,8,.25)");gr.addColorStop(1,"rgba(0,0,8,.97)");g.fillStyle=gr;g.fillRect(0,0,512,512)}
  // volcanic floor (pre-rendered once): dark basalt, glowing lava cracks
  {const fh=Math.round(H*.45);floorSpr=mk(W*DPR,fh*DPR);const g=floorSpr.getContext("2d");g.scale(DPR,DPR);const pts=[],n=Math.max(8,Math.round(W/30)),pw=W/n;for(let i=0;i<=n;i++){const x=i*pw;pts.push([x,i===n?pts[0][1]:40-Math.abs(Math.sin(x/W*Math.PI*3)*30)-Math.random()*16+(i%6===0?-30:0)])}
@@ -776,6 +777,7 @@ function drawPlay(t){
  if(shark.dead){const p=Math.min(1,dead.t/1.3);for(const q of dead.puffs){const e=Math.max(0,Math.min(1,(dead.t-q.dl)/1.2));if(e<=0||e>=1)continue;const r=L*(.18+.42*e)*q.k,x=shark.x+Math.cos(q.a)*L*q.d*(1+e),y=shark.y+Math.sin(q.a)*L*q.d*(1+e)-e*L*.15;X.globalAlpha=(1-e)*.8;X.drawImage(puffSpr,x-r,y-r,r*2,r*2)}X.globalAlpha=1}
  if(shark.stun>0){X.fillStyle="#ffe14d";X.strokeStyle=P.ink;X.lineWidth=2;for(let i=0;i<4;i++){const a=t*5+i*1.57,x=shark.x+Math.cos(a)*L*.35,y=shark.y-L*.32+Math.sin(a)*L*.08;X.beginPath();for(let j=0;j<10;j++){const r=j%2?3:8,b=j*.628;X.lineTo(x+Math.cos(b)*r,y+Math.sin(b)*r)}X.closePath();X.fill();X.stroke()}
   if(amb.on&&amb.phase==="come"){X.font="900 20px system-ui,sans-serif";X.lineWidth=5;X.strokeText("WIGGLE TO BREAK FREE!",camX+W/2,shark.y+L*.6);X.fillStyle="#fff";X.fillText("WIGGLE TO BREAK FREE!",camX+W/2,shark.y+L*.6)}}
+ if(FX>=1&&gradeSpr&&!busy&&!(DK.dk>0)){/* deep: the darkness overlay already vignettes */X.setTransform(1,0,0,1,0,0);X.drawImage(gradeSpr,0,0,X.canvas.width,X.canvas.height)}
  // darkness: the deeper, the smaller the circle of light around you
  const dk=DK.dk;if(dk>0){X.setTransform(1,0,0,1,0,0);const R=DK.R*DPR,sx=(shark.x-camX)*DPR,sy=(shark.y-camY)*DPR;X.globalAlpha=DK.ga;
   X.imageSmoothingEnabled=false;if(!DK.per)X.drawImage(vigSpr,sx-R*2,sy-R*2,R*4,R*4);X.imageSmoothingEnabled=true;// nearest sampling: a smooth 512px gradient magnified ~10x has no visible steps, and skips a costly full-screen filterX.globalAlpha=1;
@@ -821,8 +823,9 @@ function drawWater(t){darkSetup();X.setTransform(1,0,0,1,0,0);const top=camY,bot
   X.setTransform(DPR,0,0,DPR,-camX*DPR,-camY*DPR);X.globalCompositeOperation="lighter";if(FX>=1)for(let k=k0;k<=k0+1;k++)for(const v of floorSpr.vents){const vx=v+k*W;if(vx+90<camX||vx-90>camX+W)continue;X.globalAlpha=(.55+.35*Math.sin(t*2.2+vx))*dimAt(vx,BED-60);X.drawImage(ventSpr,vx-65,BED-125,130,130)}X.globalAlpha=1;X.globalCompositeOperation="source-over";
   if((FX>=3||(!busy&&FX>=2))){X.fillStyle="rgba(255,150,60,.5)";for(let k=k0;k<=k0+1;k++)for(const v of floorSpr.vents){const vx=v+k*W;for(let i=0;i<3;i++){const ph=(t*.5+i/3+vx*.01)%1;X.beginPath();X.arc(vx+Math.sin(ph*9+i)*8,BED-60-ph*200,3+ph*3,0,7);X.fill()}}}}
  // floating particles (screen space, parallax)
- X.setTransform(DPR,0,0,DPR,0,0);const d0=depthOf(camY+H/2),n=FX===0?0:busy||FX===1?14:snow.length;X.fillStyle=d0<.3?"rgba(230,250,255,.35)":"rgba(200,210,230,.35)";
+ X.setTransform(DPR,0,0,DPR,0,0);const d0=depthOf(camY+H/2),n=FX===0?0:busy||FX===1?14:snow.length;X.fillStyle=d0<.3?"rgba(200,225,240,.3)":"rgba(110,130,150,.3)";/* v10 gfx step 4: murkier specks */
  for(let i=0;i<n;i++){const p=snow[i],x=(((p.x*W-camX*.5)%W)+W)%W,y=(((p.y*H-t*p.sp*(d0<.3?-1:1)-camY*.5)%H)+H)%H,r=p.r*(d0<.3?1.6:1);if(y+top<SURF)continue;X.fillRect(x-r,y-r,r*2,r*2)}
+ if(n&&!busy&&FX>=2){/* v10 gfx step 4: a few rising bubbles */X.strokeStyle="rgba(200,230,255,.35)";X.lineWidth=1;X.beginPath();for(let i=0;i<n;i+=7){const p=snow[i],x=(((p.x*W*1.3-camX*.7+Math.sin(t*2+i)*3)%W)+W)%W,y=(((p.y*H-t*(20+p.sp*2)-camY*.7)%H)+H)%H,r=1+p.r*1.4;if(y+top<SURF+6)continue;X.moveTo(x+r,y);X.arc(x,y,r,0,6.3)}X.stroke()}
  const sy=SURF-top;if(sy>-10&&sy<H+10){X.lineCap="round";/* v10 gfx step 2: white swoosh marks dropped */
   X.strokeStyle="#e8fbff";X.lineWidth=4;X.beginPath();const st=busy?46:24,x0=-(((camX%st)+st)%st);for(let x=x0;x<=W+st;x+=st){const y=sy+Math.sin(t*2+(x+camX)*.05)*2.5;x===x0?X.moveTo(x,y):X.lineTo(x,y)}X.stroke()}}
 function drawFx(dt,screen){X.setTransform(DPR,0,0,DPR,screen?0:-camX*DPR,screen?0:-camY*DPR);X.fillStyle="#e8fbff";X.strokeStyle=P.ink;X.lineWidth=1.5;for(const p of parts)if(p.t>0){const r=3+p.t*8;X.beginPath();X.arc(p.x,p.y,r,0,7);X.fill();X.stroke()}
