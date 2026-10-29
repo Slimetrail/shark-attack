@@ -39,7 +39,7 @@ try:
     # surfers gated
     def leap(lvl):
       ev(f'''()=>{{__sa.setLevel({lvl});__sa.clearFood();const s=__sa.shark;s.x=innerWidth*.3;s.y=__sa.SURF+innerHeight*.06;s.ang=-Math.PI/2;s.spd=__sa.maxSpeed();s.run=innerHeight*.5;s.cool=0;Object.assign(__sa.touch,{{on:true,dir:-Math.PI/2,drive:1,lastMove:performance.now()+9e9}})}}''')
-      pg.wait_for_function('__sa.shark.air',timeout=2000);ev('__sa.touch.on=false;__sa.surf[0].zip=0');s0=ev('__sa.surfersCaught')
+      pg.wait_for_function('__sa.shark.air',timeout=2000);s0=ev('()=>{__sa.touch.on=false;const c=__sa.surfersCaught;__sa.surf[0].zip=0;return c}')# count BEFORE reviving the surfer: it sits where the last leap left it, so it can be caught on the very next frame (was a race)
       for i in range(40):
         ev('__sa.surf[0].zip>0||__sa.placeSurfer(0,__sa.shark.x+Math.cos(__sa.shark.ang)*__sa.shark.L*.48,0)');pg.wait_for_timeout(20)
         if ev('__sa.surfersCaught')>s0: break
