@@ -339,7 +339,7 @@ function bandOf(L){const y=d=>SURF+d*(BED-SURF);return L===0?[SURF+6,y(LAYERS.TO
 // v9: the DRAWN shark grows ×DRAW.STEP per stage up to DRAW.CAP (start 0.2×screen height, cap 1.75× = 0.35×height, so the screen stays playable
 // without a camera zoom); the world shrinks only by the rest of the true growth (wK), so relative sizes are unchanged.
 const DEEP={GROW:1.2,RAMP:.35,FADE_LVL:6,MAX_W:.45,BIG_W:.35,BIG_N:2,GIANT_P:.07,GIANT_MIN:3.8,GIANT_MAX:5.5,GIANT_MAXW:.6};// v9: deep creatures grow with depth (×1+GROW below the mid layer); rare giants up to ~half the screen for a minnow
-const EAT={RATIO:1.3};// v9: a creature this much bigger than your bite EATS you on contact; .87-1.3 = same size (push); smaller = food
+const EAT={RATIO:1.3,GRACE:1.5};// v9: a creature this much bigger than your bite EATS you on contact; .87-1.3 = same size (push); smaller = food
 const DRAW={BASE:.2,STEP:1.15,CAP:1.52,EASE:5,POP_S:.4};const drawK=l=>Math.min(DRAW.CAP,Math.pow(DRAW.STEP,l)),wK=l=>drawK(l)/trueGrow(l);
 const sharkL=l=>Math.min(W,H)*DRAW.BASE*drawK(l)*trait("size");
 const bite=()=>shark.L*.4;
@@ -641,7 +641,7 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
   if(!inWindow(f.x,f.y)){spawnFish(f,true,f.tile);continue}if(f.bump>0)f.bump-=dt;
   if(shark.air)continue;
   if(food){const ex=f.x-mx,ey=f.y-my,rr=er+f.s*.4;if(ex*ex+ey*ey<rr*rr){const pts=ptsOf(f);addScore(pts);feed(growOf(f));SFX.chomp();shark.chomp=.2;addPop(f.x,f.y,"+"+pts);for(let i=0;i<4;i++)spark(f.x,f.y,0);spawnFish(f,true,f.tile)}}
-  else{const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);if(d2<rr*rr){if(eater&&!godMode){gameOver("eaten");return}/* v9: bigger creatures eat you on contact */
+  else{const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);if(d2<rr*rr){if(eater&&!godMode&&elapsed>EAT.GRACE){gameOver("eaten");return}/* v9: bigger creatures eat you on contact */
     f.vy+=dy/dist*80;shark.x-=dx/dist*6;shark.y-=dy/dist*6;if(f.bump<=0){SFX.bump();f.bump=.4}}}}
  for(const s of surf){s.ph+=dt*2;if(s.zip>0){s.zip-=dt;if(s.zip<=0)spawnSurf(s,true);continue}
   s.x+=s.vx*dt;if(s.x<camX-60)s.x+=W+115;else if(s.x>camX+W+60)s.x-=W+115;const sk=surfK(),hy=SURFERS[s.k].hy*sk,cx=s.x,cy=SURF-hy;
