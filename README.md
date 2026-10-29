@@ -122,7 +122,7 @@ Jeremy asked for "a continue game that does not end until you are eaten and dive
 - **Growth** (`GROW`): next size needs 3 + 1 × size (retuned so Timed is winnable). Sim results: `tests/balance_results.md`.
 - **Intro**: the shark swims past "SHARK ATTACK", turns, comes back and bites the C; the K is torn off and hangs, the A is knocked crooked — all baked into the one title layer (`tearTitle`). Start works at any time.
 - **Quality**: `?rs=0.5..2` render scale, `?fx=0..3` effects, `?dprcap=`, `?adapt=0` to switch off adaptive quality (`ADAPT`: drops fx, then render scale to 0.6, when frames average >21 ms). Grid: `tests/perf_ceiling.py` → `tests/perf_ceiling_results.md` (a desktop proxy, not a phone). Recommended Galaxy S26 Ultra default = the shipped one (DPR cap 2, rs 1, fx 2, adapt on).
-- Cache `sharkattack-v8`, `game.js?v=8`. Tests: test_shark, test_divers, test_feel, test_modes, test_v6, test_v8, test_update, test_world, plus balance.py and balance_endless.py. Not tested on a real phone.
+- Cache `sharkattack-v10`, `game.js?v=10`. Tests: test_shark, test_divers, test_feel, test_modes, test_v6, test_v8, test_update, test_world, plus balance.py and balance_endless.py. Not tested on a real phone.
 
 ## Grow and get eaten (v9)
 - **No depth lock.** Every stage can swim anywhere (endless world, depth-locked spawn tables and creature zones are kept). Danger is the limit.
@@ -132,3 +132,11 @@ Jeremy asked for "a continue game that does not end until you are eaten and dive
 - **Removed size/danger indicators** (Jeremy: "the player judges size by eye"): the red "!" over bigger fish/chasers; the red "!" on the incoming ambush shark; red off-screen arrows pointing at chasers; the "Too small!" pop when bumping a same-size/bigger fish; the "Too small!" pop when a too-small shark leaps into a surfer; the "Too small to go deeper" hint (with the depth lock). There never was a diving score bonus; none added. Kept: red death puff, normal score, the control tip "Swim down to build speed…", the orange diver arrows/"Divers!" banner (not size-related), the "boing" surfer bump.
 - **Balance**: bots judge size from data (`f.s / bite()`), see `tests/balance_v9.py` (early-diver vs shallow bot) and `tests/balance_results.md`.
 - Perf: all creature sprites are cropped + mip-mapped at sprite build time (`warmSprites`); the bigger drawn world otherwise hit lazy crops mid-play.
+
+## v9c (local, build 10; supersedes 647a9a2)
+- Jeremy: "no circles around the shark or fish", "shark the same size but everything else bigger", "small fish by its fin".
+- Removed: the yellow launch-power ring around the shark, the yellow grow-pop ring, and the white bubble circles on eat/grow (flag RINGS=false).
+- Shark drawn size unchanged. Every creature except plankton is drawn LOOK.K=1.25x its true size (food touch radii match the drawing; danger contact stays on true size so balance holds); no non-plankton creature spawns under 0.4x bite. Eat/bump/danger still judged by true size vs bite (0.87 / 1.15, EAT.RATIO unchanged). Deep width caps and giants keep their old on-screen size (perf).
+- Size 1 eats any fish clearly smaller than its bite (was plankton only).
+- Food is eaten when it touches the mouth OR the drawn body: capsule from mouth (+0.48 L) to tail fin (-0.55 L), radius 0.12 L + 0.3 x drawn fish size. Same-size bump and bigger-eats-you rules unchanged.
+- Cache `sharkattack-v10`, `game.js?v=10`. Not tested on a real phone.

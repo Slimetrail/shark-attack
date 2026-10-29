@@ -12,6 +12,9 @@ Changes: growth NEED_BASE 5→3, NEED_PER_LVL 2→1; prey flee 0.85–0.92× sha
 inside its turn circle — that was why the white looked stuck at lvl 0), rise when stalled at a depth limit.
 The bot's surfer-leap is crude, so real players likely catch surfers sooner; not tested with people.
 
+## v9b (Jeremy: Size 1 eats small fish)
+A Size 1 shark now eats any fish clearly smaller than its bite (was plankton only, which left tiny fish next to it uneatable). Build 9, cache `sharkattack-v9`. balance.py and balance_endless.py: OK. A reckless early-diving bot is eaten more often now because it hunts fish down there.
+
 ## v9 (grow + get eaten, no indicators) — bots judge size from data (f.s / bite()); numbers at the final v9 code
 balance.py (Timed, 25 rounds/type): BALANCE OK. Wiggling bot reaches time-up 20/19/20 of 25 (white/hammer/tiger), eaten 5/6/5; early losses 1 each.
 Reaches surfer size in 19–22/25, median 19–23 s; catches a surfer in 3–16/25, median 35–44 s (v8: 25–32 s / 41–50 s).
@@ -24,3 +27,7 @@ balance_v9.py (8 rounds/type; diver = heads below 70% depth from the start, shal
 | Endless 180 s | early diver | 22 | 2 | 1/7/14 | 4/24 |
 | Endless 180 s | shallow | 3 | 21 | 2/0/1 | 21/24 |
 A diving minnow is in real danger (~38% eaten in a Timed round, median ~30 s in; staying deep for 3 min is almost always fatal) but a short dive is usually survivable. It grows very slowly down there (plankton only).
+
+## v9c (build 10: creatures drawn 1.25x, min 0.4x bite, body-overlap eating, no rings)
+- balance.py: BALANCE OK. First surfer (25 games each): wiggles white 6/hammer 5/tiger 4 caught, median 36-41 s; no-wiggle 9/3/6, median 37-39 s; surfer size reached 15-24/25, median 20-26 s.
+- balance_endless.py: ENDLESS BALANCE OK. good: hammer 16/30 (97 s), tiger 19/30 (63 s); weak: white 16/30 (56 s), hammer 17/30 (97 s), tiger 16/30 (98 s).

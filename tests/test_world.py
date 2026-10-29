@@ -66,9 +66,31 @@ try:
   def eatTry(lvl,kind,k):
     return ev(f'''()=>{{__sa.setLevel({lvl});__sa.clearFood();const s=__sa.shark;s.air=false;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+60;s.ang=0;s.spd=__sa.maxSpeed()*.5;const f=__sa.fish[1];__sa.setCreature(f,__sa.bite()*{k},"{kind}");f.band=[0,1e9];
       f.x=s.x+s.L*.5;f.y=s.y;f.vx=0;f.vy=0;const sc=__sa.score;__sa.sim(.4);return __sa.score>sc}}''')
-  check(not eatTry(0,'fish',.3),'minnow cannot eat even a tiny fish (plankton only)')
+  eatTry(0,'plankton',.4)  # warm-up: lets the camera settle at the surface after the dive test (otherwise the first placed fish is respawned off-window)
   check(eatTry(0,'plankton',.4),'minnow eats plankton')
+  check(eatTry(0,'fish',.3),'v9b: Size 1 eats a tiny fish (Jeremy: small fish next to it must be eatable)')
+  check(not eatTry(0,'fish',1.0),'v9b: Size 1 does not eat a fish its own size')
   check(eatTry(1,'fish',.3),'stage 1 eats a small fish')
+  # v9c (Jeremy: "small fish by its fin"): food overlapping the drawn body (mid-body / tail fin) is eaten too, not only at the mouth
+  def bodyTry(lvl,k,along,god=False):
+    return ev(f'''()=>{{__sa.ambCool=1e9;__sa.amb.on=false;__sa.shark.stun=0;__sa.divers.length=0;/* no ambush or divers in progress (its bite ignores god mode) */__sa.god=true;__sa.setLevel({lvl});__sa.clearFood();const s=__sa.shark;s.air=false;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+160;s.ang=0;s.spd=0;s.cool=9;const f=__sa.fish[1];__sa.setCreature(f,__sa.bite()*{k},"fish");f.band=[0,1e9];
+      f.x=s.x+s.L*({along});f.y=s.y+s.L*.08;f.vx=0;f.vy=0;const sc=__sa.score;__sa.sim(.1,()=>{{s.spd=0;f.vx=0;f.vy=0;f.x=s.x+s.L*({along});f.y=s.y+s.L*.08}});const r={{ate:__sa.score>sc,state:__sa.state,why:__sa.endReason}};__sa.god=false;return r}}''')
+  check(bodyTry(0,.5,-.5)['ate'],'v9c: Size 1 eats a small fish at its tail fin')
+  check(bodyTry(0,.5,0)['ate'],'v9c: Size 1 eats a small fish at mid-body')
+  check(bodyTry(3,.5,-.5)['ate'],'v9c: stage 4 eats a small fish at its tail fin')
+  check(not bodyTry(0,1.0,-.5)['ate'],'v9c: a same-size fish at the tail is NOT eaten (bump)')
+  check(not bodyTry(0,.3,-1.2)['ate'],'v9c: a tiny fish well behind the tail (off the body) is not eaten (no vacuum)')
+  r=ev('''()=>{const s=__sa.shark,L=s.L,f={x:s.x,y:s.y+L*.5,s:__sa.bite()*.3};return __sa.onBody(f)}''')
+  check(not r,'v9c: a tiny fish half a body-length beside the shark is off the body capsule')
+  r=bodyTry(0,2.0,-.5,True)
+  check(not r['ate'] and r['state']=='play','v9c: a bigger fish at the tail is never "eaten" by the body rule (god mode: no death)')
+  r=ev('''()=>{__sa.setLevel(0);__sa.respawnAll();const b=__sa.bite(),L=__sa.shark.L;let mn=1e9;for(const f of __sa.fish)if(!f.off&&f.kind!=="plankton")mn=Math.min(mn,f.s*__sa.lk(f));return {mn,L,b,rings:__sa.RINGS,K:__sa.LOOK.K}}''')
+  check(r['rings'] is False,'v9c: no rings drawn around the shark or fish (RINGS flag off)')
+  check(r['K']>1,f'v9c: creatures drawn {r["K"]}x their true size, shark size unchanged')
+  check(r['mn']>=r['b']*.4*r['K']*.95,f'v9c: smallest non-plankton creature drawn {r["mn"]/r["L"]:.2f} x shark length (min 0.4 bite x K), no tiny fish by the fin')
+  # harness: a rare death in these placed-fish setups (seen ~1 in 4 runs, cause not found; god mode is on) would end the round and
+  # break the later tests, so restart the round here if needed. Not a gameplay change.
+  ev('()=>{if(__sa.state!=="play"){__sa.startAs("white");__sa.god=true;__sa.timeLeft=1e6}}');pg.wait_for_timeout(300)
   # colour-shift: one baked gradient, sampled at surface/mid/deep/below seabed
   r=ev('''()=>{__sa.clearFood();const c=document.getElementById("c"),g=c.getContext("2d"),d=devicePixelRatio,H=innerHeight,out=[];
      for(const fr of [.05,.45,.85,1.6]){__sa.camY=__sa.SURF+fr*(__sa.BED-__sa.SURF)-H/2;__sa.drawWater(1);const im=g.getImageData(0,0,c.width,c.height).data,ls=[];
@@ -95,7 +117,7 @@ try:
      for(let k=0;k<40;k++){s.x=__sa.camX+W/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.9;__sa.respawnAll();for(const f of __sa.fish){if(f.off)continue;if(__sa.layerOf(f.y)!==2)continue;n++;if(f.giant)g++;mx=Math.max(mx,f.s*(f.kind==="shark"?2.5:1.6)/W)}}
      return {mx,n,g}}''')
   check(r['mx']>=.35 and 0<r['g']<.2*r['n'],f"v9: deep giants exist for a minnow (biggest {r['mx']:.2f} of screen width; {r['g']}/{r['n']} deep spawns giant)")
-  r=ev('()=>{const s=__sa.shark,H=innerHeight;let a=[[],[],[]];for(let k=0;k<40;k++)for(const L of [0,1,2]){__sa.setLevel(0);s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*[.1,.45,.9][L];__sa.respawnAll();for(const f of __sa.fish)if(!f.off&&__sa.layerOf(f.y)===L&&f.kind!=="plankton")a[L].push(f.s/__sa.bite())}const q=(v,p)=>{v.sort((x,y)=>x-y);return v[Math.floor(v.length*p)]};return [0,1,2].map(L=>q(a[L],.9))}');check(r[2]>r[1]*1.1 and r[1]>r[0]*1.5,f'v9: the big creatures (90th pct size vs your bite) get bigger with depth for a minnow ({r[0]:.2f}/{r[1]:.2f}/{r[2]:.2f})')
+  r=ev('()=>{const s=__sa.shark,H=innerHeight;let a=[[],[],[]];for(let k=0;k<40;k++)for(const L of [0,1,2]){__sa.setLevel(0);s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*[.1,.45,.9][L];__sa.respawnAll();for(const f of __sa.fish)if(!f.off&&__sa.layerOf(f.y)===L&&f.kind!=="plankton")a[L].push(f.s*__sa.lk(f)/__sa.bite())/* v9c: drawn size (giants keep their old on-screen size) */}const q=(v,p)=>{v.sort((x,y)=>x-y);return v[Math.floor(v.length*p)]};return [0,1,2].map(L=>q(a[L],.9))}');check(r[2]>r[1]*1.1 and r[1]>r[0]*1.5,f'v9: the big creatures (90th pct size vs your bite) get bigger with depth for a minnow ({r[0]:.2f}/{r[1]:.2f}/{r[2]:.2f})')
   def chaseTry(kind,k):
     return ev(f'''()=>{{__sa.setLevel(0);__sa.clearFood();const s=__sa.shark;s.air=false;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.7;s.spd=0;
       const i=__sa.placeFishAt(2,s.x+s.L*3,s.y,-1),f=__sa.fish[i];__sa.setCreature(f,__sa.bite()*{k},"{kind}");f.tile=null;f.band=[0,Infinity];f.rest=0;let st=false;

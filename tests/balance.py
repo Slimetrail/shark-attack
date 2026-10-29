@@ -18,7 +18,7 @@ if(mode==="hunt"&&s.y<S.SURF+H*.8&&Math.random()<dt*.6)mode="dive";
    if(mode==="dive"){T.dir=Math.PI/2+(s.x<cx+W/2?-.6:.6);T.drive=1;if(s.y>S.SURF+H*1.05||(s.y<=st.py+.2&&t-st.pt>.6))mode="rise";if(s.y>st.py+.2){st.py=s.y;st.pt=t}}else{st.py=-1e9;st.pt=t}/* stalled at a depth limit -> rise */
    if(mode==="rise"){const q=sf.reduce((a,b)=>Math.abs(b.x-s.x)<Math.abs(a.x-s.x)?b:a);T.dir=Math.atan2(S.SURF-40-s.y,(q.x+q.vx*.5-s.x)*.35);T.drive=1;if(s.y<S.SURF+L)mode="hunt";return}
    if(mode==="dive")return}
-  let best=null,bd=1e9;for(const f of S.fish)if(!f.off&&S.rel(f)<0&&(s.lvl>0||f.kind==="plankton")&&f.x>cx-W*.2&&f.x<cx+W*1.2&&f.y>cy-H*.2&&f.y<cy+H*1.2){const d=Math.hypot(f.x-s.x,f.y-s.y);if(d<bd){bd=d;best=f}}
+  let best=null,bd=1e9;for(const f of S.fish)if(!f.off&&S.rel(f)<0&&f.x>cx-W*.2&&f.x<cx+W*1.2&&f.y>cy-H*.2&&f.y<cy+H*1.2){const d=Math.hypot(f.x-s.x,f.y-s.y);if(d<bd){bd=d;best=f}}
   if(best){const mx=s.x+Math.cos(s.ang)*L*.48,my=s.y+Math.sin(s.ang)*L*.48,da=Math.atan2(best.y-my,best.x-mx),df=Math.abs(Math.atan2(Math.sin(da-s.ang),Math.cos(da-s.ang)));T.dir=(Math.hypot(best.x-s.x,best.y-s.y)<L*.6&&df>1.2)?s.ang:da;T.drive=.8}/* aim with the mouth; too close & behind -> swim on and loop back (no orbiting) */else{T.dir=Math.atan2(S.SURF+H*.45-s.y,(s.x+W*.3)-s.x);T.drive=.5}}}}'''
 res={}
 try:
