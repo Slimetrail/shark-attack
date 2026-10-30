@@ -14,8 +14,8 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch()
   man=json.load(open(os.path.join(ROOT,'manifest.webmanifest')));check(man['orientation']=='landscape','manifest orientation landscape')
-  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"43"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=43' in sw and 'art/title-art.webp' in sw,'service worker cache bumped (build 43, title art cached)')
-  check('game.js?v=43' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
+  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"44"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=44' in sw and 'art/title-art.webp' in sw,'service worker cache bumped (build 44, title art cached)')
+  check('game.js?v=44' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap')
   pg.wait_for_function('__sa.titleT>0.1',timeout=5000);t0=pg.evaluate('__sa.titleT');pg.click('#start');pg.wait_for_timeout(250)
   check(t0<0.8 and pg.is_visible('.pick'),f'intro: Start works mid-intro (tapped at {t0:.2f}s)');cx.close()

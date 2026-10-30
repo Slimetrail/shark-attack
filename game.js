@@ -892,7 +892,9 @@ function buildPick(){const box=$("pickList");box.innerHTML="";for(const k of Obj
   const cv=render3DShark(110*2,false,t);cv.style.width="110px";cv.className="pv";b.appendChild(cv);
   const info=document.createElement("div");info.className="pinfo";info.innerHTML=`<b>${t.name}</b><span class="pdesc">${t.desc}</span>`+Object.entries(t.bars).map(([n,v])=>`<span class="bar" data-stat="${n}" data-v="${v}"><i>${n}</i><em style="width:${v*20}%"></em></span>`).join("");b.appendChild(info);
   b.onclick=()=>{sType=k;localStorage.setItem(TYPE_KEY,k);buildSprites();startGame()};box.appendChild(b)}}
-$("tap").addEventListener("pointerdown",()=>{initAudio();startTitle();playMusic("title")});
+$("tap").addEventListener("pointerdown",()=>{initAudio();if(music.title){try{music.title.currentTime=0}catch(e){}}startTitle();playMusic("title")});/* b44: intro music always starts from the beginning at launch */
+// b44 (Jeremy: "intro every time"): a page restored from the back-forward cache (reopened app) counts as a launch. Outside a game, go back to "Tap to start" so the intro + its music play again.
+window.addEventListener("pageshow",e=>{if(!e.persisted||state==="play"||state==="dead")return;++fadeId;if(music.title){music.title.pause();try{music.title.currentTime=0}catch(_){}}music.cur=null;state="tap";show("tap")});
 $("start").onclick=()=>{initAudio();state="pick";buildPick();show("pickUi")};
 for(const k of MODES)$("mode_"+k).onclick=()=>setMode(k);setMode(mode);
 $("pickBack").onclick=()=>{state="title";show("titleUi")};
