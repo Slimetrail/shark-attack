@@ -553,7 +553,7 @@ function initAudio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudio
  if(AC&&AC.state==="suspended")AC.resume().catch(()=>{})}
 // Gameplay music: Slopcore's 8-bit "Reflets dans l'eau" v2, played as a WebAudio buffer loop (sample-accurate, no gap at the loop point).
 // If it fails to load or decode, the original placeholder loop below is the fallback.
-const CHIP_URL="audio/play-swim-piano.ogg",MUSIC_VOL={title:.5,game:.5};/* v10: both files -16 LUFS, peaks -1.3/-1.9 dBFS; .5 sits above the .3 SFX bus */// game track is ~9 dB louder than the title file, so it plays lower to sit under the SFX
+const CHIP_URL="audio/play-swim-piano.ogg",MUSIC_VOL={title:.5,game:.32};/* v10: both files -16 LUFS, peaks -1.3/-1.9 dBFS; .5 sits above the .3 SFX bus */// game track is ~9 dB louder than the title file, so it plays lower to sit under the SFX
 function loadChip(){if(!AC||chip.buf||chip.loading)return;chip.loading=true;fetch(CHIP_URL).then(r=>{if(!r.ok)throw new Error("chip "+r.status);return r.arrayBuffer()})
  .then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{chip.buf=buf;if(chip.want&&placeholder){phStop();chipStart()}}).catch(()=>{chip.failed=true})}
 function chipStart(){if(!AC||!chip.buf||chip.src)return;const bus=AC.createGain(),t=AC.currentTime;bus.gain.setValueAtTime(0,t);bus.gain.linearRampToValueAtTime(musOn()?MUSIC_VOL.game:0,t+.6);bus.connect(AC.destination);

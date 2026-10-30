@@ -12,12 +12,12 @@ The old Debussy/Ilić title recording (CC BY 3.0) and the chiptune arrangement a
 
 Sound effects are synthesised live in the browser (no files).
 
-## audio/play-swim-piano.ogg (SILENT PLACEHOLDER)
-- 90 s of digital silence (made with ffmpeg anullsrc, own work, CC0). The real swim song "Open Water" is NOT approved yet and is not shipped; it was in build 26 (b3c8820) and goes back in as one small commit once approved.
+## audio/play-swim-piano.ogg (90 s loop, plays during the game)
+- **Song "Open Water", two-handed piano:** own composition and synthesis by the music team (swim_v2_make.py), CC0 1.0. Licence text: licences/OWN-WORK-CC0.txt
+- **Piano samples:** VSCO-2 Community Edition upright piano (https://github.com/sgossner/VSCO-2-CE/tree/master/Keys/Upright%20Piano), CC0 1.0. Licence text: licences/VSCO-2-CE-upright-CC0-1.0.txt
+- Copied 2026-10-29 from /workspace/music-for-pr/play-swim-piano.ogg (Music Lead). sha256 7d037a5e559883586240a589fdc25c3a0b5175279680a861a45fab9aeaac7ec0, 90.000 s, -12.0 LUFS, -1.9 dBFS peak. Jeremy has NOT yet heard or approved this song; it plays at volume 0.32 (the old 0.5 was set for a quieter -16 LUFS file).
 
 ## Music team licence sheet (copied verbatim from LICENCES.md, 2026-10-29)
-Note: the swim song mentioned below is NOT shipped yet (silent placeholder above).
-
 # Licences - Shark Attack music
 | Source | Used in | Licence | Licence text | Retrieved | Status |
 |---|---|---|---|---|---|
