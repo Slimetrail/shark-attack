@@ -30,5 +30,5 @@ Not used: VCSL harp, wol-crowd-sounds, Salamander (CC BY - excluded), any record
 Swim song v2 "Open Water" two-handed (2026-10-29, swim_v2_make.py): VSCO-2 CE upright piano samples (CC0 1.0) + own composition/synthesis (CC0 1.0). Same licence files as above. Old v1 kept as swim_song_90s_loop_v1.* / play-swim-piano_v1.ogg.
 
 
-## Credits screen wording (build 42)
-The in-game Credits screen now reads: "A Slimetrail production" / "Game, music and sound effects by Slimetrail." / "The piano sound comes from the VSCO-2 Community Edition upright piano samples (CC0 public domain). No credit is required." The piano samples were not recorded by Slimetrail; their CC0 licence texts stay in licences/.
+## Credits screen wording (build 43)
+The in-game Credits screen now reads: "Designed and created by SlimeTrail Productions" / "Game, music and sound effects by Slimetrail." / "The piano sound comes from the VSCO-2 Community Edition upright piano samples (CC0 public domain). No credit is required." The piano samples were not recorded by Slimetrail; their CC0 licence texts stay in licences/.

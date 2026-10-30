@@ -14,8 +14,8 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch()
   man=json.load(open(os.path.join(ROOT,'manifest.webmanifest')));check(man['orientation']=='landscape','manifest orientation landscape')
-  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"42"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=42' in sw and 'art/title-art.webp' in sw,'service worker cache bumped (build 42, title art cached)')
-  check('game.js?v=42' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
+  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"43"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=43' in sw and 'art/title-art.webp' in sw,'service worker cache bumped (build 43, title art cached)')
+  check('game.js?v=43' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap')
   pg.wait_for_function('__sa.titleT>0.1',timeout=5000);t0=pg.evaluate('__sa.titleT');pg.click('#start');pg.wait_for_timeout(250)
   check(t0<0.8 and pg.is_visible('.pick'),f'intro: Start works mid-intro (tapped at {t0:.2f}s)');cx.close()
@@ -97,7 +97,7 @@ try:
     pg.evaluate(f'()=>{{__sa.startAs("tiger","{m}");__sa.feed(40);__sa.god=false}}');pg.wait_for_timeout(1200);pg.evaluate('__sa.timeLeft=0.01') if m=='timed' else pg.evaluate('()=>{const s=__sa.shark,c=__sa.fish[0];s.safe=0;__sa.setCreature(c,__sa.bite()*3,"shark");c.x=s.x+s.L*.2;c.y=s.y;c.vx=-50}')
     pg.wait_for_function('__sa.state==="over"',timeout=4000);pg.wait_for_timeout(600);bb=pg.locator('#overUi .card').bounding_box();check(bb['y']>=0 and bb['y']+bb['height']<=412,f'{m} score card fits landscape');pg.screenshot(path=f'{SHOTS}/{shot}.png')
   pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);pg.click('#cred');pg.wait_for_timeout(400)
-  txt=pg.inner_text('#credUi');check(all(k in txt for k in ['CC0','VSCO-2','A Slimetrail production']),'credits intact (v10 CC0 music)');bb=pg.locator('#credBack').bounding_box();check(bb and bb['y']+bb['height']<=412,'credits Back button on screen');pg.screenshot(path=f'{SHOTS}/v8-credits.png')
+  txt=pg.inner_text('#credUi');check(all(k in txt for k in ['CC0','VSCO-2','Designed and created by SlimeTrail Productions']),'credits intact (v10 CC0 music)');bb=pg.locator('#credBack').bounding_box();check(bb and bb['y']+bb['height']<=412,'credits Back button on screen');pg.screenshot(path=f'{SHOTS}/v8-credits.png')
   cx.close()
   for w,h in [(915,412),(844,390)]:
     cx=b.new_context(viewport={'width':w,'height':h},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);pg.click('#cred');pg.wait_for_timeout(400)
