@@ -100,7 +100,7 @@ try:
   for mode,want in [(None,True),('standalone',False),('fullscreen',False)]:
     c2=b.new_context(viewport={'width':915,'height':412},has_touch=True,is_mobile=True,bypass_csp=True)
     if mode: c2.add_init_script("(()=>{const o=matchMedia.bind(window);window.matchMedia=q=>q.includes('display-mode: %s')?{matches:true,media:q,addEventListener(){},removeEventListener(){},addListener(){},removeListener(){}}:o(q)})()"%mode)
-    p2=c2.new_page();p2.goto(URL);p2.wait_for_timeout(300);p2.click('#tap');p2.wait_for_timeout(500)
+    p2=c2.new_page();p2.goto(URL);p2.wait_for_timeout(300);p2.click('#tap');p2.wait_for_timeout(750)
     vis=p2.evaluate("(()=>{const b=document.getElementById('instb');return !!b&&getComputedStyle(b).display!=='none'&&!b.classList.contains('hide')})()")
     if mode is None:
       ati=p2.evaluate("!!document.querySelector('link[rel=apple-touch-icon]')&&!!document.querySelector('meta[name=apple-mobile-web-app-capable]')")

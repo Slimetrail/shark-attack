@@ -588,6 +588,7 @@ function playMusic(which){const id=++fadeId,from=music.cur,to=which==="title"?mu
  if(which==="game"){if(chip.buf)chipStart();else phStart()}else{phStop();chipStop()}music.cur=to;if(to&&musOn())to.play().catch(()=>{});
  let k=0;const step=()=>{if(id!==fadeId)return;k+=.1;if(from&&from!==to)from.volume=Math.max(0,from.volume-.1);if(to)to.volume=musOn()?Math.min(MUSIC_VOL.title,k*MUSIC_VOL.title):0;if(k<1)setTimeout(step,60);else if(from&&from!==to)from.pause()};step()}
 function musOn(){return soundOn&&songsOn}
+setTimeout(()=>{try{sndHint()}catch(e){}},0);setSound=(o=>function(v){o(v);try{sndHint()}catch(e){}})(setSound);/* b45: keep the "Sound is off" hint in step */
 function setSound(on){soundOn=on;localStorage.setItem(SND_KEY,on?"1":"0");$("snd").textContent=on?"🔊 Sound on":"🔈 Sound off";
  if($("songs"))$("songs").textContent=musOn()?"🎵 Songs on":"🎵 Songs off";if($("fx"))$("fx").textContent=soundOn&&fxOn?"🔔 Effects on":"🔕 Effects off";
  const m=musOn();if(placeholder)placeholder.bus.gain.value=m?.1:0;if(chip.bus){chip.bus.gain.cancelScheduledValues(AC.currentTime);chip.bus.gain.value=m?MUSIC_VOL.game:0}
@@ -612,22 +613,22 @@ function buildTitleShark(){const L=Math.min(titleW()*.62,H*.55,330);tSideO=rende
 function startTitle(){state="title";camY=0;camX=0;T.t=0;T.bitten=false;T.torn=false;T.done=false;T.sr=null;T.art=0;window.__saTitleDone=false;const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;buildTitleShark();show("titleUi")}
 function titleRect(){const tw=title.dw,th=title.height*(tw/title.width);return {x:(W-tw)/2,y:Math.max(safeTop()+10,H*.09),w:tw,h:th}}
 function updTitle(dt){T.t+=dt;
- if(T.t>=TITLE_SWIM&&artOK)T.art=Math.min(1,T.art+dt/TITLE_ART_FADE);
- const end=artOK?TITLE_SWIM+TITLE_ART_FADE+.05:TITLE_SWIM+.3;
- if(!T.done&&(T.t>end||(artFail&&T.t>TITLE_SWIM+.3)||(!artOK&&T.t>TITLE_SWIM+1.5))){T.done=true;window.__saTitleDone=true}}
+ /* b45 (Jeremy): the intro ends on the blue-sea title with the same swimming shark; the dark poster (art/title-art.webp) is no longer shown. T.art stays 0. */
+ if(!T.done&&T.t>TITLE_SWIM+.3){T.done=true;window.__saTitleDone=true}}
 function titleShark(){// path: in from the left past the words, turn at the right (head kept on screen), swim back OVER the title (mouth shut), then dive away down-left
  const r=titleRect(),L=tSideO.L,t=T.t,yw=r.y+r.h*.78,xr=Math.min(W-L*.62,r.x+r.w+L*.1),yo=Math.max(r.y-L*.02,L*.2),xl=Math.max(L*.62,r.x-L*.1);
  if(t<TITLE_PASS){const p=t/TITLE_PASS,e=p*(2-p);return {x:-L*.6+(xr+L*.6)*e,y:yw+Math.sin(p*6)*6,dir:1,open:false}}
  if(t<TITLE_TURN){const p=(t-TITLE_PASS)/(TITLE_TURN-TITLE_PASS);return {x:xr+Math.sin(p*Math.PI)*L*.08,y:yw+(yo-yw)*p*.5,dir:Math.cos(p*Math.PI),open:false}}
  const y1=yw+(yo-yw)*.5;
  if(t<TITLE_OVER){const p=(t-TITLE_TURN)/(TITLE_OVER-TITLE_TURN),e=p*(2-p);return {x:xr+(xl-xr)*p,y:y1+(yo-y1)*Math.sin(Math.min(1,e*1.4)*Math.PI/2),dir:-1,open:false}}
- const p=Math.min(1,(t-TITLE_OVER)/(TITLE_SWIM-TITLE_OVER));return {x:xl-p*p*(xl+L*.7),y:yo+p*p*H*.6,dir:-1,open:false,a:1-Math.max(0,p-.6)/.4}}
+ // b45: instead of diving away, it glides down to the title's swim line and turns, then keeps cruising slowly back and forth around the title
+ const W0=.45,U0=Math.asin(.25)/W0,cx=u=>xl+(xr-xl)*(1-Math.cos(u*W0))/2;
+ if(t<TITLE_SWIM){const p=(t-TITLE_OVER)/(TITLE_SWIM-TITLE_OVER),e=p*p*(3-2*p);return {x:xl+(cx(U0)-xl)*e,y:yo+(yw-yo)*e,dir:-Math.cos(p*Math.PI),open:false}}
+ const u=U0+(t-TITLE_SWIM)*(calm?.6:1);return {x:cx(u),y:yw+Math.sin(u*1.3)*(calm?3:6),dir:Math.max(-1,Math.min(1,Math.sin(u*W0)*4)),open:false}}
 function drawTitle(t){const r=titleRect(),bob=(T.t<TITLE_SWIM||calm)?0:Math.sin(t*1.5)*3;
  if(T.art<1){X.globalAlpha=1-T.art;X.drawImage(title,r.x,r.y+bob,r.w,r.h);X.globalAlpha=1}// old 3D words cross-fade out as the picture comes in
- if(T.art>0){X.globalAlpha=T.art;X.drawImage(bakeArt(),0,0,W,H);X.globalAlpha=1}
- if(T.t<TITLE_SWIM+.05){const q=titleShark(),s=tSideC,dw=s.width/DPR,dh=s.height/DPR,L=s.L;X.save();X.globalAlpha=q.a==null?1:Math.max(0,q.a);X.translate(q.x,q.y);X.scale(Math.abs(q.dir)<.08?.08*Math.sign(q.dir||1):q.dir,1);X.drawImage(s,-dw/2-L*.05,-dh/2,dw,dh);X.restore();
-  const hx=q.x+q.dir*L*.5;T.sr={x:q.x,y:q.y,head:hx,headY:q.y,L,dir:q.dir}}
- if(T.t>=TITLE_SWIM&&T.art<=0){const fx=W/2+Math.cos(t*.6)*W*.3,fy=SURF;X.fillStyle=TYPES[sType].body;X.strokeStyle=P.ink;X.lineWidth=3;X.beginPath();X.moveTo(fx-16,fy);X.lineTo(fx+(Math.sin(t*.6)>0?-6:6),fy-30);X.lineTo(fx+16,fy);X.closePath();X.fill();X.stroke()}}
+ {const q=titleShark(),s=tSideC,dw=s.width/DPR,dh=s.height/DPR,L=s.L;X.save();X.globalAlpha=q.a==null?1:Math.max(0,q.a);X.translate(q.x,q.y);X.scale(Math.abs(q.dir)<.08?.08*Math.sign(q.dir||1):q.dir,1);X.drawImage(s,-dw/2-L*.05,-dh/2,dw,dh);X.restore();
+  const hx=q.x+q.dir*L*.5;T.sr={x:q.x,y:q.y,head:hx,headY:q.y,L,dir:q.dir}}}
 
 // ---------- play ----------
 let lastBub=-9,wasFast=false;
@@ -892,7 +893,13 @@ function buildPick(){const box=$("pickList");box.innerHTML="";for(const k of Obj
   const cv=render3DShark(110*2,false,t);cv.style.width="110px";cv.className="pv";b.appendChild(cv);
   const info=document.createElement("div");info.className="pinfo";info.innerHTML=`<b>${t.name}</b><span class="pdesc">${t.desc}</span>`+Object.entries(t.bars).map(([n,v])=>`<span class="bar" data-stat="${n}" data-v="${v}"><i>${n}</i><em style="width:${v*20}%"></em></span>`).join("");b.appendChild(info);
   b.onclick=()=>{sType=k;localStorage.setItem(TYPE_KEY,k);buildSprites();startGame()};box.appendChild(b)}}
-$("tap").addEventListener("pointerdown",()=>{initAudio();if(music.title){try{music.title.currentTime=0}catch(e){}}startTitle();playMusic("title")});/* b44: intro music always starts from the beginning at launch */
+/* b45 ghost-click guard: on a phone the Tap-to-start finger-up "click" landed on Start (title UI appears under the finger on pointerdown) and skipped the intro.
+   Title-screen clicks count only if their own press started on the title screen after the tap, and never within 600 ms of the tap. Keyboard clicks (detail 0) still work. */
+let tapAt=-1e9,titleDown=false;
+$("titleUi").addEventListener("pointerdown",()=>{if(performance.now()-tapAt>=600)titleDown=true},true);
+$("titleUi").addEventListener("click",e=>{const ghost=performance.now()-tapAt<600||(e.detail!==0&&!titleDown);if(ghost){e.stopPropagation();e.preventDefault()}},true);
+function sndHint(){const h=$("sndOff");if(h)h.classList.toggle("hide",musOn())}
+$("tap").addEventListener("pointerdown",e=>{e.preventDefault();tapAt=performance.now();titleDown=false;initAudio();if(music.title){try{music.title.currentTime=0}catch(e){}}startTitle();playMusic("title")});/* b44: intro music always starts from the beginning at launch */
 // b44 (Jeremy: "intro every time"): a page restored from the back-forward cache (reopened app) counts as a launch. Outside a game, go back to "Tap to start" so the intro + its music play again.
 window.addEventListener("pageshow",e=>{if(!e.persisted||state==="play"||state==="dead")return;++fadeId;if(music.title){music.title.pause();try{music.title.currentTime=0}catch(_){}}music.cur=null;state="tap";show("tap")});
 $("start").onclick=()=>{initAudio();state="pick";buildPick();show("pickUi")};
@@ -922,6 +929,15 @@ if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceW
   else if(d.type==="applied"){location.reload()}});
  updBtn();$("updb").addEventListener("click",e=>{e.stopPropagation();if(state==="play")return;const c=navigator.serviceWorker.controller;if(!c){updBtn("📴 Not installed yet");return}
   if(UPD.pending){$("updb").textContent="Updating…";c.postMessage("apply");setTimeout(()=>location.reload(),3000)}else if(!UPD.busy){UPD.busy=true;$("updb").textContent="Checking…";c.postMessage("check")}})}
+// b45 corner button: "Update ready - tap to reload" once a newer build is fully downloaded (pending). Not on the first install (no pending then),
+// hidden during a run, never reloads by itself. The tap switches to the new build now; phones that never tap still switch on the next open.
+if($("updr")){setInterval(()=>{$("updr").classList.toggle("hide",!(UPD.pending&&state!=="play"&&state!=="dead"))},500);
+ $("updr").addEventListener("click",e=>{e.stopPropagation();if(state==="play")return;const c=navigator.serviceWorker&&navigator.serviceWorker.controller;$("updr").textContent="Updating…";UPD.reloads=(UPD.reloads||0)+1;if(c)c.postMessage("apply");setTimeout(()=>location.reload(),1500)})}
+// b45: like Starstruck, look again whenever the app comes back to the front or gets focus, and every 5 minutes; also re-ask "status" a few times
+// after launch so a download that finishes during page load is not missed (its "pending" message can race the new page).
+if("serviceWorker" in navigator&&location.protocol!=="file:"){const ask=m=>{const c=navigator.serviceWorker.controller;if(c)c.postMessage(m)};
+ [3000,8000,15000,30000].forEach(ms=>setTimeout(()=>ask("status"),ms));setInterval(()=>{if(navigator.onLine)ask("check")},5*60*1000);
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine)ask("check")});addEventListener("focus",()=>{if(navigator.onLine)ask("check")})}
 window.__saUpd=UPD;
 
 // ---------- test hooks ----------
