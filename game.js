@@ -499,7 +499,7 @@ function setCreature(f,sz,kind){f.off=false;f.fu=Math.random();f.fk=CREATURES.FL
 // tiles' creatures exist (update + draw); anything that leaves the window is respawned into its home tile.
 function initTiles(){tiles=[];for(let i=0;i<9;i++)tiles.push({tx:1e9,ty:1e9,deco:[],i});tileC.x=tileC.y=1e9;fish.forEach((f,i)=>f.tile=tiles[i%9])}
 function seedTile(T,tx,ty){T.tx=tx;T.ty=ty;T.deco.length=0;const x0=tx*W,y0=ty*H;
- for(let i=0;i<4;i++){const x=x0+rnd(0,W),y=y0+rnd(0,H);if(y<SURF+50)continue;const L=layerOf(y);if(L===2&&y>BED-60)continue;T.deco.push({x,y,k:L===0?(i%2?"kelp":"rock"):L===1?"jelly":"spire",s:rnd(.7,1.3)})}}
+ for(let i=0;i<4;i++){const x=x0+rnd(0,W),y=y0+rnd(0,H);if(y<SURF+50)continue;const L=layerOf(y);if(L===2&&y>BED-60)continue;if(L===0&&i%2)continue;/* b42: no rocks in the sunlit layer (looked out of place), kelp only */T.deco.push({x,y,k:L===0?"kelp":L===1?"jelly":"spire",s:rnd(.7,1.3)})}}
 function updTiles(force,noSpawn){const cx=Math.floor((camX+W/2)/W),cy=Math.floor((camY+H/2)/H);if(!force&&cx===tileC.x&&cy===tileC.y)return false;tileC.x=cx;tileC.y=cy;
  const want=[];for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++)want.push([cx+i,cy+j]);
  const used=new Array(9).fill(false),free=[];for(const T of tiles){const w=want.findIndex(q=>q[0]===T.tx&&q[1]===T.ty);if(w>=0&&!used[w])used[w]=true;else free.push(T)}
