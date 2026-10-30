@@ -25,6 +25,9 @@ const ZONES=[{d:0,name:"Sunlit",col:"#3fc4f0"},{d:.3,name:"Twilight",col:"#1a5f9
 // The shark is DRAWN the same size all game; instead the world shrinks around it (worldK = 1/true size), eased so nothing pops.
 const GROW={NEED_BASE:3,NEED_PER_LVL:1,REL:3,SURFER:2,START:.4,STEP:1.175,SURF_LVL:6,EASE:3};
 const trueGrow=l=>GROW.START*Math.pow(GROW.STEP,l);
+// v10 b42 DIVE: swimming DOWN takes longer the smaller the shark is. Down speed x diveK = true size / true size at SURF_LVL (clamped MIN..1).
+// The world (zones, floor, spawn bands) stays the same; only the downward part of the shark's swim is slowed, so depth in body lengths grows as the shark shrinks.
+const DIVE={REF_LVL:6,MIN:.4};const diveK=l=>Math.max(DIVE.MIN,Math.min(1,trueGrow(l)/trueGrow(DIVE.REF_LVL)));
 // SEA CREATURES (fish + sharks), judged against YOUR current size: smaller ones flee, bigger ones chase.
 // N: creatures alive near you. SIZE_*: creature size (px "bite size") range shallow -> deep. SHARK_P_*: chance a creature is a shark, shallow -> deep.
 // FOOD_SHARE: share of spawns forced smaller than you (so there is always food). SENSE: notice range (screen heights).
@@ -429,8 +432,8 @@ function buildSprites(){
  SURF=Math.round(H*WORLD.SKY);WORLD_H=Math.round(H*WORLD.SCREENS);BED=Math.round(WORLD_H-H*WORLD.FLOOR*.62);
  // whole-world water gradient (drawn each frame through the camera transform: 1 fill)
  // COLOR-SHIFT FAKE DEPTH: one baked 1px-wide gradient (light at the surface -> dark cap), drawn each frame as ONE stretched fill
- fogSpr=mk(1,512);{const g=fogSpr.getContext("2d"),gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,"rgba(16,80,120,.14)");gr.addColorStop(.3,"rgba(8,40,80,.38)");gr.addColorStop(.7,"rgba(4,18,44,.55)");gr.addColorStop(1,"rgba(2,8,20,.64)");/* v10 item 12 step 5: murkier, less saturated fog (poster) */g.fillStyle=gr;g.fillRect(0,0,1,512)}
- gradSpr=mk(1,512);{const g=gradSpr.getContext("2d"),gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,"#2aa9d8");gr.addColorStop(.06,"#1683bb");gr.addColorStop(.2,"#0c5590");gr.addColorStop(.38,"#0a3668");gr.addColorStop(.58,"#071d45");gr.addColorStop(.8,"#050e28");gr.addColorStop(1,CAP_COL);g.fillStyle=gr;g.fillRect(0,0,1,512)}
+ fogSpr=mk(1,512);{const g=fogSpr.getContext("2d"),gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,"rgba(16,80,120,.14)");gr.addColorStop(.3,"rgba(8,40,80,.30)");gr.addColorStop(.7,"rgba(4,18,44,.47)");gr.addColorStop(1,"rgba(2,8,20,.6)");/* v10 item 12 step 5: murkier, less saturated fog (poster) */g.fillStyle=gr;g.fillRect(0,0,1,512)}
+ gradSpr=mk(1,512);{const g=gradSpr.getContext("2d"),gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,"#2eaedb");gr.addColorStop(.06,"#1b8dc4");gr.addColorStop(.2,"#12649f");gr.addColorStop(.38,"#0f4479");gr.addColorStop(.58,"#0a2652");gr.addColorStop(.8,"#06122e")/* b42: ~+20% mid depth */;gr.addColorStop(1,CAP_COL);g.fillStyle=gr;g.fillRect(0,0,1,512)}
  skySpr=mk(W*DPR,SURF*DPR);{const g=skySpr.getContext("2d");g.scale(DPR,DPR);let gr=g.createLinearGradient(0,0,0,SURF);gr.addColorStop(0,"#3f7fa8");gr.addColorStop(.7,"#8fb8cf");gr.addColorStop(1,"#c9dde6");g.fillStyle=gr;g.fillRect(0,0,W,SURF);
   gr=g.createRadialGradient(W*.84,SURF*.38,4,W*.84,SURF*.38,SURF*.5);gr.addColorStop(0,"rgba(255,248,220,.8)");gr.addColorStop(.2,"rgba(255,236,190,.45)");gr.addColorStop(1,"rgba(255,236,190,0)");g.fillStyle=gr;g.fillRect(0,0,W,SURF);
   for(const [x,y,r] of[[.12,.35,14],[.17,.3,20],[.23,.36,13],[.5,.22,10],[.55,.2,15],[.6,.24,11]]){const cg=g.createLinearGradient(0,SURF*y-r,0,SURF*y+r);cg.addColorStop(0,"#fff");cg.addColorStop(1,"#d6ecf7");g.fillStyle=cg;g.beginPath();g.arc(W*x,SURF*y,r,0,7);g.fill()}
@@ -719,7 +722,7 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
   else touch.drive=Math.max(0,touch.drive-dt*STEER.DRIVE_DECAY*2);
   const tgt=shark.stun>0?0:max*(touch.on?STEER.MIN+(1-STEER.MIN)*touch.drive:STEER.MIN);
   shark.spd+=(tgt-shark.spd)*Math.min(1,dt*(tgt>shark.spd?STEER.ACC*trait("acc"):STEER.DEC));// eased = weighty
-  shark.x+=Math.cos(shark.ang)*shark.spd*dt;shark.y+=Math.sin(shark.ang)*shark.spd*dt;
+  shark.x+=Math.cos(shark.ang)*shark.spd*dt;{const sy=Math.sin(shark.ang);shark.y+=sy*shark.spd*dt*(sy>0?diveK(shark.lvl):1)}
   if(shark.spd>max*.45)shark.run+=shark.spd*dt*(shark.spd/max);else shark.run*=Math.exp(-dt*2);shark.run=Math.min(shark.run,H*1.2);
   const fr=shark.spd/max;if(fr>=FAST_SFX.AT&&!wasFast&&elapsed-lastBub>=FAST_SFX.COOL){SFX.bubbles();lastBub=elapsed;for(let i=0;i<3;i++)spark(shark.x-Math.cos(shark.ang)*L*.5,shark.y,0)}wasFast=fr>=FAST_SFX.AT;
   // surface: launch if fast with enough run-up, else bump back down with a ripple
@@ -769,7 +772,7 @@ function edgeArrow(wx,wy,col){const sx=wx-camX,sy=wy-camY;if(sx>-10&&sx<W+10&&sy
 // the same falloff is applied per object (creatures, scenery, seabed strips) as alpha instead: same look, no full-screen pass.
 const DIM_AT=.6;function nhMax(){return FX>=3?40:FX===2?(busy?8:14):FX===1?5:0}// at most 14 glow halos per frame (perf)
 const DK={dk:0,ga:0,R:1,per:false};
-function darkSetup(){const dk=Math.max(0,Math.min(1,(depthOf(shark.y)-.3)/.5));DK.dk=dk;DK.ga=Math.min(.92,dk);DK.R=Math.max(W,H)*(1.6-dk*.75);DK.per=dk>=DIM_AT||FX===0}
+function darkSetup(){const dk=Math.max(0,Math.min(1,(depthOf(shark.y)-.34)/.52));DK.dk=dk;DK.ga=Math.min(.88,dk*.85);DK.R=Math.max(W,H)*(1.6-dk*.75);DK.per=dk>=DIM_AT||FX===0}
 function vigA(x,y){const u=Math.hypot(x-shark.x,y-shark.y)/DK.R;const a=u<.156?0:u<.536?(u-.156)/.38*.25:u<1?.25+(u-.536)/.464*.72:.97;return a*DK.ga}
 const FAR_FOG=.4;/* v10 item 12 step 5: far creatures fade toward the murk (contrast -40% at the screen edge, none near the shark) */function farFog(x,y){const u=(Math.hypot(x-shark.x,y-shark.y)/(.5*Math.hypot(W,H))-.35)/.5;return 1-FAR_FOG*Math.max(0,Math.min(1,u))}
 function dimAt(x,y){return DK.per?1-vigA(x,y):1}
@@ -907,12 +910,22 @@ setSound(soundOn);resize();show("tap");startLoop();
 // build id + "Updated!" note (shown once, 2 s, on the first launch of a new build). Update checks are done by the service worker.
 const BUILD=(document.querySelector('meta[name="build"]')||{}).content||"",BUILD_KEY="sharkAttack_build";
 {const prev=localStorage.getItem(BUILD_KEY);if(BUILD&&prev&&prev!==BUILD){$("upd").classList.remove("hide");setTimeout(()=>$("upd").classList.add("hide"),2000)}if(BUILD)localStorage.setItem(BUILD_KEY,BUILD)}
-if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("sw.js").then(()=>navigator.serviceWorker.ready).then(r=>{if(navigator.onLine&&r.active)r.active.postMessage("check")}).catch(()=>{})}
+if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("sw.js").then(()=>navigator.serviceWorker.ready).then(r=>{if(r.active){r.active.postMessage("status");if(navigator.onLine)r.active.postMessage("check")}}).catch(()=>{})}
+// v10 b42 UPDATE BUTTON (like Starstruck): title screen only. Normal: "Check for update". When a new build is fully downloaded and waiting: "Update ready - tap to update".
+// Tapping it asks the service worker to switch, then reloads. Never shown or used mid-play (the button lives in the title screen). Saves (localStorage) are untouched.
+const UPD={pending:null,busy:false};
+function updBtn(txt){const b=$("updb");if(!b)return;b.classList.remove("hide");if(UPD.pending){b.textContent="⬆️ Update ready - tap to update";b.classList.add("ready")}else{b.textContent=txt||"🔄 Check for update";b.classList.remove("ready")}}
+if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceWorker.addEventListener("message",e=>{const d=e.data||{};
+  if(d.type==="pending"||(d.type==="status"&&d.pending)){UPD.pending=d.pending||d.build;updBtn()}else if(d.type==="status"&&UPD.busy){UPD.busy=false;updBtn(navigator.onLine?"✅ Up to date":"📴 Offline - try later");setTimeout(()=>{if(!UPD.pending)updBtn()},2500)}
+  else if(d.type==="applied"){location.reload()}});
+ updBtn();$("updb").addEventListener("click",e=>{e.stopPropagation();if(state==="play")return;const c=navigator.serviceWorker.controller;if(!c){updBtn("📴 Not installed yet");return}
+  if(UPD.pending){$("updb").textContent="Updating…";c.postMessage("apply");setTimeout(()=>location.reload(),3000)}else if(!UPD.busy){UPD.busy=true;$("updb").textContent="Checking…";c.postMessage("check")}})}
+window.__saUpd=UPD;
 
 // ---------- test hooks ----------
 window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
  get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get songsOn(){return songsOn},get fxOn(){return fxOn},get musOn(){return musOn()},get titleMusicPlaying(){return !!(music.title&&!music.title.paused)},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
- get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
+ get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},DIVE,diveK,WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti,kind){const f=fish[0];kind=kind||(shark.lvl===0?"plankton":"fish");setCreature(f,kind==="plankton"?bite()*.4:TIERS[ti||0].s,kind);f.band=[SURF+6,Infinity];f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>!q.used)||fish[0];setCreature(f,TIERS[ti].s,"fish");f.band=[SURF+6,Infinity];f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},
