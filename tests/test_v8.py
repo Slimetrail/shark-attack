@@ -29,9 +29,9 @@ try:
       return {lvl:s.lvl,k0,k1:__sa.worldK,mx,ratio:f.s/s0,Lmax:Math.max(...Ls.map((x,i)=>i?Math.abs(x/Ls[i-1]-1):0)),Lend:Ls[Ls.length-1],pop:__sa.DRAW.POP_S}}''')
     check(r['lvl']==1 and r['k1']<r['k0'] and r['mx']<.06,f'{tag}: growing eases the world smaller with no pop (max {r["mx"]*100:.1f}% per frame)')
     # v9 (Jeremy): the player's drawn size now GROWS each stage (was: stays fixed). Eased, no pop jump.
-    check(1.12<=r['Lend']/L0<=1.18 and r['Lmax']<.06,f'{tag}: v9 shark drawn size grows x{r["Lend"]/L0:.3f} per stage, eased (max {r["Lmax"]*100:.1f}%/frame)')
+    check(abs(r['Lend']/L0-1)<.005 and r['Lmax']<.005,f'{tag}: b48 shark drawn size stays the same when it grows (x{r["Lend"]/L0:.3f})')
     dk=ev('()=>{const o=[];for(let l=0;l<=__sa.MAX_LEVEL;l++)o.push(__sa.drawK(l));return o}')
-    check(all(dk[i+1]>=dk[i] for i in range(len(dk)-1)) and dk[-1]<=1.75+1e-9,f'{tag}: v9 drawn size grows every stage up to the cap ({dk[0]:.2f} -> {dk[-1]:.2f})')
+    check(all(abs(x-1)<1e-9 for x in dk),f'{tag}: b48 drawn size is the same at every stage ({dk[0]:.2f} -> {dk[-1]:.2f})')
     check(abs(r['ratio']-r['k1']/r['k0'])<.01,f'{tag}: other creatures shrink by the same world factor')
     # eat rules use relative size: same true-size fish stays food/not-food across world scale
     rr=ev('''()=>{const f=__sa.fish[4];__sa.setLevel(2);__sa.setCreature(f,__sa.bite()*.8,"fish");const a=__sa.rel(f);__sa.setLevel(2);const b=__sa.rel(f);__sa.setCreature(f,__sa.bite()*1.3,"fish");const c=__sa.rel(f);__sa.setLevel(5);const d=__sa.rel(f);return [a,b,c,d]}''')

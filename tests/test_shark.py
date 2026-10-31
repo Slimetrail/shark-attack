@@ -109,7 +109,7 @@ try:
   stage(pg,.5,0);ev(pg,'__sa.setLevel(0)');L0=ev(pg,'__sa.worldK');D0=ev(pg,'__sa.shark.L');v0=ev(pg,'__sa.maxSpeed()');c0=ev(pg,'__sa.sfxCount.chomp')
   for i in range(20): ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(60)
   check(ev(pg,'__sa.sfxCount.chomp')>=c0+6,'eating a fish triggers the chomp sound hook')
-  pg.wait_for_timeout(1500);check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.worldK')<L0 and ev(pg,'__sa.shark.L')>D0*1.1 and ev(pg,'__sa.maxSpeed()')>v0,'eating small fish grows the shark (v9: drawn shark grows, world shrinks by the rest) and speeds it up')
+  pg.wait_for_timeout(1500);check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.worldK')<L0 and abs(ev(pg,'__sa.shark.L')/D0-1)<.005 and ev(pg,'__sa.maxSpeed()')>v0,'eating small fish grows the shark (b48: drawn shark stays the same size, the world shrinks) and speeds it up')
   ev(pg,'__sa.feed(9999)');check(ev(pg,'__sa.shark.lvl')==ev(pg,'__sa.MAX_LEVEL'),'size capped at MAX_LEVEL')
   # bubbles on fast crossing with cooldown
   def go_fast():
@@ -194,8 +194,8 @@ try:
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v47' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v47')
-  check('audio/play-swim-piano.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v47").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
+  check('sharkattack-v48' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v48')
+  check('audio/play-swim-piano.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v48").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
   pg.wait_for_function('__sa.chip',timeout=8000);pg.wait_for_timeout(300)
   check(ev(pg,'__sa.chipPlaying') and not ev(pg,'__sa.placeholder'),'offline: real chiptune plays from cache (placeholder not used)')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()

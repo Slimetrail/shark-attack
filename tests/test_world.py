@@ -48,7 +48,7 @@ try:
      __sa.touch.on=false;return {spawns:__sa.spawnStats.n-n0,wrong:__sa.spawnStats.wrong-w0,badN,ex,frames,kinds:Object.keys(kinds).sort(),reach:(maxD-__sa.SURF)/(__sa.BED-__sa.SURF),by:__sa.spawnStats.byKind}}''')
   check(r['spawns']>300 and r['wrong']==0,f'long swim (6 min): {r["spawns"]} spawns, {r["wrong"]} wrong-zone spawns')
   check(r['badN']==0,f'long swim: no creature ever seen outside its zone ({r["badN"]} {r["ex"]})')
-  check(set(['plankton','fish','glow','shark','octo','angler','star'])<=set(r['kinds']),f'long swim: all kinds met {r["kinds"]} (reached {r["reach"]:.2f} of the way to the seabed)')
+  check(set(['plankton','fish','glow','shark','octo','angler'])<=set(r['kinds']) and 'star' not in r['kinds'],f'long swim: all kinds met, no seabed starfish (b48 endless) {r["kinds"]} (reached {r["reach"]:.2f} of the way to the seabed)')
   check(r['by'].get('angler',0)<r['by'].get('glow',0)/3,f'angler is rare (angler {r["by"].get("angler",0)} vs glow {r["by"].get("glow",0)})')
   # deeper = bigger prey (true size at a fixed stage)
   r=ev('''()=>{__sa.setLevel(9);const H=innerHeight,s=__sa.shark,out=[];for(const fr of [.15,.5,.85]){const y=__sa.SURF+fr*(__sa.BED-__sa.SURF);let a=0,n=0;for(let i=0;i<300;i++){const f=__sa.fish[i%__sa.fish.length];__sa.spawnFish(f,false,{tx:0,ty:Math.floor(y/H)});if(f.kind!=="shark"&&f.kind!=="star"&&f.kind!=="plankton"&&Math.abs(__sa.layerOf(f.y)-__sa.layerOf(y))===0){a+=f.s;n++}}out.push(n?a/n:0)}__sa.respawnAll();return out}''')

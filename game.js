@@ -21,7 +21,7 @@ const SAFE_SPAWN_S=1.5;
 // FLOOR: volcanic floor thickness (screen heights) at the very bottom.
 const WORLD={SCREENS:5,SKY:.3,FLOOR:.5,CAM_EASE:6};
 // Depth zones (0 = surface, 1 = volcanic floor). Shown on the depth meter.
-const ZONES=[{d:0,name:"Sunlit",col:"#3fc4f0"},{d:.3,name:"Twilight",col:"#1a5f9a"},{d:.62,name:"Midnight",col:"#0d1f45"},{d:.86,name:"Volcanic",col:"#ff6a1e"}];
+const ZONES=[{d:0,name:"Sunlit",col:"#3fc4f0"},{d:.3,name:"Twilight",col:"#1a5f9a"},{d:.62,name:"Midnight",col:"#0d1f45"},{d:.86,name:"Abyss",col:"#05070f"}];
 // GROWTH (slowed a lot in v6): growth needed for the next size = NEED_BASE + NEED_PER_LVL × size; a creature gives size/GROW_DIV growth; a surfer gives SURFER.
 // v8 growth: the shark starts as a minnow (START x full size) and gets STEP x bigger per level. Surfers need level SURF_LVL.
 // The shark is DRAWN the same size all game; instead the world shrinks around it (worldK = 1/true size), eased so nothing pops.
@@ -399,7 +399,7 @@ function bandOf(L){const y=d=>SURF+d*(BED-SURF);return L===0?[SURF+6,y(LAYERS.TO
 // without a camera zoom); the world shrinks only by the rest of the true growth (wK), so relative sizes are unchanged.
 const DEEP={GROW:1.2,RAMP:.35,FADE_LVL:6,MAX_W:.45,BIG_W:.35,BIG_N:2,GIANT_P:.07,GIANT_MIN:3.8,GIANT_MAX:5.5,GIANT_MAXW:.6};// v9: deep creatures grow with depth (×1+GROW below the mid layer); rare giants up to ~half the screen for a minnow
 const EAT={RATIO:1.3,GRACE:1.5};// v9: a creature this much bigger than your bite EATS you on contact; .87-1.3 = same size (push); smaller = food
-const DRAW={BASE:.2,STEP:1.15,CAP:1.52,EASE:5,POP_S:.4};const drawK=l=>Math.min(DRAW.CAP,Math.pow(DRAW.STEP,l)),wK=l=>drawK(l)/trueGrow(l);
+const DRAW={BASE:.2,STEP:1,CAP:1,/* b48 (Jeremy): the shark stays the SAME size on screen; growth is shown only by the world shrinking (wK = 1/true size) */EASE:5,POP_S:.4};const drawK=l=>Math.min(DRAW.CAP,Math.pow(DRAW.STEP,l)),wK=l=>drawK(l)/trueGrow(l);
 const sharkL=l=>Math.min(W,H)*DRAW.BASE*drawK(l)*trait("size");
 const bite=()=>shark.L*.4;
 function setWorldK(k){const r=k/worldK;if(r!==1)for(const f of fish)f.s*=r;worldK=k}
@@ -449,16 +449,8 @@ function buildSprites(){
   const fm=g.createLinearGradient(0,0,0,H*.22);fm.addColorStop(0,"rgba(0,0,0,1)");fm.addColorStop(1,"rgba(0,0,0,0)");c.globalCompositeOperation="destination-in";c.fillStyle=fm;c.fillRect(0,0,W,H*.22);g.globalAlpha=.9;try{g.filter="blur(1.2px)"}catch(_){}g.drawImage(cg,0,2);g.filter="none";g.globalAlpha=1}
  /* v10 gfx step 4: baked edge vignette + cool colour grade, one drawImage per frame */gradeSpr=mk(256,144);{const g=gradeSpr.getContext("2d"),gr=g.createRadialGradient(128,72,30,128,72,150);gr.addColorStop(0,"rgba(0,18,36,.06)");gr.addColorStop(.55,"rgba(0,12,28,.16)");gr.addColorStop(1,"rgba(0,4,12,.55)");g.fillStyle=gr;g.fillRect(0,0,256,144)}
  vigSpr=mk(512,512);{const g=vigSpr.getContext("2d"),gr=g.createRadialGradient(256,256,20,256,256,128);gr.addColorStop(0,"rgba(0,0,8,0)");gr.addColorStop(.45,"rgba(0,0,8,.25)");gr.addColorStop(1,"rgba(0,0,8,.97)");g.fillStyle=gr;g.fillRect(0,0,512,512)}
- // volcanic floor (pre-rendered once): dark basalt, glowing lava cracks
- {const fh=Math.round(H*.45);floorSpr=mk(W*DPR,fh*DPR);const g=floorSpr.getContext("2d");g.scale(DPR,DPR);const pts=[],n=Math.max(8,Math.round(W/30)),pw=W/n;for(let i=0;i<=n;i++){const x=i*pw;pts.push([x,i===n?pts[0][1]:40-Math.abs(Math.sin(x/W*Math.PI*3)*30)-Math.random()*16+(i%6===0?-30:0)])}
-  const rock=g.createLinearGradient(0,0,0,fh);rock.addColorStop(0,"#3a3036");rock.addColorStop(.3,"#211a1f");rock.addColorStop(FLOOR_CUT,CAP_COL);g.fillStyle=rock;g.beginPath();g.moveTo(0,fh);for(const [x,y] of pts)g.lineTo(x,y);g.lineTo(W,fh);g.closePath();g.fill();
-  g.strokeStyle="#000";g.lineWidth=3;g.beginPath();for(const [x,y] of pts)g.lineTo(x,y);g.stroke();
-  g.strokeStyle="rgba(90,70,80,.6)";g.lineWidth=2;for(let i=0;i<40;i++){const x=rnd(25,W-25),y=40+Math.random()*(fh*.6-50);g.beginPath();g.moveTo(x,y);g.lineTo(x+rnd(-20,20),y+rnd(4,14));g.stroke()}
-  g.lineCap="round";for(let i=0;i<9;i++){let x=rnd(40,W-40),y=rnd(45,fh*.45);g.shadowColor="#c23a00";g.shadowBlur=8;g.strokeStyle=i%3?"#b8501a":"#d98a2a";g.lineWidth=rnd(2,4);g.beginPath();g.moveTo(x,y);for(let k=0;k<5;k++){x+=rnd(-30,30);y+=rnd(4,18);g.lineTo(x,y)}g.stroke()}
-  g.shadowBlur=0;floorSpr.vents=[];for(let i=0;i<4;i++){const x=W*(.12+i*.25)+rnd(-30,30),j=Math.round(x/30),y=pts[Math.min(pts.length-1,Math.round(x/pw))][1];floorSpr.vents.push(x);{const cg=g.createLinearGradient(x-40,0,x+40,0);cg.addColorStop(0,"#0c0a0c");cg.addColorStop(.4,"#2a2224");cg.addColorStop(1,"#0a0809");g.fillStyle=cg}g.beginPath();g.moveTo(x-42,y+30);g.quadraticCurveTo(x-30,y,x-13,y-26);g.lineTo(x+13,y-26);g.quadraticCurveTo(x+26,y+2,x+42,y+30);g.closePath();g.fill();g.fillStyle="#d0641a";g.shadowColor="#a83a00";g.shadowBlur=12;g.beginPath();g.ellipse(x,y-26,11,4,0,0,7);g.fill();g.shadowBlur=0}
-  floorSpr.fh=fh}
+ /* b48 (Jeremy: endless world): no volcanic floor sprite any more. */
  puffSpr=mk(128,128);{const g=puffSpr.getContext("2d"),gr=g.createRadialGradient(56,56,4,64,64,64);gr.addColorStop(0,"rgba(235,60,60,.95)");gr.addColorStop(.55,"rgba(200,30,40,.6)");gr.addColorStop(1,"rgba(170,20,30,0)");g.fillStyle=gr;g.fillRect(0,0,128,128)}
- ventSpr=mk(160,160);{const g=ventSpr.getContext("2d"),gr=g.createRadialGradient(80,80,4,80,80,80);gr.addColorStop(0,"rgba(255,170,60,.9)");gr.addColorStop(.4,"rgba(255,80,20,.35)");gr.addColorStop(1,"rgba(255,40,0,0)");g.fillStyle=gr;g.fillRect(0,0,160,160)}
  // background scenery (parallax silhouettes) by depth: kelp/rocks in the sunlit zone, jellies in twilight, giant squid-ish shapes + rock spires deep
  decoSpr={};const bake=(k,w,h,ox,oy,fn)=>{const c=mk(w*DPR,h*DPR),g=c.getContext("2d");g.scale(DPR,DPR);g.translate(ox,oy);fn(g);c.w=w;c.h=h;c.ox=ox;c.oy=oy;decoSpr[k]=c};
  bake("kelp",60,170,30,100,g=>{g.strokeStyle="rgba(10,80,70,.55)";g.lineWidth=7;g.lineCap="round";g.beginPath();g.moveTo(0,60);for(let i=0;i<6;i++)g.lineTo(Math.sin(1+i*.7)*10,60-i*30);g.stroke()});
@@ -524,7 +516,7 @@ function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;
   if(!crowd&&(!P0||Math.hypot(f.x-shark.x,f.y-shark.y)>Math.min(W,H)*(elapsed<SAFE_SPAWN_S?.7:.45)))break}
  const L=layerOf(f.y),d=depthOf(f.y);let kind=pickKind(L,f.y,T);
  // starfish: only on the seabed strip (deep layer), when this tile contains it
- if(L===2&&T.ty*H<=BED+20&&T.ty*H+H>=BED-20&&Math.random()<STAR_P){kind="star";f.y=BED-8+rnd(-5,5)}
+ /* b48: no seabed, so no starfish strip */
  let sz;
  if(kind==="plankton")sz=bite()*rnd(.3,.55)*GROW.START*worldK;
  else if(kind==="star")sz=rnd(14,28)*sizeK*worldK;
@@ -698,7 +690,7 @@ function dodge(f,dt,sprint,dist,L,tvx,tvy,v){const D=DODGE;if(!D.ON||(!sprint&&!
   f.ddur=near?D.DUR:C.dur;f.dzig=dd>.5&&Math.random()<D.ZIG_P;
   const cd=near?C.cdS:(D.CD_SHALLOW+(D.CD_DEEP-D.CD_SHALLOW)*dd)*C.cd;f.dcd=Math.max(D.CD_MIN,cd-D.CD_LVL*shark.lvl)+D.WIG+f.ddur;
   const ts=touch.on?Math.sign(angDiff(shark.ang,touch.dir)):0;let side=ts?-ts:(Math.random()<.5?-1:1);/* away from the side the shark turns to */
-  const fa=Math.atan2(tvy,tvx),ny=a=>Math.sin(fa+a),b0=Math.max(SURF+f.s*.6,f.band[0]),b1=Math.min(BED-f.s*.6,f.band[1]),m=L*1.2;
+  const fa=Math.atan2(tvy,tvx),ny=a=>Math.sin(fa+a),b0=Math.max(SURF+f.s*.6,f.band[0]),b1=f.band[1],m=L*1.2;
   const bad=a=>(ny(a)<-.2&&f.y-b0<m)||(ny(a)>.2&&b1-f.y<m);let a=side*ang*Math.PI/180;if(bad(a)){a=-a;if(bad(a))a=0}f.da=a;return}
  f.dt+=dt;if(f.dg===1){f.ph+=dt*40;if(f.dt>=D.WIG){f.dg=2;f.dt=0}return}
  if(f.dzig&&f.dt>=D.ZIG_AT){f.dzig=false;f.da=-f.da}if(f.dt>=f.ddur){f.dg=0}}
@@ -882,11 +874,7 @@ function drawWater(t){darkSetup();X.setTransform(1,0,0,1,0,0);const top=camY,bot
  // scenery from the tile pool (only nearby tiles exist)
  for(const T of tiles)for(const o of T.deco){const sp=decoSpr[o.k],x=o.x-camX,y=o.y-top;if(x+sp.w*o.s<0||x-sp.w*o.s>W||y+sp.h*o.s<0||y-sp.h*o.s>H)continue;const sc=o.s;X.setTransform(sc,0,0,sc,x*DPR,y*DPR);X.globalAlpha=dimAt(o.x,o.y);const T=trim(sp);X.drawImage(T,-sp.ox*DPR+T.ox,-sp.oy*DPR+T.oy)}X.globalAlpha=1;
  X.setTransform(1,0,0,1,0,0);if(FX>=1&&!busy&&fogSpr&&bot>SURF){X.imageSmoothingEnabled=false;const w0=Math.max(SURF,top),k=512/(BED+H*.35-SURF),h0=Math.max(.01,Math.min(512,(Math.min(bot,BED+H*.35)-w0)*k));if(h0>.01)X.drawImage(fogSpr,0,Math.min(511,(w0-SURF)*k),1,h0,0,Math.floor((w0-top)*DPR),C.width,Math.ceil(h0/k*DPR)+1);X.imageSmoothingEnabled=true}// v10 gfx step 2 (skipped on a busy screen to stay in the perf budget): depth fog (one stretched baked gradient) over the scenery
- // seabed strip far down (decorative, tileable, no wall: the shark swims past it into the dark below)
- const fy=BED-40;if(bot>fy&&top<fy+floorSpr.fh){const k0=Math.floor(camX/W);{const fh2=Math.round(floorSpr.height*FLOOR_CUT),yy=Math.round((fy-top)*DPR);for(let k=k0;k<=k0+1;k++)X.drawImage(floorSpr,0,0,floorSpr.width,fh2,Math.round((k*W-camX)*DPR),yy,floorSpr.width,fh2);X.fillStyle=CAP_COL;X.fillRect(0,yy+fh2-1,C.width,floorSpr.height-fh2+1);// below the cut the rock is flat cap colour: cheap solid fill
-  if(DK.per){const n=12,sw=C.width/n;X.fillStyle="rgb(0,0,8)";for(let i=0;i<n;i++){X.globalAlpha=vigA(camX+(i+.5)*sw/DPR,fy+60);X.fillRect(Math.floor(i*sw),yy,Math.ceil(sw)+1,fh2)}X.globalAlpha=1}}// cheap solid overlay strips darken the seabed
-  X.setTransform(DPR,0,0,DPR,-camX*DPR,-camY*DPR);X.globalCompositeOperation="lighter";if(FX>=1)for(let k=k0;k<=k0+1;k++)for(const v of floorSpr.vents){const vx=v+k*W;if(vx+90<camX||vx-90>camX+W)continue;X.globalAlpha=(.55+.35*Math.sin(t*2.2+vx))*dimAt(vx,BED-60);X.drawImage(ventSpr,vx-65,BED-125,130,130)}X.globalAlpha=1;X.globalCompositeOperation="source-over";
-  if((FX>=3||(!busy&&FX>=2))){X.fillStyle="rgba(255,150,60,.5)";for(let k=k0;k<=k0+1;k++)for(const v of floorSpr.vents){const vx=v+k*W;for(let i=0;i<3;i++){const ph=(t*.5+i/3+vx*.01)%1;X.beginPath();X.arc(vx+Math.sin(ph*9+i)*8,BED-60-ph*200,3+ph*3,0,7);X.fill()}}}}
+ /* b48: no seabed strip, vents or lava sparks: the water just keeps getting darker, down forever. */
  // floating particles (screen space, parallax)
  X.setTransform(DPR,0,0,DPR,0,0);const d0=depthOf(camY+H/2),n=FX===0?0:busy||FX===1?14:d0>.6?80:46;{const m=FX===0?0:busy||FX===1?16:murk.length;for(let L=0;L<2;L++){X.fillStyle=L?"rgba(42,69,88,.4)":"rgba(42,69,88,.25)";const k=L?.8:.35;for(let i=L;i<m;i+=2){const p=murk[i],x=(((p.x*W-camX*k+Math.sin(t*.3+i)*6)%W)+W)%W,y=(((p.y*H-t*p.sp*.4-camY*k)%H)+H)%H,r=p.r*(1+L);if(y+top<SURF)continue;X.fillRect(x-r,y-r,r*2,r*2)}}}X.fillStyle=d0<.3?"rgba(200,225,240,.3)":"rgba(110,130,150,.3)";/* v10 gfx step 4: murkier specks */
  for(let i=0;i<n;i++){const p=snow[i],x=(((p.x*W-camX*.5)%W)+W)%W,y=(((p.y*H-t*p.sp*(d0<.3?-1:1)-camY*.5)%H)+H)%H,r=p.r*(d0<.3?1.6:1);if(y+top<SURF)continue;X.fillRect(x-r,y-r,r*2,r*2)}
