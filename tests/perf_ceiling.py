@@ -17,7 +17,7 @@ try:
    for rs in RS:
     for fx in FXS:
      cdp.send('Emulation.setCPUThrottlingRate',{'rate':1})
-     pg.goto(f'{URL}?rs={rs}&fx={fx}&adapt={ADAPT}&dprcap=2.625');pg.wait_for_timeout(250);pg.click('#tap');pg.wait_for_timeout(150);pg.click('#start');pg.wait_for_timeout(150);pg.click('.pick[data-type=tiger]');pg.wait_for_timeout(250)
+     pg.goto(f'{URL}?rs={rs}&fx={fx}&adapt={ADAPT}&dprcap=2.625');pg.wait_for_timeout(250);pg.click('#tap');pg.wait_for_timeout(700);pg.click('#start');pg.wait_for_timeout(150);pg.click('.pick[data-type=tiger]');pg.wait_for_timeout(250)
      ev('__sa.god=true;__sa.timeLeft=999')
      ev(f'()=>{{__sa.setLevel({lvl});const s=__sa.shark;s.y={yy};s.x=__sa.camX+innerWidth/2;__sa.camX=s.x-innerWidth/2;__sa.camY=s.y-innerHeight/2;__sa.respawnAll();for(const f of __sa.fish){{if(f.kind!=="star")f.y=s.y+(Math.random()-.5)*innerHeight*.8;f.x=__sa.camX+Math.random()*innerWidth}}}}')
      cdp.send('Emulation.setCPUThrottlingRate',{'rate':CPU});pg.wait_for_timeout(400);ev('__sa.perf.reset()')

@@ -939,7 +939,13 @@ function wakeAudio(){initAudio();if(AC&&AC.state==="suspended")AC.resume().catch
  a.volume=MUSIC_VOL.title;a.play().catch(()=>{})}
 for(const ev of["pointerup","touchend","click","keydown"])document.addEventListener(ev,wakeAudio,true);
 function sndHint(){const h=$("sndOff");if(h)h.classList.toggle("hide",musOn())}
-$("tap").addEventListener("pointerdown",e=>{e.preventDefault();tapAt=performance.now();titleDown=false;initAudio();if(music.title){try{music.title.currentTime=0}catch(e){}}startTitle();playMusic("title")});/* b44: intro music always starts from the beginning at launch */
+/* b48 fix (QA): the first tap used to start the sound on finger DOWN, which Chrome on Android does not count as permission. Now a press on "Tap to start" only arms it;
+   the intro, music and sound engine start when the finger comes UP (pointerup) - a cancelled or never-lifted press starts nothing. */
+let tapArmed=false;
+function tapGo(){if(!tapArmed)return;tapArmed=false;tapAt=performance.now();titleDown=false;initAudio();if(music.title){try{music.title.currentTime=0}catch(e){}}startTitle();playMusic("title")}
+$("tap").addEventListener("pointerdown",e=>{e.preventDefault();tapArmed=true});
+document.addEventListener("pointerup",()=>{if(state==="tap")tapGo()},true);
+document.addEventListener("pointercancel",()=>{tapArmed=false},true);/* b44: intro music always starts from the beginning at launch */
 // b44 (Jeremy: "intro every time"): a page restored from the back-forward cache (reopened app) counts as a launch. Outside a game, go back to "Tap to start" so the intro + its music play again.
 window.addEventListener("pageshow",e=>{if(!e.persisted||state==="play"||state==="dead")return;++fadeId;if(music.title){music.title.pause();try{music.title.currentTime=0}catch(_){}}music.cur=null;state="tap";show("tap")});
 $("start").onclick=()=>{initAudio();state="pick";buildPick();show("pickUi")};

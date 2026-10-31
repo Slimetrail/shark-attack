@@ -32,3 +32,6 @@ Swim song v2 "Open Water" two-handed (2026-10-29, swim_v2_make.py): VSCO-2 CE up
 
 ## Credits screen wording (build 45)
 The in-game Credits screen now reads: "A Slimetrail production" / "The piano sound comes from the VSCO-2 Community Edition upright piano samples (CC0 public domain). No credit is required." The piano samples were not recorded by Slimetrail; their CC0 licence texts stay in licences/.
+
+## Credits screen line "Art, sound effects and code: original" (2026-10-31, build 48)
+The title-screen credit "Art, sound effects and code: original, made for this game" is our own work: the shark and fish pictures are drawn by our own code (tools/make_icons.py and the drawing code in game.js), the sound effects (chomp, bubbles, gulp and so on) are made live in the browser by our own code with no sound files, and the code is ours. Licence: CC0 1.0 (own dedication), see licences/OWN-WORK-CC0.txt. This is separate from the piano samples above, which come from VSCO-2 CE (CC0). No secrets in this entry.
