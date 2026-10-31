@@ -1,4 +1,4 @@
-# b48 update-path test (Skeptic, c0fbb57): a phone on the LIVE build (47, commit 040bcbb, offline worker running, saved settings) must be offered the new build,
+# b48/b49 update-path test (Skeptic, c0fbb57): a phone on the LIVE build (47, commit 040bcbb, offline worker running, saved settings) must be offered the new build,
 # move to it after the "update ready" tap, keep its saved settings, and still work offline afterwards.
 # The "live" files are a git archive of 040bcbb; the "new" files are a git archive of the commit being checked (HEAD of this repo). Served from one local port (same
 # origin, so the worker and localStorage carry over, like the real site). Pretend phone (Chromium with touch), never a real phone.
@@ -44,7 +44,7 @@ try:
     pg.wait_for_timeout(500)
   check(f'sharkattack-v{nv}' in keys,f'new build {nv} was downloaded in the background (all files) while the old one kept running {sorted(keys)}')
   g1=pg.evaluate("fetch('game.js?v='+%s).then(r=>r.text())"%lv)
-  check('tapArmed' not in g1,'until the player taps "update", the phone still runs the old build (never switched mid-play)')
+  check(g1==open(os.path.join(LIVE,'game.js')).read(),'until the player taps "update", the phone still runs the old build (never switched mid-play)')
   pg.click('#tap');pg.wait_for_timeout(1500)
   for i in range(20):
     vis=pg.evaluate('()=>[...document.querySelectorAll("#updr,#updb")].filter(e=>!e.classList.contains("hide")&&/Update ready/.test(e.textContent)).map(e=>e.id)')
@@ -54,7 +54,7 @@ try:
   pg.click('#'+vis[0]);pg.wait_for_timeout(6000)
   vj=pg.evaluate("fetch('version.json').then(r=>r.json())");keys=pg.evaluate('caches.keys()')
   g2=pg.evaluate("fetch('game.js?v='+%s).then(r=>r.text())"%nv);h2=pg.evaluate("fetch('index.html').then(r=>r.text())")
-  check(str(vj['build'])==str(nv) and 'tapArmed' in g2 and 'Slimetrail Productions. No ads' in h2,f'after the tap the phone runs the new build (version.json {vj}, new code present, new credits)')
+  check(str(vj['build'])==str(nv) and g2==open(os.path.join(NEW,'game.js')).read() and h2==open(os.path.join(NEW,'index.html')).read(),f'after the tap the phone runs the new build (version.json {vj}, new game.js and index.html match the new build)')
   check(f'sharkattack-v{lv}' not in keys and f'sharkattack-v{nv}' in keys,f'old cache removed, new cache kept {sorted(keys)}')
   got=pg.evaluate('s=>Object.fromEntries(Object.keys(s).map(k=>[k,localStorage.getItem(k)]))',SET)
   check(got==SET,f'saved settings and best score kept {got}')
