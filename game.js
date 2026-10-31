@@ -352,25 +352,53 @@ function render3DTitle(w){const fs=Math.floor(w*.17),c=mk(w,fs*2.7),g=c.getConte
   g.save();g.globalCompositeOperation="source-atop";g.fillStyle="rgba(255,255,255,.35)";g.fillRect(0,y-fs*.45,w,fs*.18);g.restore()}
  return c}
 // head-on shark for the intro: mouth WIDE open toward the viewer (open) or snapped shut (closed). Pre-rendered once.
-function renderFrontShark(S,open){const c=mk(S*1.2,S*1.1),g=c.getContext("2d");g.translate(c.width/2,c.height*.48);g.lineJoin="round";const k=S/400;
- const head=()=>{g.beginPath();g.moveTo(-200*k,-10*k);g.bezierCurveTo(-210*k,-150*k,-90*k,-205*k,0,-205*k);g.bezierCurveTo(90*k,-205*k,210*k,-150*k,200*k,-10*k);g.bezierCurveTo(195*k,110*k,110*k,190*k,0,195*k);g.bezierCurveTo(-110*k,190*k,-195*k,110*k,-200*k,-10*k);g.closePath()};
- g.fillStyle="#26313b";g.beginPath();g.moveTo(-30*k,-190*k);g.lineTo(0,-300*k);g.lineTo(30*k,-190*k);g.closePath();g.fill();g.lineWidth=3*k;g.strokeStyle="rgba(6,16,26,.55)";g.stroke();// dorsal fin behind
- for(const sd of[-1,1]){g.fillStyle="#3a4855";g.beginPath();g.moveTo(sd*170*k,60*k);g.quadraticCurveTo(sd*290*k,120*k,sd*300*k,200*k);g.quadraticCurveTo(sd*230*k,150*k,sd*140*k,120*k);g.closePath();g.fill();g.stroke()}// pectoral fins
- g.save();g.translate(10*k,14*k);head();g.fillStyle="rgba(0,10,20,.45)";g.fill();g.restore();
- head();let gr=g.createLinearGradient(0,-205*k,0,195*k);gr.addColorStop(0,"#2c3844");gr.addColorStop(.3,"#5f7181");gr.addColorStop(.5,"#9aa9b5");gr.addColorStop(.58,"#e6eaec");gr.addColorStop(1,"#a9b3bb");g.fillStyle=gr;g.fill();{const rg=g.createRadialGradient(-60*k,-120*k,10*k,0,0,230*k);rg.addColorStop(0,"rgba(255,255,255,.28)");rg.addColorStop(.5,"rgba(255,255,255,0)");rg.addColorStop(1,"rgba(0,8,16,.45)");g.fillStyle=rg;g.fill()}g.lineWidth=3*k;g.strokeStyle="rgba(6,16,26,.55)";g.stroke();
- g.save();head();g.clip();g.fillStyle="rgba(255,255,255,.12)";g.beginPath();g.ellipse(-60*k,-140*k,90*k,30*k,-.3,0,7);g.fill();g.restore();
- for(const sd of[-1,1]){const ex=sd*168*k,ey=-70*k;/* b50: small dark eyes set far out on the sides (less cartoon) */g.fillStyle="#05080b";g.beginPath();g.ellipse(ex,ey,11*k,13*k,sd*.5,0,7);g.fill();g.fillStyle="rgba(200,220,235,.35)";g.beginPath();g.arc(ex-sd*3*k,ey-5*k,2.6*k,0,7);g.fill();
-  g.strokeStyle="rgba(6,16,26,.55)";
-  g.lineWidth=4*k;g.beginPath();g.ellipse(sd*40*k,-150*k,8*k,4*k,0,0,7);g.stroke()}// nostrils
- if(open){const mw=150*k,mt=-40*k,mb=175*k;g.beginPath();g.moveTo(-mw,mt+20*k);g.quadraticCurveTo(0,mt-30*k,mw,mt+20*k);g.quadraticCurveTo(mw*1.05,mb*.8,0,mb);g.quadraticCurveTo(-mw*1.05,mb*.8,-mw,mt+20*k);g.closePath();
-  g.fillStyle="#8a3c46";g.fill();g.lineWidth=3*k;g.strokeStyle="rgba(6,16,26,.55)";g.stroke();// gums
-  g.save();g.clip();gr=g.createRadialGradient(0,70*k,10*k,0,70*k,150*k);gr.addColorStop(0,"#05030a");gr.addColorStop(.7,"#1a0d1c");gr.addColorStop(1,"#3a1a2a");g.fillStyle=gr;g.beginPath();g.ellipse(0,72*k,mw*.82,(mb-mt)*.4,0,0,7);g.fill();g.restore();
-  g.fillStyle="#efeadb";g.strokeStyle="rgba(6,16,26,.55)";g.lineWidth=3.5*k;
-  for(let row=0;row<2;row++){const n=row?7:9;for(let i=0;i<n;i++){const u=(i+.5)/n,x=-mw*.92+u*mw*1.84,yTop=mt+20*k-Math.sin(u*Math.PI)*42*k+row*22*k,tw=mw*1.84/n*.5,th=(row?34:46)*k;{const tg=g.createLinearGradient(0,yTop,0,yTop+th);tg.addColorStop(0,"#a99c7e");tg.addColorStop(.4,"#e9e2cc");tg.addColorStop(1,"#fbf8ee");g.fillStyle=tg}/* b50: shaded teeth, curved sides */g.beginPath();g.moveTo(x-tw,yTop);g.quadraticCurveTo(x-tw*.3,yTop+th*.5,x+tw*.08,yTop+th);g.quadraticCurveTo(x+tw*.35,yTop+th*.5,x+tw,yTop);g.closePath();g.fill();g.stroke()}}
-  for(let i=0;i<8;i++){const u=(i+.5)/8,x=-mw*.8+u*mw*1.6,yb=mb-12*k-Math.sin(u*Math.PI)*28*k,tw=mw*1.6/8*.48;{const tg=g.createLinearGradient(0,yb,0,yb-40*k);tg.addColorStop(0,"#a99c7e");tg.addColorStop(.4,"#e9e2cc");tg.addColorStop(1,"#fbf8ee");g.fillStyle=tg}g.beginPath();g.moveTo(x-tw,yb);g.quadraticCurveTo(x-tw*.3,yb-20*k,x+tw*.08,yb-40*k);g.quadraticCurveTo(x+tw*.35,yb-20*k,x+tw,yb);g.closePath();g.fill();g.stroke()}}
- else{g.strokeStyle="rgba(6,16,26,.55)";g.lineWidth=3*k;g.beginPath();g.moveTo(-150*k,40*k);g.quadraticCurveTo(0,90*k,150*k,40*k);g.stroke();g.fillStyle="#efeadb";g.lineWidth=3*k;for(let i=0;i<10;i++){const u=(i+.5)/10,x=-130*k+u*260*k,y=40*k+Math.sin(u*Math.PI)*45*k;g.beginPath();g.moveTo(x-11*k,y-2*k);g.lineTo(x,y+18*k);g.lineTo(x+11*k,y-2*k);g.closePath();g.fill();g.stroke()}}
- for(const sd of[-1,1])for(let i=0;i<3;i++){g.strokeStyle="rgba(8,42,61,.6)";g.lineWidth=4*k;g.beginPath();g.moveTo(sd*(165+i*12)*k,-20*k);g.quadraticCurveTo(sd*(175+i*12)*k,20*k,sd*(160+i*12)*k,60*k);g.stroke()}
- return c}
+/* b51: head-on shark redrawn in the shaded style of the side-view shark: dark grey back fading to a white belly, conical snout, black eyes,
+   uneven serrated teeth (no outlines), shaded throat, no gills. Our own drawing in code. Sprite box: x ±320k, y -215k..233k (k=S/400). */
+function renderFrontShark(S,open){const k=S/400,c=mk(S*1.6,S*1.12),g=c.getContext("2d");g.translate(c.width/2,215*k);g.lineJoin="round";g.lineCap="round";
+ let sd=7;const rnd=()=>{sd=(sd*16807)%2147483647;return sd/2147483647};
+ const head=()=>{g.beginPath();g.moveTo(0,-192*k);g.bezierCurveTo(70*k,-194*k,150*k,-172*k,196*k,-108*k);g.bezierCurveTo(232*k,-58*k,236*k,30*k,214*k,92*k);g.bezierCurveTo(182*k,164*k,100*k,206*k,0,206*k);g.bezierCurveTo(-100*k,206*k,-182*k,164*k,-214*k,92*k);g.bezierCurveTo(-236*k,30*k,-232*k,-58*k,-196*k,-108*k);g.bezierCurveTo(-150*k,-172*k,-70*k,-194*k,0,-192*k);g.closePath()};
+ // pectoral fins behind the head
+ for(const s of[-1,1]){const fg=g.createLinearGradient(s*150*k,90*k,s*318*k,232*k);fg.addColorStop(0,"#3c4954");fg.addColorStop(.7,"#28333d");fg.addColorStop(1,"#1b242c");g.fillStyle=fg;g.beginPath();g.moveTo(s*140*k,70*k);g.bezierCurveTo(s*230*k,110*k,s*292*k,170*k,s*318*k,230*k);g.bezierCurveTo(s*262*k,206*k,s*200*k,176*k,s*128*k,150*k);g.closePath();g.fill();
+  g.fillStyle="rgba(230,238,242,.35)";g.beginPath();g.moveTo(s*150*k,140*k);g.bezierCurveTo(s*210*k,170*k,s*262*k,200*k,s*312*k,228*k);g.bezierCurveTo(s*250*k,214*k,s*196*k,190*k,s*130*k,156*k);g.closePath();g.fill()}
+ // body: dark back, soft change to white belly
+ head();let gr=g.createLinearGradient(0,-200*k,0,60*k);gr.addColorStop(0,"#27323c");gr.addColorStop(.5,"#3f4c58");gr.addColorStop(1,"#5c6873");g.fillStyle=gr;g.fill();
+ g.save();head();g.clip();
+ {g.save();g.shadowColor="rgba(235,240,243,.9)";g.shadowBlur=10*k;gr=g.createLinearGradient(0,0,0,206*k);gr.addColorStop(0,"#e4e8ea");gr.addColorStop(.6,"#f1f3f4");gr.addColorStop(1,"#b7c0c7");g.fillStyle=gr;g.beginPath();g.moveTo(-250*k,64*k);for(let i=0;i<=20;i++){const x=-240*k+i*24*k,ax=Math.abs(x)/(240*k);g.lineTo(x,(-18+ax*ax*70+(rnd()-.5)*16)*k)}g.lineTo(250*k,240*k);g.lineTo(-250*k,240*k);g.closePath();g.fill();g.restore()}/* countershading: ragged line where the grey back meets the white belly */
+ gr=g.createRadialGradient(0,-30*k,80*k,0,-10*k,250*k);gr.addColorStop(0,"rgba(0,0,0,0)");gr.addColorStop(.6,"rgba(4,12,20,.18)");gr.addColorStop(1,"rgba(4,12,20,.72)");g.fillStyle=gr;g.fillRect(-220*k,-220*k,440*k,440*k);// rounded sides fall into shadow
+ gr=g.createRadialGradient(0,-120*k,4*k,0,-120*k,120*k);gr.addColorStop(0,"rgba(190,210,225,.38)");gr.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=gr;g.beginPath();g.ellipse(0,-140*k,110*k,70*k,0,0,7);g.fill();// conical snout catches the light
+ gr=g.createLinearGradient(0,-10*k,0,40*k);gr.addColorStop(0,"rgba(255,255,255,0)");gr.addColorStop(1,"rgba(255,255,255,.18)");g.fillStyle=gr;g.fillRect(-220*k,-10*k,440*k,60*k);
+ g.restore();
+ // snout ridge + nostrils (soft, no outlines)
+ for(const s of[-1,1]){g.fillStyle="rgba(10,16,22,.55)";g.beginPath();g.ellipse(s*62*k,-112*k,7*k,2.5*k,-s*.5,0,7);g.fill()}
+ // eyes: black, set on the sides, with a soft socket and a small wet highlight
+ for(const s of[-1,1]){const ex=s*176*k,ey=-46*k;gr=g.createRadialGradient(ex,ey,4*k,ex,ey,30*k);gr.addColorStop(0,"rgba(0,0,0,.45)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.beginPath();g.arc(ex,ey,30*k,0,7);g.fill();
+  gr=g.createRadialGradient(ex-s*3*k,ey-4*k,1*k,ex,ey,16*k);gr.addColorStop(0,"#1a2128");gr.addColorStop(1,"#000");g.fillStyle=gr;g.beginPath();g.ellipse(ex,ey,15*k,17*k,s*.4,0,7);g.fill();
+  g.fillStyle="rgba(220,235,245,.7)";g.beginPath();g.ellipse(ex-s*5*k,ey-7*k,3.2*k,2.2*k,-.5,0,7);g.fill()}
+ // tooth: tapered triangle with serrated edges, ivory with a shaded side, no outline
+ const tooth=(x,y,len,w,ang,up,dim)=>{g.save();g.translate(x,y);g.rotate(ang);const d=up?-1:1,n=6;g.beginPath();g.moveTo(-w/2,0);
+  for(let i=1;i<=n;i++){const f=i/n,px=-w/2*(1-f)+(i%2?-.7*k:.7*k)*(1-f),py=d*len*f;g.lineTo(px,py)}
+  for(let i=n-1;i>=0;i--){const f=i/n,px=w/2*(1-f)+(i%2?.7*k:-.7*k)*(1-f),py=d*len*f;g.lineTo(px,py)}g.closePath();
+  const tg=g.createLinearGradient(0,0,0,d*len);tg.addColorStop(0,dim?"#8c7f6a":"#bfb294");tg.addColorStop(.35,dim?"#c9c0ac":"#ece6d4");tg.addColorStop(1,dim?"#dcd5c4":"#fffcf3");g.fillStyle=tg;g.fill();
+  g.fillStyle="rgba(70,50,35,.28)";g.beginPath();g.moveTo(0,0);g.lineTo(w/2,0);g.lineTo(0,d*len);g.closePath();g.fill();
+  g.strokeStyle="rgba(255,255,255,.55)";g.lineWidth=1.2*k;g.beginPath();g.moveTo(-w*.18,d*len*.15);g.lineTo(-w*.03,d*len*.8);g.stroke();g.restore()};
+ const mouth=(t,b,w)=>{g.beginPath();g.moveTo(-w,t+42*k);g.bezierCurveTo(-w*.8,t-6*k,-w*.35,t,0,t);g.bezierCurveTo(w*.35,t,w*.8,t-6*k,w,t+42*k);g.bezierCurveTo(w*1.04,b*.62,w*.6,b,0,b);g.bezierCurveTo(-w*.6,b,-w*1.04,b*.62,-w,t+42*k);g.closePath()};
+ if(open){const mw=152*k,mt=-30*k,mb=182*k,topY=x=>mt+Math.pow(Math.abs(x)/mw,2.2)*40*k,botY=x=>mb-Math.pow(Math.abs(x)/mw,1.8)*(mb-mt-60*k);
+  // lips in shadow
+  g.save();g.shadowColor="rgba(0,0,0,.55)";g.shadowBlur=14*k;mouth(mt-6*k,mb+8*k,mw+8*k);g.fillStyle="#5a2a30";g.fill();g.restore();
+  mouth(mt,mb,mw);gr=g.createRadialGradient(0,62*k,8*k,0,70*k,170*k);gr.addColorStop(0,"#020001");gr.addColorStop(.4,"#160407");gr.addColorStop(.7,"#4a1218");gr.addColorStop(.9,"#7a3138");gr.addColorStop(1,"#8f4a4f");g.fillStyle=gr;g.fill();
+  g.save();mouth(mt,mb,mw);g.clip();gr=g.createLinearGradient(0,mt,0,mt+50*k);gr.addColorStop(0,"rgba(0,0,0,.55)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.fillRect(-mw,mt,mw*2,50*k);
+   // back rows (smaller, darker, deeper in the mouth)
+   for(let i=0;i<11;i++){const x=-mw*.78+i/10*mw*1.56+(rnd()-.5)*6*k;tooth(x,topY(x)+30*k,(16+rnd()*12)*k,(13+rnd()*6)*k,(rnd()-.5)*.35,false,true)}
+   for(let i=0;i<9;i++){const x=-mw*.66+i/8*mw*1.32+(rnd()-.5)*6*k;tooth(x,botY(x)-26*k,(14+rnd()*10)*k,(11+rnd()*5)*k,(rnd()-.5)*.35,true,true)}
+  g.restore();
+  // front rows: big uneven upper teeth, narrower lower teeth
+  for(let i=0;i<12;i++){const u=i/11,x=-mw*.9+u*mw*1.8+(rnd()-.5)*5*k,mid=1-Math.abs(u-.5)*1.4,len=(26+mid*26+rnd()*10)*k,w=(18+mid*10+rnd()*5)*k;tooth(x,topY(x)+3*k,len,w,(u-.5)*.5+(rnd()-.5)*.22,false,false)}
+  for(let i=0;i<10;i++){const u=i/9,x=-mw*.78+u*mw*1.56+(rnd()-.5)*5*k,mid=1-Math.abs(u-.5)*1.3,len=(22+mid*18+rnd()*8)*k,w=(12+mid*6+rnd()*4)*k;tooth(x,botY(x)-3*k,len,w,-(u-.5)*.55+(rnd()-.5)*.22,true,false)}
+  // wet gum highlight
+  g.strokeStyle="rgba(255,190,190,.18)";g.lineWidth=4*k;g.beginPath();g.moveTo(-mw*.7,mt+12*k);g.quadraticCurveTo(0,mt-2*k,mw*.7,mt+12*k);g.stroke()}
+ else{const w=150*k;g.save();g.shadowColor="rgba(0,0,0,.5)";g.shadowBlur=8*k;g.strokeStyle="#2a1517";g.lineWidth=7*k;g.beginPath();g.moveTo(-w,34*k);g.bezierCurveTo(-w*.5,92*k,w*.5,92*k,w,34*k);g.stroke();g.restore();
+  for(let i=0;i<13;i++){const u=i/12,x=-w*.85+u*w*1.7,y=34*k+Math.sin(u*Math.PI)*42*k+1*k;tooth(x,y,(10+rnd()*8)*k,(10+rnd()*4)*k,(u-.5)*.6,false,false)}}
+ c.cy=215/448;return c}
 
 // ---------- world ----------
 const shark={stun:0,safe:0,x:0,y:0,ang:0,spd:0,lvl:0,L:70,Lt:70,wag:0,chomp:0,meter:0,run:0,air:false,vx:0,vy:0,h:0,sq:0,cool:0,perfect:false,face:1};
@@ -616,25 +644,29 @@ function wideJaw(c,L){const g=c.getContext("2d"),h=L*.2;g.save();g.setTransform(
  for(let i=0;i<8;i++){const u=i/7.5,x=U0[0]-L*.008+(K[0]-U0[0])*u,y=U0[1]+h*.05+(K[1]-U0[1])*u;tooth(x,y,h*(.26-u*.13),L*(.03-u*.01),true)}
  for(let i=0;i<7;i++){const u=i/6.5,x=D[0]-L*.012+(K[0]-D[0])*u,y=D[1]-h*.04+(K[1]-D[1])*u;tooth(x,y,h*(.24-u*.12),L*(.028-u*.01),false)}
  g.restore();return c}
-function frontSize(r){const S=r.h*1.5/.6125;return Math.max(80,Math.min(S,W*.7,H*1.05,600))}
+function frontSize(){return titleLayout().S}
 function buildTitleShark(){const L=Math.min(titleW()*.62,H*.55,330);tSideO=wideJaw(render3DShark(L*DPR,true,TYPES[sType]),L*DPR);tSideC=render3DShark(L*DPR,false,TYPES[sType]);tSideO.L=tSideC.L=L;
- const S=frontSize(titleRect());tHeadO=renderFrontShark(S*DPR,true);tHeadC=renderFrontShark(S*DPR,false);tHeadO.S=tHeadC.S=S}/* b50: head-on shark pre-rendered once per title (no per-frame drawing work) */
-function startTitle(){state="title";camY=0;camX=0;T.t=0;T.bitten=false;T.bite=null;T.frags=[];window.__saBite=null;T.torn=false;T.done=false;T.sr=null;T.art=0;T.pose=false;T.rel=null;T.relT=0;T.log=window.__saTitleLog?[]:null;window.__saTitleDone=false;window.__saPose=null;T.lim=0;const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;show("titleUi");buildTitleShark()}
-/* b50: on short landscape screens the Start button used to sit over "ATTACK". The title now shrinks (same picture, nothing cut) so it ends above the buttons. */
-function titleRect(){let tw=title.dw,th=title.height*(tw/title.width);const y=Math.max(safeTop()+10,H*.09),ui=$("titleUi");
- if(ui&&!ui.classList.contains("hide")){const b=$("start").getBoundingClientRect();if(b.height>0)T.lim=b.top-8}
- if(T.lim&&y+th>T.lim){const k=(T.lim-y)/th;if(k>=.45){tw*=k;th*=k}}/* too short to fit: keep the build 48 size */return {x:(W-tw)/2,y,w:tw,h:th}}
+ const S=frontSize();tHeadO=renderFrontShark(S*DPR,true);tHeadC=renderFrontShark(S*DPR,false);tHeadO.S=tHeadC.S=S}/* b50: head-on shark pre-rendered once per title (no per-frame drawing work) */
+function startTitle(){state="title";camY=0;camX=0;T.t=0;T.bitten=false;T.bite=null;T.frags=[];window.__saBite=null;T.torn=false;T.done=false;T.sr=null;T.art=0;T.pose=false;T.rel=null;T.relT=0;T.log=window.__saTitleLog?[]:null;window.__saTitleDone=false;window.__saPose=null;T.lim=0;T.snapped=0;const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;show("titleUi");buildTitleShark()}
+/* b51: one layout for the title screen. The head-on shark (whole sprite, fins included) fits in the band between the top edge and the Start button;
+   the title sits on the open mouth. The Install hint line has space kept for it, so tapping Install never moves anything. */
+function titleLayout(){const top=safeTop()+6,ui=$("titleUi");
+ if(ui&&!ui.classList.contains("hide")){const b=$("start").getBoundingClientRect();if(b.height>0)T.lim=b.top-10}
+ const bot=T.lim||H*.6,S=Math.max(60,Math.min((bot-top)/1.13,W*.6,600)),cx=W/2,cy=top+S*215/400+S*.004;
+ let tw=Math.min(title.dw,S*.86),th=title.height*(tw/title.width);const my=cy+S*72/400;
+ return {S,cx,cy,box:{x:cx-S*.8,y:cy-S*215/400,w:S*1.6,h:S*1.12},head:{x:cx-S*.6,y:cy-S*.485,w:S*1.2,h:S*1.0},title:{x:cx-tw/2,y:my-th/2,w:tw,h:th}}}
+function titleRect(){return titleLayout().title}
 function poseIn(){return calm?TITLE_CALM_IN:TITLE_SWIM}
 function updTitle(dt){T.t+=dt;if(T.rel!=null)T.relT+=dt;
  if(!T.done&&T.rel==null&&T.t>=poseIn()){T.done=true;T.pose=true;window.__saTitleDone=true;window.__saPose={held:true,since:+T.t.toFixed(2),released:false};if(T.log)T.log.push([+T.t.toFixed(2),"pose",0,true])}}
 /* b50: any title button releases the pose (the button still does its own job right away; Start is never delayed). */
 function releasePose(){if(T.rel!=null||state==="tap")return;T.rel=T.t;T.relT=0;T.done=true;T.pose=false;window.__saTitleDone=true;window.__saPose={held:false,since:window.__saPose?window.__saPose.since:null,released:true,at:+T.t.toFixed(2)};if(T.log)T.log.push([+T.t.toFixed(2),"release",0,true])}
-function frontAnchor(r,S){return {x:r.x+r.w/2,y:r.y+r.h/2-S*.131}}/* puts the middle of the open mouth on the middle of the title */
+function frontAnchor(){const l=titleLayout();return {x:l.cx,y:l.cy}}/* b51: head centre from the shared layout; the title sits on the mouth */
 function titleShark(){const r=titleRect(),L=tSideO.L,t=T.t,yw=r.y+r.h*.78,xr=Math.min(W-L*.62,r.x+r.w+L*.1),xl=Math.max(L*.62,r.x-L*.1),cxm=r.x+r.w/2,cym=r.y+r.h*.5;
- const W0=.45,U0=Math.asin(.25)/W0,cx=u=>xl+(xr-xl)*(1-Math.cos(u*W0))/2,S=tHeadO.S,A=frontAnchor(r,S);
+ const W0=.45,U0=Math.asin(.25)/W0,cx=u=>xl+(xr-xl)*(1-Math.cos(u*W0))/2,A=frontAnchor();
  if(T.rel!=null){const g=T.relT;
-  if(g<TITLE_GLIDE){const p=g/TITLE_GLIDE,e=p*p*(3-2*p);return {x:cxm+(cx(U0)-cxm)*e,y:cym+(yw-cym)*e,dir:-1,open:true,layer:"front",lap:3,front:{a:1-Math.min(1,p*1.6),s:1-.25*e,open:true,x:A.x,y:A.y},a:Math.min(1,p*1.6)}}
-  const u=U0+(g-TITLE_GLIDE)*(calm?.6:1);return {x:cx(u),y:yw+Math.sin(u*1.3)*(calm?3:6),dir:Math.max(-1,Math.min(1,Math.sin(u*W0)*4)),open:true,layer:"front",lap:3}}
+  if(g<TITLE_GLIDE){const p=g/TITLE_GLIDE,e=p*p*(3-2*p);return {x:cxm+(cx(U0)-cxm)*e,y:cym+(yw-cym)*e,dir:-1,open:true,layer:"behind",lap:3,front:{a:1-Math.min(1,p*1.6),s:1-.25*e,open:true,x:A.x,y:A.y},a:Math.min(1,p*1.6)}}
+  const u=U0+(g-TITLE_GLIDE)*(calm?.6:1);return {x:cx(u),y:yw+Math.sin(u*1.3)*(calm?3:6),dir:Math.max(-1,Math.min(1,Math.sin(u*W0)*4)),open:true,layer:"behind",lap:3}/* b51: cruises behind the words so "ATTACK" stays readable */}
  if(calm){const p=Math.min(1,t/TITLE_CALM_IN),e=p*p*(3-2*p);return {hide:true,layer:"behind",lap:0,front:{a:e,s:.94+.06*e,open:true,x:A.x,y:A.y}}}
  const t1=TITLE_ENTER,t2=t1+TITLE_ACROSS,t3=t2+TITLE_TURN;
  if(t<t1){const p=t/t1,e=p*(2-p),x0=W+L*.7,x1=r.x+r.w*.85;return {x:x0+(x1-x0)*e,y:cym,dir:-1,open:true,layer:"behind",lap:0}}
@@ -643,14 +675,14 @@ function titleShark(){const r=titleRect(),L=tSideO.L,t=T.t,yw=r.y+r.h*.78,xr=Mat
  const sn=t-t3,shut=sn<TITLE_SNAP&&sn>.05&&sn<.22;if(shut&&!T.snapped){T.snapped=1;if(T.log)T.log.push([+t.toFixed(2),"snap",2,false]);try{SFX.chomp()}catch(e){}}
  const br=T.pose&&!calm?1+Math.sin(t*1.6)*.006:1;return {hide:true,layer:"behind",lap:2,front:{a:1,s:br,open:!shut,x:A.x,y:A.y}}}
 function titleInk(){const g=title.getContext("2d"),d=g.getImageData(0,0,title.width,title.height).data;let n=0;for(let i=3;i<d.length;i+=16)if(d[i]>128)n++;return n}
-function drawFront(f){if(!f||f.a<=0)return;const s=f.open?tHeadO:tHeadC,dw=s.width/DPR*f.s,dh=s.height/DPR*f.s;X.save();X.globalAlpha=Math.max(0,Math.min(1,f.a));X.drawImage(s,f.x-dw/2,f.y-dh*.48,dw,dh);X.restore()}
+function drawFront(f){if(!f||f.a<=0)return;const s=f.open?tHeadO:tHeadC,z=titleLayout().S/s.S*f.s,dw=s.width/DPR*z,dh=s.height/DPR*z;X.save();X.globalAlpha=Math.max(0,Math.min(1,f.a));X.drawImage(s,f.x-dw/2,f.y-dh*s.cy,dw,dh);X.restore()}
 function drawTitleShark(q){if(!q.hide){const s=q.open?tSideO:tSideC,dw=s.width/DPR,dh=s.height/DPR,L=s.L,back=q.layer==="behind",k=back?.86:1;X.save();X.globalAlpha=q.a==null?1:Math.max(0,q.a);X.translate(q.x,q.y);if(q.tilt)X.rotate(q.tilt*Math.sign(q.dir||1));X.scale((Math.abs(q.dir)<.08?.08*Math.sign(q.dir||1):q.dir)*k,k);
 X.drawImage(s,-dw/2-L*.05,-dh/2,dw,dh);X.restore()}
  const L=tSideO.L,f=q.front;T.sr=q.hide?{x:f.x,y:f.y,head:f.x,headY:f.y,L,dir:0,open:!!f.open,layer:q.layer,lap:q.lap,front:true,pose:T.pose,s:f.s,a:f.a}:{x:q.x,y:q.y,head:q.x+q.dir*L*.5,headY:q.y,L,dir:q.dir,open:!!q.open,layer:q.layer,lap:q.lap,front:!!f,pose:false};if(T.log)T.log.push([+T.t.toFixed(2),q.layer,q.lap,!!(q.hide?f.open:q.open)])}
 function drawTitle(t){const r=titleRect(),bob=(T.rel==null||calm)?0:Math.sin(t*1.5)*3,q=titleShark(),f=q.front;
  if(f)drawFront(f);if(q.layer==="behind")drawTitleShark(q);// shark first, words drawn over it
  /* b50: the title is never cut. Over the shark it gets a soft dark halo so every letter stays readable. */
- const halo=f?Math.max(0,Math.min(1,f.a)):0;if(halo>0){X.save();X.globalAlpha=halo;X.shadowColor="rgba(0,6,14,.95)";X.shadowBlur=14;X.drawImage(title,r.x,r.y+bob,r.w,r.h);X.shadowBlur=6;X.drawImage(title,r.x,r.y+bob,r.w,r.h);X.restore()}
+ const halo=f?Math.max(0,Math.min(1,f.a)):0;if(halo>0){X.save();X.globalAlpha=halo;X.shadowColor="rgba(0,4,10,.6)";X.shadowBlur=6;X.shadowOffsetY=2;X.drawImage(title,r.x,r.y+bob,r.w,r.h);X.restore()}/* b51: subtle soft shadow only (no heavy dark halo) */
  X.drawImage(title,r.x,r.y+bob,r.w,r.h);
  if(q.layer!=="behind")drawTitleShark(q)}
 
@@ -984,7 +1016,7 @@ window.__saUpd=UPD;
 // ---------- test hooks ----------
 window.__sa={get state(){return state},boost,BOOST,doBoost,shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
  get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get songsOn(){return songsOn},get fxOn(){return fxOn},get musOn(){return musOn()},get titleMusicPlaying(){return !!(music.title&&!music.title.paused)},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
- get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},DIVE,diveK,WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleLog(){return T.log},get titleTorn(){return false},get titleArt(){return T.art},get titleArtOK(){return false},get titleBite(){return null},titleInk:()=>title?titleInk():0,get titleFrags(){return T.frags?T.frags.length:0},TITLE:{ENTER:TITLE_ENTER,ACROSS:TITLE_ACROSS,TURN:TITLE_TURN,SNAP:TITLE_SNAP,CALM_IN:TITLE_CALM_IN,GLIDE:TITLE_GLIDE,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titlePose(){return {pose:T.pose,rel:T.rel,relT:T.relT,sr:T.sr}},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
+ get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},DIVE,diveK,WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleLog(){return T.log},get titleTorn(){return false},get titleArt(){return T.art},get titleArtOK(){return false},get titleBite(){return null},titleInk:()=>title?titleInk():0,get titleFrags(){return T.frags?T.frags.length:0},TITLE:{ENTER:TITLE_ENTER,ACROSS:TITLE_ACROSS,TURN:TITLE_TURN,SNAP:TITLE_SNAP,CALM_IN:TITLE_CALM_IN,GLIDE:TITLE_GLIDE,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titlePose(){return {pose:T.pose,rel:T.rel,relT:T.relT,sr:T.sr}},get titleRect(){return titleRect()},get titleLayout(){return titleLayout()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti,kind){const f=fish[0];kind=kind||(shark.lvl===0?"plankton":"fish");setCreature(f,kind==="plankton"?bite()*.4:TIERS[ti||0].s,kind);f.band=[SURF+6,Infinity];f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>!q.used)||fish[0];setCreature(f,TIERS[ti].s,"fish");f.band=[SURF+6,Infinity];f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},

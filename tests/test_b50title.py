@@ -1,5 +1,6 @@
 # b50 title test (Jeremy via Eve, 5:22 PM): the whole SHARK ATTACK title stays whole; the shark swims in behind it, faces the camera with open jaws around
 # the title, snaps once, then HOLDS that pose until any title button is tapped; then it glides to the swim line and cruises. Calm / reduced motion: gentle fade-in.
+# b51: the 640x360 'button covers title' check is a real check now (was marked KNOWN in build 50).
 # Run: /workspace/.pwvenv/bin/python tests/test_b50title.py (port 8903). Pretend phone (Chromium touch emulation), never a real phone. Screenshots -> art-shots-b50/ (not committed).
 import os,sys,subprocess,time
 from playwright.sync_api import sync_playwright
@@ -89,7 +90,7 @@ try:
         if(!(b.width>0&&b.height>0&&b.x>=0&&b.y>=0&&b.right<=W+.5&&b.bottom<=H+.5&&top&&(top===e||e.contains(top))))out.bad.push(id)}return out})()'''%BTNS)
     pg.screenshot(path=f'{SHOTS}/pose-{w}x{h}.png')
     if h>w: check(pg.evaluate('window.__rotShown'),f'{w}x{h}: portrait shows the "Turn your phone sideways" cover as before (game is landscape-only); layout below checked with the cover hidden')
-    check(res['title'],f'{w}x{h}: whole title inside the canvas');(check if h>=390 else (lambda c,m: print(('PASS ' if c else 'KNOWN (screen too short: the menu buttons fill it; same as build 48) ')+m)))(not res['hit'],f'{w}x{h}: no button covers any part of the title {res["hit"]}');(check if w>h else (lambda c,m: print(('PASS ' if c else 'NOTE (portrait is covered by the turn-phone screen in the real game; same button CSS as build 48) ')+m)))(not res['bad'],f'{w}x{h}: every title button visible, inside the screen, on top (elementFromPoint) {res["bad"]}')
+    check(res['title'],f'{w}x{h}: whole title inside the canvas');(check if w>h else (lambda c,m: print(('PASS ' if c else 'NOTE (portrait is covered by the turn-phone screen in the real game) ')+m)))(not res['hit'],f'{w}x{h}: no button covers any part of the title {res["hit"]}');(check if w>h else (lambda c,m: print(('PASS ' if c else 'NOTE (portrait is covered by the turn-phone screen in the real game; same button CSS as build 48) ')+m)))(not res['bad'],f'{w}x{h}: every title button visible, inside the screen, on top (elementFromPoint) {res["bad"]}')
     cx.close()
   b.close()
 finally: srv.terminate()
