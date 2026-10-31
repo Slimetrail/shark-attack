@@ -29,7 +29,9 @@ try:
    check(s1['state']=='tap' and s1['ac']=='none' and s1['paused'] is not False,f'{how}: finger held DOWN 1.5 s -> still "Tap to start", no sound started {s1}')
    if how=='touch': cd.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
    else: pg.mouse.up()
-   pg.wait_for_timeout(1500)
+   for _ in range(30):  # wait until the music has really started (no fixed timing guess)
+    pg.wait_for_timeout(200)
+    if pg.evaluate(ST)['t']>0.1:break
    s2=pg.evaluate(ST)
    check(s2['state']=='title' and s2['ac']=='running' and s2['paused'] is False and s2['t']>0.1,f'{how}: finger UP -> intro starts and title music plays {s2}')
    if how=='touch':
