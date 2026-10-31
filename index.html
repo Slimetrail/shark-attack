@@ -39,6 +39,8 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 .card{max-width:min(720px,92vw);padding:10px 16px;margin:6px}.card h2{font-size:24px;margin:2px 0 4px}#final{font-size:46px;margin:0}#reason.gulp,#reason.caught{font-size:36px}
 #credUi .card{max-height:94vh;columns:2;column-gap:22px;overflow-wrap:anywhere;padding:8px 14px}#credUi .card p{font-size:12px;margin:3px 0}#credUi .card h2,#credUi .card .btn{column-span:all}#titleUi{padding-bottom:calc(env(safe-area-inset-bottom) + 3vh)}.big{font-size:28px;padding:10px 36px}}
 #updb{font-size:15px;padding:5px 14px;min-height:40px;margin:2px}#updb.ready{background:#ffcc33;font-size:17px}#instb{font-size:15px;padding:5px 14px;min-height:40px;margin:2px}#insth{color:#fff;font:800 14px system-ui,sans-serif;text-shadow:0 2px 0 #082a3d;margin-top:2px}
+#boost{position:fixed;left:calc(env(safe-area-inset-left) + 14px);bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:6;width:64px;height:64px;border-radius:50%;padding:0;border:3px solid #082a3d;box-shadow:0 4px 0 #082a3d;cursor:pointer;touch-action:none;color:#082a3d;font:900 12px system-ui,sans-serif;letter-spacing:.5px;background:conic-gradient(#ffcc33 var(--p,100%),#5d6b76 0);display:flex;align-items:center;justify-content:center}
+#boost span{display:flex;align-items:center;justify-content:center;width:50px;height:50px;border-radius:50%;background:#e8f7ff}#boost.cd{opacity:.6}#boost.on span{background:#ffcc33}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="titleUi" class="ui hide"><button id="start" class="btn big">Start</button><div class="row"><button id="snd" class="btn sm">🔊 Sound on</button><button id="songs" class="btn sm">🎵 Songs on</button><button id="fx" class="btn sm">🔔 Effects on</button><button id="calm" class="btn sm">🌊 Shake on</button><button id="cred" class="btn sm">Credits</button></div><button id="updb" class="btn sm hide">🔄 Check for update</button><button id="instb" class="btn sm">📲 Install app</button><div id="insth" class="hide"></div></div>
@@ -51,6 +53,7 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 <button id="credBack" class="btn sm">Back</button></div></div>
 <div id="tap" class="ui hide"><div>Tap to start</div><p id="sndOff" class="hide">🔇 Sound is off</p></div>
 <button id="updr" type="button" class="hide">⬆️ Update ready - tap to reload</button>
+<button id="boost" type="button" class="hide" aria-label="Boost"><span>BOOST</span></button>
 <div id="note" class="hide"></div>
 <div id="upd" class="hide">Updated!</div>
 <div id="rot"><div>🦈🔄<br>Turn your phone sideways<br><small>Shark Attack plays in landscape</small></div></div>

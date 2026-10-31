@@ -10,6 +10,8 @@ def check(c,m):
 TMP=tempfile.mkdtemp(prefix='sa-b46-');APP=os.path.join(TMP,'app')
 shutil.copytree(ROOT,APP,ignore=shutil.ignore_patterns('.git','tests','tools','V9C-NOTES.txt','title-art-crop-preview.png'))
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+OLD=os.path.join(TMP,'b45');shutil.copytree(APP,OLD);open(os.path.join(OLD,'game.js'),'w').write(subprocess.run(['git','-C',ROOT,'show','bb4f91a2379c71068ed8cd5544538338d77e6138:game.js'],capture_output=True,text=True).stdout);PORT3=8899
+srv3=subprocess.Popen([sys.executable,'-m','http.server',str(PORT3),'--bind','127.0.0.1'],cwd=OLD,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 srv2=subprocess.Popen([sys.executable,'-m','http.server',str(PORT2),'--bind','127.0.0.1'],cwd=APP,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(.8)
 ST='({ac:AC?AC.state:"none",paused:music.title?music.title.paused:null,t:music.title?music.title.currentTime:-1,chip:!!chip.src,state:state,cur:music.cur===music.title})'
 def tapc(pg,sel):
@@ -61,9 +63,44 @@ def run_intro(b,url):
   check(not pg.evaluate('__sa.titleTorn') and pg.evaluate('__sa.sfxCount.chomp')==c0,'intro: never bites, tears or chomps')
   check(pg.evaluate('__sa.TITLE.SWIM')<=20 and pg.evaluate('__sa.titleArt')==0,'intro under 20 s, ends on the blue-sea title')
   check(not errs,f'intro: no page errors {errs}');cx.close()
+def drag_dy(b,url):
+  cx=b.new_context(viewport={'width':915,'height':412},bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(url);pg.wait_for_timeout(400)
+  pg.evaluate('__sa.startAs("tiger","endless");__sa.god=true');pg.wait_for_timeout(300)
+  pg.evaluate('(()=>{const s=__sa.shark;s.ang=0;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.5;s.spd=__sa.maxSpeed()*.6})()')
+  y0=pg.evaluate('__sa.shark.y');pg.mouse.move(300,150);pg.mouse.down()
+  for i in range(12): pg.mouse.move(300+8*(i+1),150+8*(i+1));pg.wait_for_timeout(16)
+  pg.wait_for_timeout(350);r=pg.evaluate('({dy:__sa.shark.y-%s,ang:__sa.shark.ang})'%y0);pg.mouse.up();cx.close();return r
+def run_boost(b,url):
+  for (w,h) in ((915,412),(740,360)):
+    cx=b.new_context(viewport={'width':w,'height':h},device_scale_factor=2,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(url);pg.wait_for_timeout(400);tag=f'{w}x{h}'
+    pg.touchscreen.tap(w/2,h/2);pg.wait_for_timeout(500);check(not pg.is_visible('#boost'),f'{tag}: no boost button on the title')
+    pg.evaluate('__sa.startAs("tiger","endless");__sa.god=true');pg.wait_for_timeout(400)
+    bb=pg.locator('#boost').bounding_box();check(pg.is_visible('#boost') and bb['width']>=56 and bb['x']<40 and bb['y']+bb['height']>h-40,f'{tag}: boost button bottom-left in play, >=56 px {bb}')
+    over=pg.evaluate('(()=>{const r=document.getElementById("boost").getBoundingClientRect();return [...document.querySelectorAll("button,.btn")].filter(e=>e.id!=="boost"&&e.offsetParent!==null).some(e=>{const q=e.getBoundingClientRect();return q.left<r.right&&q.right>r.left&&q.top<r.bottom&&q.bottom>r.top})})()')
+    check(not over,f'{tag}: boost button overlaps no other button')
+    if w==915: pg.screenshot(path='/workspace/intro-shots/shark-b46/boost-ready-915x412.png')
+    pg.evaluate('(()=>{const s=__sa.shark;s.ang=0;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.5;Object.assign(__sa.touch,{on:true,dir:0,drive:1,lastMove:performance.now()+9e9})})()');pg.wait_for_timeout(2500)
+    v0=pg.evaluate('__sa.shark.spd/__sa.maxSpeed()');a0=pg.evaluate('__sa.shark.ang');t0=pg.evaluate('__sa.touch.dir')
+    pg.touchscreen.tap(bb['x']+bb['width']/2,bb['y']+bb['height']/2);pg.wait_for_timeout(1000);v1=pg.evaluate('__sa.shark.spd/__sa.maxSpeed()')
+    check(pg.evaluate('__sa.boost.n')==1 and v1>v0*1.08 and v1<=1.17,f'{tag}: boost raises speed ({v0:.2f} -> {v1:.2f} of top speed)')
+    check(pg.evaluate('__sa.touch.dir')==t0 and abs(pg.evaluate('__sa.shark.ang')-a0)<.05,f'{tag}: pressing boost does not steer')
+    if w==915: pg.screenshot(path='/workspace/intro-shots/shark-b46/boost-active-915x412.png')
+    pg.wait_for_timeout(1500);v2=pg.evaluate('__sa.shark.spd/__sa.maxSpeed()');check(v2<=1.1 and pg.evaluate('__sa.boost.t')==0 and pg.evaluate('__sa.boost.cd')>0,f'{tag}: boost ends after ~1.2 s, recharging (speed {v2:.2f})')
+    if w==915: pg.screenshot(path='/workspace/intro-shots/shark-b46/boost-recharge-915x412.png')
+    pg.touchscreen.tap(bb['x']+bb['width']/2,bb['y']+bb['height']/2);pg.wait_for_timeout(100);check(pg.evaluate('__sa.boost.n')==1,f'{tag}: press during recharge does nothing')
+    pg.wait_for_timeout(3200);pg.keyboard.press('b');pg.wait_for_timeout(100);check(pg.evaluate('__sa.boost.n')==2,f'{tag}: recharged after ~4 s; B key boosts')
+    pg.evaluate('__sa.timeLeft=0;__sa.god=false');pg.evaluate('__sa.endGame&&__sa.endGame("time")');pg.wait_for_timeout(800)
+    if pg.evaluate('__sa.state')=='play': pg.evaluate('__sa.setRound(0.1)')
+    cx.close()
+def run_vertical(b):
+  old=drag_dy(b,f'http://127.0.0.1:{PORT3}/');new=drag_dy(b,f'http://127.0.0.1:{PORT}/');print('vertical drag b45',old,'b46',new)
+  check(new['dy']<=old['dy']*.6 and new['dy']>0,f'vertical response down to {new["dy"]/max(1e-6,old["dy"]):.0%} of b45 ({old["dy"]:.1f}px -> {new["dy"]:.1f}px)')
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(args=['--autoplay-policy=document-user-activation-required'])
+    run_vertical(b)
+    if os.environ.get('SA_B46_ONLY')=='v': raise SystemExit
+    run_boost(b,f'http://127.0.0.1:{PORT}/')
     run_intro(b,f'http://127.0.0.1:{PORT}/')
     run(b,f'http://127.0.0.1:{PORT}/',False,'no-SW')
     run_mute(b,f'http://127.0.0.1:{PORT}/')
@@ -71,5 +108,5 @@ try:
     run(b,f'http://127.0.0.1:{PORT2}/',True,'SW')
     b.close()
 finally:
-  srv.kill();srv2.kill();shutil.rmtree(TMP,ignore_errors=True)
+  srv.kill();srv2.kill();srv3.kill();shutil.rmtree(TMP,ignore_errors=True)
 print(f'{passes} passed, {len(fails)} failed');[print(' -',f) for f in fails];sys.exit(1 if fails else 0)

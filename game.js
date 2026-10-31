@@ -8,7 +8,9 @@ const N_SURF=3,MAX_LEVEL=10,MAX_PARTS=30,BEST_KEY="sharkAttack_best",SND_KEY="sh
 const TIERS=[{s:16,pts:1,grow:1,col:"#ffd23f",n:8},{s:28,pts:2,grow:2,col:"#7be04a",n:3},{s:44,pts:3,grow:3,col:"#b06cff",n:1},{s:62,pts:5,grow:4,col:"#ff7a1e",n:1}];
 const N_FISH=TIERS.reduce((a,t)=>a+t.n,0);
 // Steering: the finger's SLIDE direction = swim direction. Each px slid adds "drive" (speed); drive fades when the finger rests.
-const STEER={MIN:.2,FULL:.25,DIR_PX:1.5,DRIVE_DECAY:.5,TURN:12,ACC:1.8,DEC:1.2};// v10 ANALOG: drive = distance of the finger from its FIRST touch point / (FULL x screen width), 0..1. Held = no decay (the shark never tires; top speed depends only on size). DRIVE_DECAY only after the finger lifts (back to the MIN idle drift).
+const STEER={MIN:.2,FULL:.25,DIR_PX:1.5,DRIVE_DECAY:.5,TURN:12,ACC:1.8,DEC:1.2,VK:.45,VDEAD:.18,PITCH_TURN:.6};/* b46 (Jeremy: "way too sensitive with up and down"): VK scales the up/down part of a finger move (0.45: a 45-degree drag now aims about 24 degrees), VDEAD ignores small up/down wobble (|uy|<0.18 of the move), PITCH_TURN slows turning when the turn is mostly up/down */
+const BOOST={MUL:1.15,ACC:1.4,DUR:1.2,CD:4};/* b46 boost: 1.2 s at 1.15x speed (1.4x acceleration), then 4 s recharge. Tuned with tests/measure_flee.py: a slight edge, not a sure catch */
+const boost={t:0,cd:0,n:0};// v10 ANALOG: drive = distance of the finger from its FIRST touch point / (FULL x screen width), 0..1. Held = no decay (the shark never tires; top speed depends only on size). DRIVE_DECAY only after the finger lifts (back to the MIN idle drift).
 // Launch: heading up through the surface. power = LAUNCH.K * (speed/max) * (run-up distance at speed / screen height), capped at 1.
 const LAUNCH={K:2.2,MIN_POWER:.22,MIN_SPEED:.45,UP:-.35,H_MAX:.32,G:1.6,COOL:.3};// H_MAX: max height as fraction of screen height, G: gravity in screen-heights/s^2
 const SURFERS=[{kind:"kneel",pts:3,hy:16},{kind:"stand",pts:5,hy:46}];// hy: how high above the water the surfer's catch point is
@@ -641,7 +643,7 @@ function titleShark(){const r=titleRect(),L=tSideO.L,t=T.t,yw=r.y+r.h*.78,xr=Mat
  const o=th=>({x:ocx+Rx*Math.cos(th),y:ocy-Ry*Math.sin(th)});
  if(t<TITLE_ENTER){const p=t/TITLE_ENTER,e=p*(2-p),q=o(0);return {x:W+L*.7+(q.x-W-L*.7)*e,y:q.y,dir:-1,open:true,layer:"behind",lap:0}}
  if(t<L2){const th=(t-TITLE_ENTER)/TITLE_LAP*2*Math.PI,q=o(th),vx=-Rx*Math.sin(th),vy=-Ry*Math.cos(th),sp=Math.hypot(vx,vy)||1;
-  return {x:q.x,y:q.y,dir:Math.max(-1,Math.min(1,vx/sp*2.2)),tilt:Math.atan2(vy,Math.abs(vx)+1e-6)*.35,open:true,layer:Math.sin(th)>0?"behind":"front",lap:1+Math.min(1,Math.floor((t-TITLE_ENTER)/TITLE_LAP))}}
+  return {x:q.x,y:q.y,dir:Math.max(-1,Math.min(1,vx/sp*2.2)),tilt:Math.atan2(vy,Math.abs(vx)+1e-6)*.35,open:true,layer:Math.sin(th)>=0?"behind":"front",lap:1+Math.min(1,Math.floor((t-TITLE_ENTER)/TITLE_LAP))}}
  const W0=.45,U0=Math.asin(.25)/W0,cx=u=>xl+(xr-xl)*(1-Math.cos(u*W0))/2;
  if(t<TITLE_SWIM){const p=(t-L2)/TITLE_GLIDE,e=p*p*(3-2*p),q=o(0);return {x:q.x+(cx(U0)-q.x)*e,y:q.y+(yw-q.y)*e,dir:-Math.cos(p*Math.PI),open:true,layer:"front",lap:3}}
  const u=U0+(t-TITLE_SWIM)*(calm?.6:1);return {x:cx(u),y:yw+Math.sin(u*1.3)*(calm?3:6),dir:Math.max(-1,Math.min(1,Math.sin(u*W0)*4)),open:true,layer:"front",lap:3}}
@@ -655,9 +657,9 @@ function drawTitle(t){const r=titleRect(),bob=(T.t<TITLE_SWIM||calm)?0:Math.sin(
 
 // ---------- play ----------
 let lastBub=-9,wasFast=false;
-function startGame(){hideAll();state="play";score=0;elapsed=0;endReason="";roundLen=window.__saRound||ROUND_SECONDS;timeLeft=roundLen;
+function startGame(){hideAll();state="play";$("boost").classList.remove("hide");score=0;elapsed=0;endReason="";roundLen=window.__saRound||ROUND_SECONDS;timeLeft=roundLen;
  shark.lvl=0;shark.meter=0;shark.dead=false;dead.t=0;worldK=wK(0);shark.pop=0;buildShark();shark.Lt=shark.L;shark.x=W/2;shark.y=SURF+H*.45;camX=0;sizeK=Math.min(1.25,Math.max(.75,bite()/CREATURES.REF_BITE));camY=Math.max(0,shark.y-H*.5);shark.ang=0;shark.spd=sharkMax(0)*.25;shark.run=0;shark.air=false;shark.h=0;shark.cool=0;shark.sq=0;
- touch.on=false;touch.drive=0;shake=0;shark.stun=0;shark.safe=0;divers.length=0;amb.on=false;amb.ate=false;netHits=0;surfersCaught=0;ambCool=0;bannerT=0;diverTipT=0;fasterT=0;struggles=0;touch.strug=0;wasFast=false;lastBub=-9;for(const p of parts)p.t=0;for(const p of pops)p.t=0;placeAll();playMusic("game");
+ touch.on=false;touch.drive=0;boost.t=0;boost.cd=0;boost.n=0;shake=0;shark.stun=0;shark.safe=0;divers.length=0;amb.on=false;amb.ate=false;netHits=0;surfersCaught=0;ambCool=0;bannerT=0;diverTipT=0;fasterT=0;struggles=0;touch.strug=0;wasFast=false;lastBub=-9;for(const p of parts)p.t=0;for(const p of pops)p.t=0;placeAll();playMusic("game");
  hintT=localStorage.getItem(HINT_KEY)?0:6;localStorage.setItem(HINT_KEY,"1")}
 function spark(x,y,big){for(const p of parts)if(p.t<=0){const a=Math.random()*6.28,v=rnd(40,140)*(big?1.4:1);p.x=x;p.y=y;p.vx=Math.cos(a)*v;p.vy=Math.sin(a)*v-(big?60:0);p.t=.5;return}}
 function addPop(x,y,txt){let o=pops[0];for(const p of pops)if(p.t<o.t)o=p;o.x=Math.max(camX+50,Math.min(camX+W-50,x));o.y=y;o.t=1;o.txt=txt}
@@ -742,10 +744,11 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
  else{
   if(shark.safe>0&&shark.stun<=0)shark.safe-=dt;
   if(shark.stun>0){shark.stun=Math.max(0,shark.stun-dt);shark.safe=DIVER_SAFE_AFTER_STUN_MS/1000;touch.drive=0;shark.ang+=Math.sin(elapsed*25)*dt*2}
-  else if(touch.on){shark.ang+=angDiff(shark.ang,touch.dir)*Math.min(1,dt*STEER.TURN*trait("turn"))}
+  else if(touch.on){const ad=angDiff(shark.ang,touch.dir),pv=Math.abs(Math.sin(touch.dir)-Math.sin(shark.ang))/2,hv=Math.abs(Math.cos(touch.dir)-Math.cos(shark.ang))/2,pk=pv>hv?STEER.PITCH_TURN:1;shark.ang+=ad*Math.min(1,dt*STEER.TURN*trait("turn")*pk)}
   else touch.drive=Math.max(0,touch.drive-dt*STEER.DRIVE_DECAY*2);
-  const tgt=shark.stun>0?0:max*(touch.on?STEER.MIN+(1-STEER.MIN)*touch.drive:STEER.MIN);
-  shark.spd+=(tgt-shark.spd)*Math.min(1,dt*(tgt>shark.spd?STEER.ACC*trait("acc"):STEER.DEC));// eased = weighty
+  if(boost.t>0)boost.t=Math.max(0,boost.t-dt);if(boost.cd>0)boost.cd=Math.max(0,boost.cd-dt);const bst=boost.t>0&&shark.stun<=0;
+  const tgt=shark.stun>0?0:max*(touch.on?STEER.MIN+(1-STEER.MIN)*touch.drive:STEER.MIN)*(bst?BOOST.MUL:1);/* boost multiplies the speed you are already asking for */
+  shark.spd+=(tgt-shark.spd)*Math.min(1,dt*(tgt>shark.spd?STEER.ACC*trait("acc")*(bst?BOOST.ACC:1):STEER.DEC));boostUi();// eased = weighty
   shark.x+=Math.cos(shark.ang)*shark.spd*dt;{const sy=Math.sin(shark.ang);shark.y+=sy*shark.spd*dt*(sy>0?diveK(shark.lvl):1)}
   if(shark.spd>max*.45)shark.run+=shark.spd*dt*(shark.spd/max);else shark.run*=Math.exp(-dt*2);shark.run=Math.min(shark.run,H*1.2);
   const fr=shark.spd/max;if(fr>=FAST_SFX.AT&&!wasFast&&elapsed-lastBub>=FAST_SFX.COOL){SFX.bubbles();lastBub=elapsed;for(let i=0;i<3;i++)spark(shark.x-Math.cos(shark.ang)*L*.5,shark.y,0)}wasFast=fr>=FAST_SFX.AT;
@@ -897,7 +900,7 @@ function stopLoop(){cancelAnimationFrame(raf);raf=0}
 document.addEventListener("visibilitychange",()=>{if(document.hidden){stopLoop();if(music.cur)music.cur.pause();if(AC)AC.suspend()}else{startLoop();if(AC)AC.resume();if(music.cur&&musOn())music.cur.play().catch(()=>{})}});
 
 // ---------- UI ----------
-function hideAll(){for(const id of["titleUi","overUi","credUi","pickUi","tap"])$(id).classList.add("hide")}
+function hideAll(){for(const id of["titleUi","overUi","credUi","pickUi","tap","boost"])$(id).classList.add("hide")}
 function show(id){hideAll();$(id).classList.remove("hide")}
 // steering (v10 ANALOG, Jeremy): speed = how far the finger is from its FIRST touch point (tiny move = slow, FULL x screen width or more =
 // top speed for its size). Direction = where the finger is moving, used at once (no 3 px dead zone, no 55/45 lag; 1.5 px of movement is enough,
@@ -906,12 +909,17 @@ C.addEventListener("pointerdown",e=>{if(state!=="play")return;e.preventDefault()
 C.addEventListener("pointermove",e=>{if(!touch.on)return;const mx=e.clientX-touch.x,my=e.clientY-touch.y,md=Math.hypot(mx,my);touch.x=e.clientX;touch.y=e.clientY;if(md<=0)return;
  if(shark.stun>0){struggle(md);touch.x0=e.clientX;touch.y0=e.clientY;touch.ax=touch.ay=0;return}// netted: wiggles shorten the stun; steering restarts from where the finger is
  touch.ax+=mx;touch.ay+=my;const am=Math.hypot(touch.ax,touch.ay);
- if(am>=STEER.DIR_PX){const ux=touch.ax/am,uy=touch.ay/am;touch.dir=Math.atan2(uy,ux);touch.ax=touch.ay=0;
+ if(am>=STEER.DIR_PX){const ux=touch.ax/am,uy0=touch.ay/am,uy=Math.abs(uy0)<STEER.VDEAD?0:uy0*STEER.VK;touch.dir=Math.atan2(uy,ux);touch.ax=touch.ay=0;
   }// v10 item 7: the start point stays FIXED (no leash); dragging back toward it lowers the drive below
  touch.drive=Math.min(1,Math.hypot(e.clientX-touch.x0,e.clientY-touch.y0)/(W*STEER.FULL));touch.lastMove=performance.now()});
 const up=()=>{touch.on=false};C.addEventListener("pointerup",up);C.addEventListener("pointercancel",up);
 document.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});document.addEventListener("gesturestart",e=>e.preventDefault());document.addEventListener("contextmenu",e=>e.preventDefault());// no long-press menu
 document.addEventListener("pointerdown",()=>{if(AC&&AC.state==="suspended")AC.resume().catch(()=>{})},true);
+/* b46 boost button (bottom-left, play only). Its own pointer events never reach the canvas, so it never steers; another finger can keep steering. */
+let boostP=-1;function boostUi(){const b=$("boost");if(!b)return;const p=boost.t>0?1:boost.cd>0?1-boost.cd/(BOOST.DUR+BOOST.CD):1,q=Math.round(p*50)/50;if(q!==boostP){boostP=q;b.style.setProperty("--p",q*100+"%")}b.classList.toggle("on",boost.t>0);b.classList.toggle("cd",boost.t<=0&&boost.cd>0)}
+function doBoost(){if(state!=="play"||boost.t>0||boost.cd>0||shark.stun>0||shark.air)return false;boost.t=BOOST.DUR;boost.cd=BOOST.DUR+BOOST.CD;boost.n++;SFX.bubbles();boostUi();return true}
+{const b=$("boost");for(const ev of["pointerdown","pointermove","pointerup","touchstart","touchmove","touchend"])b.addEventListener(ev,e=>{e.stopPropagation();if(ev==="pointerdown"){e.preventDefault();doBoost()}},{passive:false});b.addEventListener("click",e=>{e.stopPropagation();e.preventDefault()})}
+document.addEventListener("keydown",e=>{if(state==="play"&&!e.repeat&&(e.key==="Shift"||e.key==="b"||e.key==="B"))doBoost()});
 function buildPick(){const box=$("pickList");box.innerHTML="";for(const k of Object.keys(TYPES)){const t=TYPES[k],b=document.createElement("button");b.className="pick"+(k===sType?" sel":"");b.dataset.type=k;
   const cv=render3DShark(110*2,false,t);cv.style.width="110px";cv.className="pv";b.appendChild(cv);
   const info=document.createElement("div");info.className="pinfo";info.innerHTML=`<b>${t.name}</b><span class="pdesc">${t.desc}</span>`+Object.entries(t.bars).map(([n,v])=>`<span class="bar" data-stat="${n}" data-v="${v}"><i>${n}</i><em style="width:${v*20}%"></em></span>`).join("");b.appendChild(info);
@@ -971,7 +979,7 @@ if("serviceWorker" in navigator&&location.protocol!=="file:"){const ask=m=>{cons
 window.__saUpd=UPD;
 
 // ---------- test hooks ----------
-window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
+window.__sa={get state(){return state},boost,BOOST,doBoost,shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
  get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get songsOn(){return songsOn},get fxOn(){return fxOn},get musOn(){return musOn()},get titleMusicPlaying(){return !!(music.title&&!music.title.paused)},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
  get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},DIVE,diveK,WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleLog(){return T.log},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
