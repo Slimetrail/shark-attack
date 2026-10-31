@@ -35,7 +35,7 @@ try:
   check(ctl and f'sharkattack-v{lv}' in keys,f'phone on live build {lv}: offline worker is running and in control, cache {sorted(keys)}')
   pg.evaluate('s=>{for(const k in s)localStorage.setItem(k,s[k])}',SET)
   g0=pg.evaluate("fetch('game.js?v='+%s).then(r=>r.text())"%lv)
-  check('tapArmed' not in g0,'phone is running the old game code (no finger-up fix yet)')
+  check(g0==open(os.path.join(LIVE,'game.js')).read(),'phone is running the live game code of the LIVE_REF commit')
   cur['d']=NEW   # publish the new build
   pg.reload();pg.wait_for_timeout(1000)
   for i in range(60):
