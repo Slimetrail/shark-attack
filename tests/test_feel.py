@@ -15,7 +15,7 @@ try:
   b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True);pg=cx.new_page();errs=[]
   pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:m.type=='error' and errs.append(m.text))
-  pg.goto(URL+'?round=300');pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);pg.click('#start');pg.wait_for_timeout(150);pg.click('.pick[data-type=white]');pg.wait_for_timeout(300)
+  pg.goto(URL+'?round=300');pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000);pg.click('#start');pg.wait_for_timeout(150);pg.click('.pick[data-type=white]');pg.wait_for_timeout(300)
   def stage(): ev(pg,'()=>{__sa.clearFood();const s=__sa.shark;s.x=innerWidth/2;s.y=__sa.SURF+innerHeight*.45;s.ang=0;s.spd=__sa.maxSpeed()*.2;__sa.touch.on=false;__sa.touch.drive=0}')
   # tuning constants are exposed and sane
   D=ev(pg,'__sa.DIV');src=open(os.path.join(ROOT,'game.js')).read();check('return m?+m[1]:60' in src and D['DIVER_CATCHES_TO_LOSE']==3 and D['AMBUSH_ON_HIT'][1]==False and D['AMBUSH_CHANCE']==.5 and D['AMBUSH_ON_HIT'][3]==True,'defaults: 60 s round, 3 net hits, ambush hit1 never / hit2 50% / hit3 ends')

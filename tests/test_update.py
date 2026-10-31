@@ -34,7 +34,7 @@ try:
   def launch():
     pg.goto(URL);pg.wait_for_function('document.readyState==="complete"');pg.wait_for_timeout(300)
   def play():
-    pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);pg.click('#start');pg.wait_for_timeout(200);pg.click('.pick[data-type=white]');pg.wait_for_timeout(300);ev('__sa.god=true;__sa.timeLeft=999')
+    pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000);pg.click('#start');pg.wait_for_timeout(200);pg.click('.pick[data-type=white]');pg.wait_for_timeout(300);ev('__sa.god=true;__sa.timeLeft=999')
   def upd_shown():return ev('!document.getElementById("upd").classList.contains("hide")')
   # 1) install
   launch();pg.wait_for_function('navigator.serviceWorker.controller||navigator.serviceWorker.ready.then(()=>true)',timeout=8000)

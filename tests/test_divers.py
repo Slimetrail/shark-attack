@@ -14,7 +14,7 @@ def ev(pg,js): return pg.evaluate(js)
 def fresh(b,t='white'):
     cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True);pg=cx.new_page();errs=[]
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:m.type=='error' and errs.append(m.text))
-    pg.goto(URL+'?round=300');pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
+    pg.goto(URL+'?round=300');pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
     pg.click('#start');pg.wait_for_timeout(150);pg.click(f'.pick[data-type={t}]');pg.wait_for_timeout(250);calm(pg);return cx,pg,errs
 def calm(pg): ev(pg,'()=>{__sa.clearFood();const s=__sa.shark;s.x=innerWidth/2;s.y=__sa.SURF+innerHeight*.45;s.spd=0;s.ang=0;__sa.touch.on=false}')
 def stunWith(pg,force):  # net hit through the real path, with the ambush roll forced

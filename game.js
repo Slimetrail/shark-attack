@@ -33,6 +33,7 @@ const DIVE={REF_LVL:6,MIN:.4};const diveK=l=>Math.max(DIVE.MIN,Math.min(1,trueGr
 // SEA CREATURES (fish + sharks), judged against YOUR current size: smaller ones flee, bigger ones chase.
 // N: creatures alive near you. SIZE_*: creature size (px "bite size") range shallow -> deep. SHARK_P_*: chance a creature is a shark, shallow -> deep.
 // FOOD_SHARE: share of spawns forced smaller than you (so there is always food). SENSE: notice range (screen heights).
+// b46 (Jeremy: "the fish still swim away too fast"): flee speeds cut: shallow .725-.785 -> .62-.66, deep .785-.865 -> .66-.69, per level .01 -> .008, cap .90 -> .72.
 // v10 fish speed (Dynamics): sprint = FLEE_SHALLOW..FLEE_DEEP by depth (0.60-0.70 shallow, 0.70-0.82 deep; FLEE_MIN..FLEE_MAX = 0.60-0.72 is the typical spawn range), +FLEE_LVL per shark level, capped FLEE_CAP; fish bigger than FLEE_NEAR_R of your bite (near the bite limit) x FLEE_NEAR_K. Only FISH tire; the shark never does. (old: rolled per spawn, 0.85-0.92; plankton just drifts at .15); after FLEE_BURST_S of sprinting it tires to FLEE_TIRED for FLEE_TIRED_S and CHASE_*: chasing speed, both × YOUR current top speed (chasers are always slower than your top speed).
 // GIVEUP_S: a chaser gives up after this long, then rests REST_S. GLOW_DEPTH: below this depth, glowing fish + big sharks.
 // v10 item 6 DODGE (Dynamics Lead design, tuned with tests/measure_flee.py): only while sprinting, never tired. Shark within R shark lengths + cooldown ready ->
@@ -40,7 +41,7 @@ const DIVE={REF_LVL:6,MIN:.4};const diveK=l=>Math.max(DIVE.MIN,Math.min(1,trueGr
 // then flees again. Same flee speed (fish stay slower than the shark). Never turns into the surface or the floor.
 const DODGE={ON:true,TIRED:true,R:2.5,R_TIRED:1.2,WIG:.15,GAIN:7,ANG_SHALLOW:60,ANG_DEEP:80,CD_SHALLOW:1.4,CD_DEEP:.8,ZIG_P:.25,ZIG_AT:.25,DUR:.45,
  SMALL_Q:.35,SMALL:{ang:85,dur:.35,cd:.8},MID:{ang:55,dur:.55,cd:1.2},NEAR_Q:.7,NEAR:{ang:40,dur:.45,cdS:2.5},CD_LVL:.03,CD_MIN:.6};
-const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.60,FLEE_MAX:.72,FLEE_SHALLOW:[.725,.785],FLEE_DEEP:[.785,.865],FLEE_LVL:.01,FLEE_CAP:.90,FLEE_NEAR_R:.7,FLEE_NEAR_K:.9,FLEE_BURST_S:1.8,FLEE_TIRED:.65,FLEE_TIRED_S:.8,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,DIVER_BAND:1.1,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
+const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.60,FLEE_MAX:.72,FLEE_SHALLOW:[.62,.66],FLEE_DEEP:[.66,.69],FLEE_LVL:.008,FLEE_CAP:.72,FLEE_NEAR_R:.7,FLEE_NEAR_K:.9,FLEE_BURST_S:1.8,FLEE_TIRED:.65,FLEE_TIRED_S:.8,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,DIVER_BAND:1.1,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
 // DIVERS + AMBUSH. The 3-hit lose rule and the ambush odds/timing are OUR choice, to confirm with Jeremy.
 // GAME MODES. "timed" = 60 s round, 3 net hits = Caught!. "endless" = no timer, ends only when eaten (Gulp!);
 // net hits only stun + cost growth there (OUR reading of Jeremy's "does not end until you are eaten").

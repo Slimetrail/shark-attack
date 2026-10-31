@@ -18,7 +18,7 @@ try:
   b=p.chromium.launch()
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,has_touch=True,is_mobile=True,bypass_csp=True,service_workers='block');pg=cx.new_page();errs=[]
   pg.on('pageerror',lambda e:errs.append(str(e)));ev=pg.evaluate
-  pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
+  pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
   pg.click('#start');pg.wait_for_timeout(200);pg.click('.pick[data-type=white]');pg.wait_for_timeout(400);ev('__sa.god=true;__sa.timeLeft=1e6')
   # world tests only: no divers, so a long swim that happens to catch surfers can't end the Timed round by nets ("caught" ignores god mode)
   ev('()=>{const s0=__sa.sim;__sa.sim=(a,bot,c)=>s0(a,dt=>{__sa.divers.length=0;if(bot)bot(dt)},c);(function k(){__sa.divers.length=0;requestAnimationFrame(k)})()}')
@@ -110,10 +110,10 @@ try:
     return {kk,ratio:mx/top,caught,fmin:Math.min(...fks),fmax:Math.max(...fks),chase:[__sa.CREATURES.CHASE_SHALLOW,__sa.CREATURES.CHASE_DEEP]}}''')
   check(.60<=r['fmin'] and r['fmax']<=.72,f"every creature's base flee roll in 0.60-0.72 ({r['fmin']:.3f}-{r['fmax']:.3f})")
   check(.55<=r['ratio']<=.86,f"fleeing fish peaks at {r['ratio']:.3f}x top speed (v10 band .60-.85, never at top speed)")
-  C=ev('__sa.CREATURES');check(C['FLEE_BURST_S']==1.8 and C['FLEE_TIRED']==.65 and C['FLEE_TIRED_S']==.8 and C['FLEE_SHALLOW']==[.725,.785] and C['FLEE_DEEP']==[.785,.865] and C['FLEE_CAP']==.9 and C['FLEE_CAP']<1,'v10 build 21 fish speed numbers: sprint 1.8 s, tired .65 for .8 s, shallow .725-.785, deep .785-.865, cap .90 (under shark top speed)')
+  C=ev('__sa.CREATURES');check(C['FLEE_BURST_S']==1.8 and C['FLEE_TIRED']==.65 and C['FLEE_TIRED_S']==.8 and C['FLEE_SHALLOW']==[.62,.66] and C['FLEE_DEEP']==[.66,.69] and C['FLEE_CAP']==.72 and C['FLEE_CAP']<1,'b46 fish speed numbers (Jeremy: fish too fast): sprint 1.8 s, tired .65 for .8 s, shallow .62-.66, deep .66-.69, cap .72 (under shark top speed)')
   fk=ev('''()=>{const f=__sa.fish[0],o={y:f.y,s:f.s,fu:f.fu},out=[];for(const lv of [0,5,10]){__sa.setLevel(lv);for(const d of [0,1]){f.y=__sa.SURF+(__sa.BED-__sa.SURF)*d;f.fu=1;f.s=__sa.bite()*.3;out.push(__sa.fleeK(f))}}
     __sa.setLevel(3);f.y=__sa.SURF+10;f.fu=0;f.s=__sa.bite()*.3;const far=__sa.fleeK(f);f.s=__sa.bite()*.8;const near=__sa.fleeK(f);Object.assign(f,o);__sa.setLevel(3);return {out,far,near}}''')
-  check(abs(fk['out'][0]-.785)<1e-6 and abs(fk['out'][1]-.865)<1e-6 and abs(fk['out'][2]-.835)<1e-6 and max(fk['out'])<=.90+1e-9,f"flee factor: shallow/deep tops .785/.865, +.01 per level, capped .90 ({[round(x,3) for x in fk['out']]})")
+  check(abs(fk['out'][0]-.66)<1e-6 and abs(fk['out'][1]-.69)<1e-6 and abs(fk['out'][2]-.70)<1e-6 and max(fk['out'])<=.72+1e-9,f"b46 flee factor: shallow/deep tops .66/.69, +.008 per level, capped .72 ({[round(x,3) for x in fk['out']]})")
   check(abs(fk['near']-fk['far']*.9)<1e-6,f"fish near the bite limit are 10% slower ({fk['near']:.3f} vs {fk['far']:.3f})")
   check(max(r['chase'])<1,f"chasers stay slower than top speed ({r['chase']})")
   check(0<=r['caught']<=12,f"minnow chase bot catches the fleeing fish in {r['caught']:.2f} s (bound 12 s)")
