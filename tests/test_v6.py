@@ -14,8 +14,8 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch()
   man=json.load(open(os.path.join(ROOT,'manifest.webmanifest')));check(man['orientation']=='landscape','manifest orientation landscape')
-  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"46"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=46' in sw and 'art/title-art.webp' in sw,'service worker cache bumped (build 44, title art cached)')
-  check('game.js?v=46' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
+  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"47"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=47' in sw and 'title-art' not in sw and not os.path.exists(os.path.join(ROOT,'art/title-art.webp')),'service worker cache bumped (build 47, title art removed)')
+  check('game.js?v=47' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap')
   pg.wait_for_function('__sa.titleT>0.7',timeout=5000);t0=pg.evaluate('__sa.titleT');pg.click('#start');pg.wait_for_timeout(250)
   check(t0<1.5 and pg.is_visible('.pick'),f'intro: Start works mid-intro (after the 600 ms tap guard) (tapped at {t0:.2f}s)');cx.close()
@@ -44,10 +44,10 @@ try:
     cy=ev('__sa.titleRect');cy=cy['y']+cy['h']/2 if cy else h/2
     check(any(d>0.9 for *_,d in hs2) and any(d<-0.9 for *_,d in hs2) and any(hy<cy for _,_,hy,_ in hs2) and any(hy>cy for _,_,hy,_ in hs2),f'{tag}: b46 intro shark circles the title: swims both ways, above and below it ({len(hs2)} samples)')
     check(all(o for *_,o in lay) and all(any(l==ly and lp==k for l,k,_ in lay) for ly in ('behind','front') for lp in (1,2)),f'{tag}: b46: shark circles the title twice, behind AND in front of the words each lap, mouth wide open ({len(lay)} samples)')
-    check(not any(torn) and ev('__sa.sfxCount.chomp')==c0,f'{tag}: title is never bitten or torn, no chomp sound in the intro')
+    bt=ev('__sa.titleBite');check(bt is not None and bt['t']>=7.3 and bt['after']<bt['before'] and not any(torn[:max(1,len(torn)//2)]) and ev('__sa.sfxCount.chomp')>=c0+1,f'{tag}: b47: title untouched during the laps, then ONE bite after lap 2 removes letter pixels ({bt})')
     check(all(a==0 for tt,a in arts),f'{tag}: b45: the dark poster picture is never shown in the intro')
     pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
-    s1=ev('__sa.titleShark');pg.wait_for_timeout(600);s2=ev('__sa.titleShark');check(ev('__sa.titleArt')==0 and not ev('__sa.titleTorn') and s1 and s2 and 0<=s2['x']<=w and abs(s2['x']-s1['x'])>1,f'{tag}: b45: intro ends on the blue title with the same shark still swimming around it (no poster), title untorn')
+    s1=ev('__sa.titleShark');pg.wait_for_timeout(600);s2=ev('__sa.titleShark');check(ev('__sa.titleArt')==0 and s1 and s2 and 0<=s2['x']<=w and abs(s2['x']-s1['x'])>1,f'{tag}: b45: intro ends on the blue title with the same shark still swimming around it (no poster), title shows the bite')
     if w==915: pg.screenshot(path=f'{SHOTS}/v8d-title-after.png')
     check(pg.is_visible('#start') and pg.locator('#start').bounding_box()['y']+pg.locator('#start').bounding_box()['height']<=h,f'{tag}: start button on screen')
     pg.click('#start');pg.wait_for_timeout(250)

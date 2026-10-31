@@ -59,8 +59,8 @@ def run_intro(b,url):
     for ly in ('behind','front'): check(len(laps(ly,k))>5,f'intro lap {k}: shark drawn {ly} the title ({len(laps(ly,k))} frames)')
   seq=[];[seq.append((x[1],x[2])) for x in log if not seq or seq[-1]!=(x[1],x[2])]
   check(seq[:5]==[('behind',0),('behind',1),('front',1),('behind',2),('front',2)],f'intro order: in behind, then behind/front x2 {seq[:6]}')
-  check(all(x[3] for x in log),'intro: open-mouth (teeth) sprite used on every frame')
-  check(not pg.evaluate('__sa.titleTorn') and pg.evaluate('__sa.sfxCount.chomp')==c0,'intro: never bites, tears or chomps')
+  check(all(x[3] for x in log if x[2]<3),'intro: open-mouth (teeth) sprite used on every lap frame (b47: jaw closes only for the bite)')
+  bt=pg.evaluate('__sa.titleBite');check(bt is not None and bt['t']>=7.3 and pg.evaluate('__sa.sfxCount.chomp')==c0+1,f'intro (b47): exactly one bite + chomp, after the two laps {bt}')
   check(pg.evaluate('__sa.TITLE.SWIM')<=20 and pg.evaluate('__sa.titleArt')==0,'intro under 20 s, ends on the blue-sea title')
   check(not errs,f'intro: no page errors {errs}');cx.close()
 def drag_dy(b,url):

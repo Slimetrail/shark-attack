@@ -15,7 +15,7 @@ git=lambda *x:subprocess.check_output(['git',*x],cwd=ROOT).decode().strip()
 sha=git('rev-parse','--short','HEAD')
 n=a.n if a.n is not None else int(git('rev-list','--count','08993fa..HEAD') or 0)
 build=a.build or f't{n}-{sha}'
-SHIP=['index.html','game.js','sw.js','manifest.webmanifest','version.json','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','art/title-art.webp','audio/intro-scary.ogg','audio/play-swim-piano.ogg','AUDIO-LICENSES.md']
+SHIP=['index.html','game.js','sw.js','manifest.webmanifest','version.json','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','audio/intro-scary.ogg','audio/play-swim-piano.ogg','AUDIO-LICENSES.md']
 out=a.out
 if os.path.exists(out):shutil.rmtree(out)
 os.makedirs(out)
