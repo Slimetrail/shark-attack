@@ -8,9 +8,9 @@ def check(c,m):
   if c: passes+=1;print('PASS',m)
   else: fails.append(m);print('FAIL',m)
 rd=lambda f:open(os.path.join(ROOT,f)).read()
-check(json.loads(rd('version.json'))['build']=='49','version.json says build 49')
-check('<meta name="build" content="49">' in rd('index.html') and 'game.js?v=49' in rd('index.html') and 'game.js?v=49' in rd('sw.js'),'index.html and sw.js name build 49 (cache name follows version.json)')
-check('v=48' not in rd('index.html')+rd('sw.js'),'no leftover build 48 file names in index.html or sw.js')
+check(json.loads(rd('version.json'))['build']=='50','version.json says build 50')
+check('<meta name="build" content="50">' in rd('index.html') and 'game.js?v=50' in rd('index.html') and 'game.js?v=50' in rd('sw.js'),'index.html and sw.js name build 50 (cache name follows version.json)')
+check('v=49' not in rd('index.html')+rd('sw.js'),'no leftover build 49 file names in index.html or sw.js')
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(.8)
 try:
  with sync_playwright() as p:

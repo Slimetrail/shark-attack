@@ -54,13 +54,12 @@ def run_intro(b,url):
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,bypass_csp=True,service_workers='block');pg=cx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
   pg.add_init_script('window.__saTitleLog=1');pg.goto(url);pg.wait_for_timeout(400);pg.click('#tap');c0=pg.evaluate('__sa.sfxCount.chomp')
   pg.wait_for_function('window.__saTitleDone===true',timeout=20000);log=pg.evaluate('__sa.titleLog');pg.wait_for_timeout(500)
-  laps=lambda ly,k:[x for x in log if x[1]==ly and x[2]==k]
-  for k in (1,2):
-    for ly in ('behind','front'): check(len(laps(ly,k))>5,f'intro lap {k}: shark drawn {ly} the title ({len(laps(ly,k))} frames)')
-  seq=[];[seq.append((x[1],x[2])) for x in log if not seq or seq[-1]!=(x[1],x[2])]
-  check(seq[:5]==[('behind',0),('behind',1),('front',1),('behind',2),('front',2)],f'intro order: in behind, then behind/front x2 {seq[:6]}')
-  check(all(x[3] for x in log if x[2]<3),'intro: open-mouth (teeth) sprite used on every lap frame (b47: jaw closes only for the bite)')
-  bt=pg.evaluate('__sa.titleBite');check(bt is not None and bt['t']>=7.3 and pg.evaluate('__sa.sfxCount.chomp')==c0+1,f'intro (b47): exactly one bite + chomp, after the two laps {bt}')
+  # b50 (Jeremy, 5:22 PM): no more laps or bite. The shark swims in BEHIND the words (open mouth), turns to face the camera, snaps once (one chomp) and holds.
+  seq=[];[seq.append(x[1]) for x in log if not seq or seq[-1]!=x[1]]
+  check(seq[:4]==['behind','snap','behind','pose'] and set(seq[4:])<={'behind'},f'b50 intro order: behind the words, snap, held pose (then pose frames only) {seq}')
+  check(not any(x[1]=='front' for x in log),'b50: shark never drawn in front of the words before the pose')
+  check(all(x[3] for x in log if x[1]=='behind' and x[2]<2),'b50: open-mouth (teeth) sprite on every swim-in frame')
+  check(pg.evaluate('__sa.titleBite') is None and pg.evaluate('__sa.sfxCount.chomp')==c0+1,'b50: no bite, exactly one chomp (the snap)')
   check(pg.evaluate('__sa.TITLE.SWIM')<=20 and pg.evaluate('__sa.titleArt')==0,'intro under 20 s, ends on the blue-sea title')
   check(not errs,f'intro: no page errors {errs}');cx.close()
 def drag_dy(b,url):

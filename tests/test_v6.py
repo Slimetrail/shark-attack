@@ -14,8 +14,8 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch()
   man=json.load(open(os.path.join(ROOT,'manifest.webmanifest')));check(man['orientation']=='landscape','manifest orientation landscape')
-  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"48"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=48' in sw and 'title-art' not in sw and not os.path.exists(os.path.join(ROOT,'art/title-art.webp')),'service worker cache bumped (build 48, title art removed)')
-  check('game.js?v=48' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
+  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"50"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=50' in sw and 'title-art' not in sw and not os.path.exists(os.path.join(ROOT,'art/title-art.webp')),'service worker cache bumped (build 50, title art removed)')
+  check('game.js?v=50' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=50')
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap')
   pg.wait_for_function('__sa.titleT>0.7',timeout=5000);t0=pg.evaluate('__sa.titleT');pg.click('#start');pg.wait_for_timeout(250)
   check(t0<1.5 and pg.is_visible('.pick'),f'intro: Start works mid-intro (after the 600 ms tap guard) (tapped at {t0:.2f}s)');cx.close()
@@ -40,14 +40,14 @@ try:
       pg.wait_for_timeout(30)
     vis=[x for x in hs if x[0]>0.45]
     check(len(vis)>5 and all(0<=hx<=w and 0<=hy<=h for _,hx,hy,_ in vis),f'{tag}: intro shark head stays on screen while it passes, turns and swims around ({len(vis)} samples)')
-    # b46: the old intro swam past and turned back; the new one circles the title, so check it really goes round: both directions and both above and below the title middle
-    cy=ev('__sa.titleRect');cy=cy['y']+cy['h']/2 if cy else h/2
-    check(any(d>0.9 for *_,d in hs2) and any(d<-0.9 for *_,d in hs2) and any(hy<cy for _,_,hy,_ in hs2) and any(hy>cy for _,_,hy,_ in hs2),f'{tag}: b46 intro shark circles the title: swims both ways, above and below it ({len(hs2)} samples)')
-    check(all(o for *_,o in lay) and all(any(l==ly and lp==k for l,k,_ in lay) for ly in ('behind','front') for lp in (1,2)),f'{tag}: b46: shark circles the title twice, behind AND in front of the words each lap, mouth wide open ({len(lay)} samples)')
-    bt=ev('__sa.titleBite');check(bt is not None and bt['t']>=7.3 and bt['after']<bt['before'] and not any(torn[:max(1,len(torn)//2)]) and ev('__sa.sfxCount.chomp')>=c0+1,f'{tag}: b47: title untouched during the laps, then ONE bite after lap 2 removes letter pixels ({bt})')
+    # b50 (Jeremy 5:22 PM): no laps and no bite any more. The shark swims in from the right behind the words, faces the camera, snaps and HOLDS; a button releases it.
+    check(any(d<-0.9 for *_,d in hs2) and all(l=='behind' for l,_,_ in lay),f'{tag}: b50 intro shark swims in from the right, only behind the words ({len(lay)} samples)')
+    check(not any(torn) and ev('__sa.titleBite') is None and ev('__sa.sfxCount.chomp')==c0+1,f'{tag}: b50: title never cut, one chomp at the snap')
     check(all(a==0 for tt,a in arts),f'{tag}: b45: the dark poster picture is never shown in the intro')
     pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
-    s1=ev('__sa.titleShark');pg.wait_for_timeout(600);s2=ev('__sa.titleShark');check(ev('__sa.titleArt')==0 and s1 and s2 and 0<=s2['x']<=w and abs(s2['x']-s1['x'])>1,f'{tag}: b45: intro ends on the blue title with the same shark still swimming around it (no poster), title shows the bite')
+    s1=ev('__sa.titleShark');pg.wait_for_timeout(600);s2=ev('__sa.titleShark');check(ev('__sa.titleArt')==0 and s1 and s2 and s2['front'] and s1['x']==s2['x'],f'{tag}: b50: intro ends on the blue title with the head-on shark held still (no poster)')
+    pg.wait_for_timeout(700);pg.tap('#snd');pg.tap('#snd');pg.wait_for_timeout(1000);s3=ev('__sa.titleShark');pg.wait_for_timeout(600);s4=ev('__sa.titleShark')
+    check(s3 and s4 and not s4['front'] and 0<=s4['x']<=w and abs(s4['x']-s3['x'])>1,f'{tag}: b50: after a button tap the same shark swims around the title again')
     if w==915: pg.screenshot(path=f'{SHOTS}/v8d-title-after.png')
     check(pg.is_visible('#start') and pg.locator('#start').bounding_box()['y']+pg.locator('#start').bounding_box()['height']<=h,f'{tag}: start button on screen')
     pg.click('#start');pg.wait_for_timeout(250)
