@@ -88,7 +88,14 @@ def run_boost(b,url):
     pg.wait_for_timeout(1500);v2=pg.evaluate('__sa.shark.spd/__sa.maxSpeed()');check(v2<=1.1 and pg.evaluate('__sa.boost.t')==0 and pg.evaluate('__sa.boost.cd')>0,f'{tag}: boost ends after ~1.2 s, recharging (speed {v2:.2f})')
     if w==915: pg.screenshot(path='/workspace/intro-shots/shark-b46/boost-recharge-915x412.png')
     pg.touchscreen.tap(bb['x']+bb['width']/2,bb['y']+bb['height']/2);pg.wait_for_timeout(100);check(pg.evaluate('__sa.boost.n')==1,f'{tag}: press during recharge does nothing')
-    pg.wait_for_timeout(3200);pg.keyboard.press('b');pg.wait_for_timeout(100);check(pg.evaluate('__sa.boost.n')==2,f'{tag}: recharged after ~4 s; B key boosts')
+    # poll (not a fixed sleep): wait until the recharge really ends, then press B until it boosts (it is refused while stunned or in the air)
+    t_=time.time();pg.wait_for_function('__sa.boost.cd<=0',timeout=8000,polling=50);rc=time.time()-t_+1.6
+    ok=False
+    for _ in range(40):
+      pg.keyboard.press('b')
+      if pg.evaluate('__sa.boost.n')==2: ok=True;break
+      pg.wait_for_timeout(100)
+    check(ok and 3<=rc<=5.5,f'{tag}: recharged after ~4 s (about {rc:.1f} s after the press); B key boosts')
     pg.evaluate('__sa.timeLeft=0;__sa.god=false');pg.evaluate('__sa.endGame&&__sa.endGame("time")');pg.wait_for_timeout(800)
     if pg.evaluate('__sa.state')=='play': pg.evaluate('__sa.setRound(0.1)')
     cx.close()

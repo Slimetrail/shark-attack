@@ -58,7 +58,10 @@ try:
   angs=[]
   pg.wait_for_timeout(500)
   for _ in range(20): angs.append(ev('__sa.shark.ang'));pg.wait_for_timeout(30)
-  check(max(angs)-min(angs)<math.radians(2),f'no twitch while the finger is held still (heading spread {math.degrees(max(angs)-min(angs)):.2f} deg)')
+  # b46: PITCH_TURN slows mostly up/down turns, so after the up->right turn the heading is still easing in (about 2.8 deg spread over 0.6 s, always toward the finger).
+  # A twitch is a back-and-forth wobble, so check: no direction reversals, spread under 4 deg, and it ends within 0.5 deg of the finger.
+  dd=[b_-a_ for a_,b_ in zip(angs,angs[1:])];rev=sum(1 for a_,b_ in zip(dd,dd[1:]) if a_*b_<0 and abs(a_)>1e-4 and abs(b_)>1e-4)
+  check(rev==0 and max(angs)-min(angs)<math.radians(4) and abs(angs[-1])<math.radians(.5),f'no twitch while the finger is held still: heading eases in one way, no wobble ({rev} reversals, spread {math.degrees(max(angs)-min(angs)):.2f} deg, ends {math.degrees(angs[-1]):.2f} deg)')
   pg.mouse.up()
   # the shark never tires: holding a long drag keeps top speed for 10 s (real time)
   stage();pg.mouse.move(200,200);pg.mouse.down();pg.mouse.move(200+W*.4,200,steps=5);pg.wait_for_timeout(4000);mx=ev('__sa.maxSpeed()');sp=[]

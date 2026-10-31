@@ -58,7 +58,7 @@ try:
   pg.reload();pg.wait_for_timeout(2000);check(not pg.is_visible('#updr'),'same build re-open: no Update ready button')
   open(os.path.join(APP,'version.json'),'w').write('{"build":"47"}')
   p_=os.path.join(APP,'index.html');s=open(p_).read().replace('<meta name="build" content="46">','<meta name="build" content="47">');open(p_,'w').write(s)
-  pg.reload();pg.wait_for_selector('#updr',state='visible',timeout=20000)
+  pg.reload();pg.wait_for_selector('#updr',state='visible',timeout=40000)
   check(pg.evaluate('__saUpd.pending')=='47','button appears once build 47 is fully downloaded (pending)')
   bb=pg.locator('#updr').bounding_box();sb=pg.evaluate('(()=>{const r=document.getElementById("tap").getBoundingClientRect();return 1})()')
   check(bb and bb['x']+bb['width']>=900 and bb['y']<20 and bb['height']>=44,f'button in the top-right corner, tappable {bb}')

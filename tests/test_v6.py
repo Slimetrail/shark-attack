@@ -25,12 +25,13 @@ try:
     pg.on('request',lambda r:outside.append(r.url) if not r.url.startswith(URL) else None)
     ev=pg.evaluate;tag=f'{w}x{h}'
     pg.goto(URL);pg.wait_for_timeout(300);check(not pg.is_visible('#rot'),f'{tag}: no rotate prompt in landscape');pg.click('#tap')
-    hs=[];arts=[];torn=[];c0=ev('__sa.sfxCount.chomp');shots={1.7:'before',3.3:'mid'};lay=[]
+    hs=[];arts=[];torn=[];c0=ev('__sa.sfxCount.chomp');shots={1.7:'before',3.3:'mid'};lay=[];hs2=[]
     while True:
       st=ev('({t:__sa.titleT,s:__sa.titleShark,a:__sa.titleArt,torn:__sa.titleTorn,done:window.__saTitleDone,r:__sa.titleRect})')
       arts.append((st['t'],st['a']));torn.append(st['torn'])
       if st['done'] or st['t']>12: break
       if st['s'] and st['t']>0.2 and st['t']<2.1: hs.append((st['t'],st['s']['head'],st['s']['headY'],st['s']['dir']))
+      if st['s'] and 0.9<st['t']<7.3: hs2.append((st['t'],st['s']['head'],st['s']['headY'],st['s']['dir']))
       if st['s'] and st['t']<7.3: lay.append((st['s']['layer'],st['s']['lap'],st['s']['open']))
       for k in list(shots):
         if st['t']>=k:
@@ -39,7 +40,9 @@ try:
       pg.wait_for_timeout(30)
     vis=[x for x in hs if x[0]>0.45]
     check(len(vis)>5 and all(0<=hx<=w and 0<=hy<=h for _,hx,hy,_ in vis),f'{tag}: intro shark head stays on screen while it passes, turns and swims around ({len(vis)} samples)')
-    check(any(d>0.9 for *_,d in hs) and any(d<-0.9 for *_,d in hs),f'{tag}: intro shark swims past one way, then turns back')
+    # b46: the old intro swam past and turned back; the new one circles the title, so check it really goes round: both directions and both above and below the title middle
+    cy=ev('__sa.titleRect');cy=cy['y']+cy['h']/2 if cy else h/2
+    check(any(d>0.9 for *_,d in hs2) and any(d<-0.9 for *_,d in hs2) and any(hy<cy for _,_,hy,_ in hs2) and any(hy>cy for _,_,hy,_ in hs2),f'{tag}: b46 intro shark circles the title: swims both ways, above and below it ({len(hs2)} samples)')
     check(all(o for *_,o in lay) and all(any(l==ly and lp==k for l,k,_ in lay) for ly in ('behind','front') for lp in (1,2)),f'{tag}: b46: shark circles the title twice, behind AND in front of the words each lap, mouth wide open ({len(lay)} samples)')
     check(not any(torn) and ev('__sa.sfxCount.chomp')==c0,f'{tag}: title is never bitten or torn, no chomp sound in the intro')
     check(all(a==0 for tt,a in arts),f'{tag}: b45: the dark poster picture is never shown in the intro')
