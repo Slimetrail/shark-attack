@@ -18,7 +18,7 @@ def newpage(b,w,h,dpr,q=''):
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:m.type=='error' and errs.append(m.text))
     pg.on('request',lambda r:r.url.startswith(URL) or r.url.startswith('data:') or outside.append(r.url))
     pg.goto(URL+q);pg.wait_for_timeout(300);return cx,pg,errs,outside
-def to_title(pg): pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
+def to_title(pg): pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
 def play(pg,t='white'): pg.click('#start');pg.wait_for_timeout(150);pg.click(f'.pick[data-type={t}]');pg.wait_for_timeout(250)
 # Landing is detected on the first rendered frame after touchdown and compared with the AudioContext clock, so the measured
 # offset carries up to one frame (~16.7 ms at 60 Hz) of detection lag plus up to one frame of rAF-vs-audio-clock jitter.
@@ -40,7 +40,7 @@ try:
   ev(pg,"localStorage.clear()");pg.reload();pg.wait_for_timeout(300)
   check(pg.locator('#jump').count()==0 and 'jump' not in pg.content().lower().split('<script')[0],'no Jump button in the DOM')
   pg.click('#tap');pg.wait_for_timeout(250);pg.screenshot(path=f'{SHOTS}/title-1-swim.png');pg.wait_for_timeout(1050);pg.screenshot(path=f'{SHOTS}/title-2-around.png')
-  pg.wait_for_function('window.__saTitleDone===true',timeout=8000);check(True,'title: fake-3D shark swims across and around the title (no bite), picture shown');pg.screenshot(path=f'{SHOTS}/title-3-picture.png')
+  pg.wait_for_function('window.__saTitleDone===true',timeout=15000);check(True,'title: fake-3D shark swims across and around the title (no bite), picture shown');pg.screenshot(path=f'{SHOTS}/title-3-picture.png')
   pg.click('#start');pg.wait_for_timeout(200)
   check(pg.locator('.pick').count()==3 and all(t in pg.inner_text('#pickList') for t in ['Great White','Hammerhead','Tiger Shark']),'pick screen shows the 3 sharks')
   bars=ev(pg,"[...document.querySelectorAll('.bar')].map(b=>b.dataset.stat+b.dataset.v)")
@@ -194,8 +194,8 @@ try:
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v45' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v45')
-  check('audio/play-swim-piano.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v45").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
+  check('sharkattack-v46' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v46')
+  check('audio/play-swim-piano.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v46").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
   pg.wait_for_function('__sa.chip',timeout=8000);pg.wait_for_timeout(300)
   check(ev(pg,'__sa.chipPlaying') and not ev(pg,'__sa.placeholder'),'offline: real chiptune plays from cache (placeholder not used)')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()

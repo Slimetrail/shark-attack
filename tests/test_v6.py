@@ -14,8 +14,8 @@ try:
  with sync_playwright() as p:
   b=p.chromium.launch()
   man=json.load(open(os.path.join(ROOT,'manifest.webmanifest')));check(man['orientation']=='landscape','manifest orientation landscape')
-  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"45"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=45' in sw and 'art/title-art.webp' in sw,'service worker cache bumped (build 44, title art cached)')
-  check('game.js?v=45' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
+  sw=open(os.path.join(ROOT,'sw.js')).read();check('"build":"46"' in open(os.path.join(ROOT,'version.json')).read() and 'PREFIX="sharkattack-v"' in sw and 'game.js?v=46' in sw and 'art/title-art.webp' in sw,'service worker cache bumped (build 44, title art cached)')
+  check('game.js?v=46' in open(os.path.join(ROOT,'index.html')).read(),'index loads game.js?v=40')
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap')
   pg.wait_for_function('__sa.titleT>0.7',timeout=5000);t0=pg.evaluate('__sa.titleT');pg.click('#start');pg.wait_for_timeout(250)
   check(t0<1.5 and pg.is_visible('.pick'),f'intro: Start works mid-intro (after the 600 ms tap guard) (tapped at {t0:.2f}s)');cx.close()
@@ -25,25 +25,25 @@ try:
     pg.on('request',lambda r:outside.append(r.url) if not r.url.startswith(URL) else None)
     ev=pg.evaluate;tag=f'{w}x{h}'
     pg.goto(URL);pg.wait_for_timeout(300);check(not pg.is_visible('#rot'),f'{tag}: no rotate prompt in landscape');pg.click('#tap')
-    hs=[];arts=[];torn=[];c0=ev('__sa.sfxCount.chomp');shots={0.6:'before',1.62:'mid'}
+    hs=[];arts=[];torn=[];c0=ev('__sa.sfxCount.chomp');shots={1.7:'before',3.3:'mid'};lay=[]
     while True:
       st=ev('({t:__sa.titleT,s:__sa.titleShark,a:__sa.titleArt,torn:__sa.titleTorn,done:window.__saTitleDone,r:__sa.titleRect})')
       arts.append((st['t'],st['a']));torn.append(st['torn'])
-      if st['done'] or st['t']>4: break
+      if st['done'] or st['t']>12: break
       if st['s'] and st['t']>0.2 and st['t']<2.1: hs.append((st['t'],st['s']['head'],st['s']['headY'],st['s']['dir']))
-      if st['s'] and 1.6<st['t']<1.95: hs.append(('over',st['s']['headY'],st['r']['y']+st['r']['h']*.5))
+      if st['s'] and st['t']<7.3: lay.append((st['s']['layer'],st['s']['lap'],st['s']['open']))
       for k in list(shots):
         if st['t']>=k:
           if w==915: pg.screenshot(path=f'{SHOTS}/v8d-title-{shots[k]}.png')
           del shots[k]
       pg.wait_for_timeout(30)
-    over=[x for x in hs if x[0]=='over'];hs=[x for x in hs if x[0]!='over'];vis=[x for x in hs if x[0]>0.45]
+    vis=[x for x in hs if x[0]>0.45]
     check(len(vis)>5 and all(0<=hx<=w and 0<=hy<=h for _,hx,hy,_ in vis),f'{tag}: intro shark head stays on screen while it passes, turns and swims around ({len(vis)} samples)')
     check(any(d>0.9 for *_,d in hs) and any(d<-0.9 for *_,d in hs),f'{tag}: intro shark swims past one way, then turns back')
-    check(over and all(hy<cy for _,hy,cy in over),f'{tag}: shark swims back around (over) the title, not into it ({len(over)} samples)')
+    check(all(o for *_,o in lay) and all(any(l==ly and lp==k for l,k,_ in lay) for ly in ('behind','front') for lp in (1,2)),f'{tag}: b46: shark circles the title twice, behind AND in front of the words each lap, mouth wide open ({len(lay)} samples)')
     check(not any(torn) and ev('__sa.sfxCount.chomp')==c0,f'{tag}: title is never bitten or torn, no chomp sound in the intro')
     check(all(a==0 for tt,a in arts),f'{tag}: b45: the dark poster picture is never shown in the intro')
-    pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
+    pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
     s1=ev('__sa.titleShark');pg.wait_for_timeout(600);s2=ev('__sa.titleShark');check(ev('__sa.titleArt')==0 and not ev('__sa.titleTorn') and s1 and s2 and 0<=s2['x']<=w and abs(s2['x']-s1['x'])>1,f'{tag}: b45: intro ends on the blue title with the same shark still swimming around it (no poster), title untorn')
     if w==915: pg.screenshot(path=f'{SHOTS}/v8d-title-after.png')
     check(pg.is_visible('#start') and pg.locator('#start').bounding_box()['y']+pg.locator('#start').bounding_box()['height']<=h,f'{tag}: start button on screen')
@@ -92,15 +92,15 @@ try:
   pg.evaluate('()=>{__sa.startAs("white","timed")}');pg.wait_for_timeout(500);t0=pg.evaluate('__sa.timeLeft');pg.wait_for_timeout(700);check(pg.evaluate('__sa.timeLeft')==t0 and pg.evaluate('__sa.rotPaused'),'portrait pauses play')
   cx.close()
   # score + credits screens, perf
-  cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
+  cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
   for m,shot in [('timed','v6-score-timed'),('endless','v6-score-endless')]:
     pg.evaluate(f'()=>{{__sa.startAs("tiger","{m}");__sa.feed(40);__sa.god=false}}');pg.wait_for_timeout(1200);pg.evaluate('__sa.timeLeft=0.01') if m=='timed' else pg.evaluate('()=>{const s=__sa.shark,c=__sa.fish[0];s.safe=0;__sa.setCreature(c,__sa.bite()*3,"shark");c.x=s.x+s.L*.2;c.y=s.y;c.vx=-50}')
     pg.wait_for_function('__sa.state==="over"',timeout=4000);pg.wait_for_timeout(600);bb=pg.locator('#overUi .card').bounding_box();check(bb['y']>=0 and bb['y']+bb['height']<=412,f'{m} score card fits landscape');pg.screenshot(path=f'{SHOTS}/{shot}.png')
-  pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);pg.click('#cred');pg.wait_for_timeout(400)
+  pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000);pg.click('#cred');pg.wait_for_timeout(400)
   txt=pg.inner_text('#credUi');check(all(k in txt for k in ['CC0','VSCO-2','A Slimetrail production']) and 'SlimeTrail' not in txt and 'Game, music and sound effects' not in txt,'credits intact: one line A Slimetrail production (b45)');bb=pg.locator('#credBack').bounding_box();check(bb and bb['y']+bb['height']<=412,'credits Back button on screen');pg.screenshot(path=f'{SHOTS}/v8-credits.png')
   cx.close()
   for w,h in [(915,412),(844,390)]:
-    cx=b.new_context(viewport={'width':w,'height':h},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);pg.click('#cred');pg.wait_for_timeout(400)
+    cx=b.new_context(viewport={'width':w,'height':h},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000);pg.click('#cred');pg.wait_for_timeout(400)
     txt=pg.inner_text('#credUi');check('CC0' in txt and 'VSCO-2' in txt,f'{w}x{h}: credits show the CC0 music credit');bb=pg.locator('#credBack').bounding_box();check(bb['y']+bb['height']<=h and pg.is_visible('#credBack'),f'{w}x{h}: credits Back button on screen')
     pg.screenshot(path=f'{SHOTS}/v8-credits-{w}x{h}.png');cx.close()
   b.close()

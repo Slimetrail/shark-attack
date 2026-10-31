@@ -598,7 +598,7 @@ function setSound(on){soundOn=on;localStorage.setItem(SND_KEY,on?"1":"0");$("snd
 // Intro (v10): the shark swims past the words, turns and swims back around the title (over the top), then dives away.
 // It NEVER bites: no tear, no CHOMP, no shake, no chomp sound. Then Jeremy's title picture fades in (0.7 s) and stays.
 // The picture is preloaded once and baked to a screen-sized layer on resize; if it fails to load the 3D title stays.
-const T={t:0,bitten:false,torn:false,done:false,k:0,sr:null,art:0};const TITLE_TOP_PAD=6,TITLE_PASS=1.05,TITLE_TURN=1.45,TITLE_OVER=2.05,TITLE_SWIM=2.6,TITLE_ART_FADE=.7;
+const T={t:0,bitten:false,torn:false,done:false,k:0,sr:null,art:0};const TITLE_TOP_PAD=6,TITLE_PASS=1.05,TITLE_TURN=1.45,TITLE_OVER=2.05,TITLE_SWIM=.9+2*3.2+.5,TITLE_ART_FADE=.7;
 const TITLE_ART=new Image();let artOK=false,artFail=false,artC=null,artKey="";TITLE_ART.onload=()=>{artOK=true;artKey=""};TITLE_ART.onerror=()=>{artFail=true};TITLE_ART.src="art/title-art.webp";
 function artRect(){const iw=TITLE_ART.naturalWidth||938,ih=TITLE_ART.naturalHeight||1396,a=iw/ih;
  if(W<H){let w=W,h=w/a;if(h>H){h=H;w=h*a}return {x:(W-w)/2,y:Math.max(0,Math.min(safeTop(),H-h)),w,h,port:true}}// portrait: full width, keep aspect
@@ -609,26 +609,49 @@ function bakeArt(){const r=artRect(),key=W+"x"+H+"@"+DPR;if(artC&&artKey===key)r
  else{const x0=r.x+r.w-r.w*.15,gr=g.createLinearGradient(x0,0,x0+r.w*.3,0);gr.addColorStop(0,"rgba(4,13,22,0)");gr.addColorStop(1,"rgba(4,13,22,1)");g.fillStyle=gr;g.fillRect(x0,0,r.w*.3,H)}
  artC=c;return c}
 let tSideO=null,tSideC=null;
-function buildTitleShark(){const L=Math.min(titleW()*.62,H*.55,330);tSideO=render3DShark(L*DPR,true,TYPES[sType]);tSideC=render3DShark(L*DPR,false,TYPES[sType]);tSideO.L=tSideC.L=L}
-function startTitle(){state="title";camY=0;camX=0;T.t=0;T.bitten=false;T.torn=false;T.done=false;T.sr=null;T.art=0;window.__saTitleDone=false;const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;buildTitleShark();show("titleUi")}
+/* b46: title-only WIDE open jaw painted over the open sprite: dropped lower jaw, dark throat, two rows of shaded serrated teeth (no blood, no bite). */
+function wideJaw(c,L){const g=c.getContext("2d"),h=L*.2;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation="source-over";g.shadowBlur=0;g.filter="none";g.translate(c.width/2+L*.05,c.height*.56);g.lineJoin="round";
+ const U0=[L*.485,h*.1],K=[L*.25,h*.27],D=[L*.44,h*.9];
+ let gr=g.createLinearGradient(L*.48,0,L*.25,0);gr.addColorStop(0,"#3d1416");gr.addColorStop(.4,"#1a0607");gr.addColorStop(1,"#050102");g.fillStyle=gr;
+ g.beginPath();g.moveTo(U0[0],U0[1]);g.lineTo(L*.5,h*.2);g.lineTo(L*.47,h*.5);g.lineTo(D[0]+L*.01,D[1]);g.lineTo(K[0],K[1]);g.closePath();g.fill();
+ // lower jaw: pale belly skin, shaded underneath
+ gr=g.createLinearGradient(0,h*.3,0,h*1.1);gr.addColorStop(0,"#aeb8bf");gr.addColorStop(.45,"#d5dadd");gr.addColorStop(1,"#66727d");g.fillStyle=gr;
+ g.beginPath();g.moveTo(K[0]-L*.01,K[1]);g.lineTo(D[0],D[1]);g.quadraticCurveTo(D[0]+L*.012,D[1]+h*.1,D[0]-L*.02,D[1]+h*.16);g.quadraticCurveTo(L*.3,h*.95,L*.16,h*.6);g.closePath();g.fill();
+ g.strokeStyle="rgba(4,10,18,.45)";g.lineWidth=Math.max(1,L*.004);g.stroke();
+ // gums
+ g.strokeStyle="#5e2428";g.lineWidth=Math.max(1,h*.07);g.lineCap="round";g.beginPath();g.moveTo(U0[0]-L*.005,U0[1]+h*.04);g.lineTo(K[0]+L*.01,K[1]);g.moveTo(D[0]-L*.005,D[1]-h*.03);g.lineTo(K[0]+L*.01,K[1]+h*.03);g.stroke();
+ const tooth=(x,y,len,w,dn)=>{const tip=y+(dn?len:-len);const tg=g.createLinearGradient(0,y,0,tip);tg.addColorStop(0,"#a99c7e");tg.addColorStop(.35,"#e9e2cc");tg.addColorStop(1,"#fbf8ee");g.fillStyle=tg;
+  g.beginPath();g.moveTo(x-w/2,y);g.quadraticCurveTo(x-w*.18,(y+tip)/2,x+w*.06,tip);g.quadraticCurveTo(x+w*.2,(y+tip)/2,x+w/2,y);g.closePath();g.fill();g.strokeStyle="rgba(50,35,25,.55)";g.lineWidth=Math.max(.6,L*.0025);g.stroke();
+  g.strokeStyle="rgba(255,255,255,.5)";g.lineWidth=Math.max(.5,L*.0015);g.beginPath();g.moveTo(x-w*.2,y+(dn?1:-1)*len*.15);g.lineTo(x,tip-(dn?1:-1)*len*.15);g.stroke()};
+ for(let i=0;i<8;i++){const u=i/7.5,x=U0[0]-L*.008+(K[0]-U0[0])*u,y=U0[1]+h*.05+(K[1]-U0[1])*u;tooth(x,y,h*(.26-u*.13),L*(.03-u*.01),true)}
+ for(let i=0;i<7;i++){const u=i/6.5,x=D[0]-L*.012+(K[0]-D[0])*u,y=D[1]-h*.04+(K[1]-D[1])*u;tooth(x,y,h*(.24-u*.12),L*(.028-u*.01),false)}
+ g.restore();return c}
+function buildTitleShark(){const L=Math.min(titleW()*.62,H*.55,330);tSideO=wideJaw(render3DShark(L*DPR,true,TYPES[sType]),L*DPR);tSideC=render3DShark(L*DPR,false,TYPES[sType]);tSideO.L=tSideC.L=L}
+function startTitle(){state="title";camY=0;camX=0;T.t=0;T.bitten=false;T.torn=false;T.done=false;T.sr=null;T.art=0;T.log=window.__saTitleLog?[]:null;window.__saTitleDone=false;const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;buildTitleShark();show("titleUi")}
 function titleRect(){const tw=title.dw,th=title.height*(tw/title.width);return {x:(W-tw)/2,y:Math.max(safeTop()+10,H*.09),w:tw,h:th}}
 function updTitle(dt){T.t+=dt;
  /* b45 (Jeremy): the intro ends on the blue-sea title with the same swimming shark; the dark poster (art/title-art.webp) is no longer shown. T.art stays 0. */
  if(!T.done&&T.t>TITLE_SWIM+.3){T.done=true;window.__saTitleDone=true}}
-function titleShark(){// path: in from the left past the words, turn at the right (head kept on screen), swim back OVER the title (mouth shut), then dive away down-left
- const r=titleRect(),L=tSideO.L,t=T.t,yw=r.y+r.h*.78,xr=Math.min(W-L*.62,r.x+r.w+L*.1),yo=Math.max(r.y-L*.02,L*.2),xl=Math.max(L*.62,r.x-L*.1);
- if(t<TITLE_PASS){const p=t/TITLE_PASS,e=p*(2-p);return {x:-L*.6+(xr+L*.6)*e,y:yw+Math.sin(p*6)*6,dir:1,open:false}}
- if(t<TITLE_TURN){const p=(t-TITLE_PASS)/(TITLE_TURN-TITLE_PASS);return {x:xr+Math.sin(p*Math.PI)*L*.08,y:yw+(yo-yw)*p*.5,dir:Math.cos(p*Math.PI),open:false}}
- const y1=yw+(yo-yw)*.5;
- if(t<TITLE_OVER){const p=(t-TITLE_TURN)/(TITLE_OVER-TITLE_TURN),e=p*(2-p);return {x:xr+(xl-xr)*p,y:y1+(yo-y1)*Math.sin(Math.min(1,e*1.4)*Math.PI/2),dir:-1,open:false}}
- // b45: instead of diving away, it glides down to the title's swim line and turns, then keeps cruising slowly back and forth around the title
+/* b46 (Jeremy: "the sharks teeth are not around the title with his mouth wide open from behind when he circle infront and behind the tile 2 times"):
+   the shark swims in from the right BEHIND the words, then circles the title TWICE (each lap: behind the words along the top, in front along the bottom),
+   mouth wide open with the teeth showing the whole time. It still never bites (no tear, no CHOMP, no shake). Then it glides to the swim line and cruises. */
+const TITLE_ENTER=.9,TITLE_LAP=3.2,TITLE_GLIDE=.5;
+function titleShark(){const r=titleRect(),L=tSideO.L,t=T.t,yw=r.y+r.h*.78,xr=Math.min(W-L*.62,r.x+r.w+L*.1),xl=Math.max(L*.62,r.x-L*.1);
+ const ocx=r.x+r.w/2,ocy=r.y+r.h*.5,Rx=Math.max(L*.3,Math.min(r.w/2+L*.3,W/2-L*.55)),Ry=r.h*.3,L2=TITLE_ENTER+2*TITLE_LAP;
+ const o=th=>({x:ocx+Rx*Math.cos(th),y:ocy-Ry*Math.sin(th)});
+ if(t<TITLE_ENTER){const p=t/TITLE_ENTER,e=p*(2-p),q=o(0);return {x:W+L*.7+(q.x-W-L*.7)*e,y:q.y,dir:-1,open:true,layer:"behind",lap:0}}
+ if(t<L2){const th=(t-TITLE_ENTER)/TITLE_LAP*2*Math.PI,q=o(th),vx=-Rx*Math.sin(th),vy=-Ry*Math.cos(th),sp=Math.hypot(vx,vy)||1;
+  return {x:q.x,y:q.y,dir:Math.max(-1,Math.min(1,vx/sp*2.2)),tilt:Math.atan2(vy,Math.abs(vx)+1e-6)*.35,open:true,layer:Math.sin(th)>0?"behind":"front",lap:1+Math.min(1,Math.floor((t-TITLE_ENTER)/TITLE_LAP))}}
  const W0=.45,U0=Math.asin(.25)/W0,cx=u=>xl+(xr-xl)*(1-Math.cos(u*W0))/2;
- if(t<TITLE_SWIM){const p=(t-TITLE_OVER)/(TITLE_SWIM-TITLE_OVER),e=p*p*(3-2*p);return {x:xl+(cx(U0)-xl)*e,y:yo+(yw-yo)*e,dir:-Math.cos(p*Math.PI),open:false}}
- const u=U0+(t-TITLE_SWIM)*(calm?.6:1);return {x:cx(u),y:yw+Math.sin(u*1.3)*(calm?3:6),dir:Math.max(-1,Math.min(1,Math.sin(u*W0)*4)),open:false}}
-function drawTitle(t){const r=titleRect(),bob=(T.t<TITLE_SWIM||calm)?0:Math.sin(t*1.5)*3;
- if(T.art<1){X.globalAlpha=1-T.art;X.drawImage(title,r.x,r.y+bob,r.w,r.h);X.globalAlpha=1}// old 3D words cross-fade out as the picture comes in
- {const q=titleShark(),s=tSideC,dw=s.width/DPR,dh=s.height/DPR,L=s.L;X.save();X.globalAlpha=q.a==null?1:Math.max(0,q.a);X.translate(q.x,q.y);X.scale(Math.abs(q.dir)<.08?.08*Math.sign(q.dir||1):q.dir,1);X.drawImage(s,-dw/2-L*.05,-dh/2,dw,dh);X.restore();
-  const hx=q.x+q.dir*L*.5;T.sr={x:q.x,y:q.y,head:hx,headY:q.y,L,dir:q.dir}}}
+ if(t<TITLE_SWIM){const p=(t-L2)/TITLE_GLIDE,e=p*p*(3-2*p),q=o(0);return {x:q.x+(cx(U0)-q.x)*e,y:q.y+(yw-q.y)*e,dir:-Math.cos(p*Math.PI),open:true,layer:"front",lap:3}}
+ const u=U0+(t-TITLE_SWIM)*(calm?.6:1);return {x:cx(u),y:yw+Math.sin(u*1.3)*(calm?3:6),dir:Math.max(-1,Math.min(1,Math.sin(u*W0)*4)),open:true,layer:"front",lap:3}}
+function drawTitleShark(q){const s=q.open?tSideO:tSideC,dw=s.width/DPR,dh=s.height/DPR,L=s.L,back=q.layer==="behind",k=back?.86:1;X.save();X.globalAlpha=q.a==null?1:Math.max(0,q.a);X.translate(q.x,q.y);if(q.tilt)X.rotate(q.tilt*Math.sign(q.dir||1));X.scale((Math.abs(q.dir)<.08?.08*Math.sign(q.dir||1):q.dir)*k,k);
+X.drawImage(s,-dw/2-L*.05,-dh/2,dw,dh);X.restore();
+ const hx=q.x+q.dir*L*.5*k;T.sr={x:q.x,y:q.y,head:hx,headY:q.y,L,dir:q.dir,open:!!q.open,layer:q.layer,lap:q.lap};if(T.log)T.log.push([+T.t.toFixed(2),q.layer,q.lap,!!q.open])}
+function drawTitle(t){const r=titleRect(),bob=(T.t<TITLE_SWIM||calm)?0:Math.sin(t*1.5)*3,q=titleShark();
+ if(q.layer==="behind")drawTitleShark(q);// b46: behind part of each lap: shark first, words drawn over it
+ if(T.art<1){X.globalAlpha=1-T.art;X.drawImage(title,r.x,r.y+bob,r.w,r.h);X.globalAlpha=1}
+ if(q.layer!=="behind")drawTitleShark(q)}
 
 // ---------- play ----------
 let lastBub=-9,wasFast=false;
@@ -898,6 +921,13 @@ function buildPick(){const box=$("pickList");box.innerHTML="";for(const k of Obj
 let tapAt=-1e9,titleDown=false;
 $("titleUi").addEventListener("pointerdown",()=>{if(performance.now()-tapAt>=600)titleDown=true},true);
 $("titleUi").addEventListener("click",e=>{const ghost=performance.now()-tapAt<600||(e.detail!==0&&!titleDown);if(ghost){e.stopPropagation();e.preventDefault()}},true);
+/* b46 (Jeremy: "Shark attack still had no music"): Chrome on Android does not count a finger-DOWN as permission to play sound, so the intro music
+   started on pointerdown was blocked and never retried. Every finger-UP / click / key press now wakes the AudioContext and, on the title or pick screen,
+   (re)starts the intro music if it was blocked. It never restarts music that is already playing or has finished, and respects the Sound/Songs switches. */
+function wakeAudio(){initAudio();if(AC&&AC.state==="suspended")AC.resume().catch(()=>{});
+ const a=music.title;if(!a||music.cur!==a||!musOn()||(state!=="title"&&state!=="pick")||!a.paused||a.ended||document.hidden)return;
+ a.volume=MUSIC_VOL.title;a.play().catch(()=>{})}
+for(const ev of["pointerup","touchend","click","keydown"])document.addEventListener(ev,wakeAudio,true);
 function sndHint(){const h=$("sndOff");if(h)h.classList.toggle("hide",musOn())}
 $("tap").addEventListener("pointerdown",e=>{e.preventDefault();tapAt=performance.now();titleDown=false;initAudio();if(music.title){try{music.title.currentTime=0}catch(e){}}startTitle();playMusic("title")});/* b44: intro music always starts from the beginning at launch */
 // b44 (Jeremy: "intro every time"): a page restored from the back-forward cache (reopened app) counts as a launch. Outside a game, go back to "Tap to start" so the intro + its music play again.
@@ -943,7 +973,7 @@ window.__saUpd=UPD;
 // ---------- test hooks ----------
 window.__sa={get state(){return state},shark,fish,surf,touch,perf,sfxCount,TYPES,TIERS,LAUNCH,BEAT,STEER,FAST_SFX,SURFERS,MAX_LEVEL,ROUND_SECONDS,
  get score(){return score},get timeLeft(){return timeLeft},set timeLeft(v){timeLeft=v},get best(){return best},get endReason(){return endReason},get soundOn(){return soundOn},get songsOn(){return songsOn},get fxOn(){return fxOn},get musOn(){return musOn()},get titleMusicPlaying(){return !!(music.title&&!music.title.paused)},get chip(){return !!chip.buf},get chipPlaying(){return !!chip.src},get chipFailed(){return chip.failed},get acState(){return AC?AC.state:"none"},get looping(){return !!raf},MUSIC_VOL,get placeholder(){return !!placeholder},
- get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},DIVE,diveK,WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
+ get type(){return sType},get camY(){return camY},get WORLD_H(){return WORLD_H},get sizeK(){return sizeK},DIVE,diveK,WORLD,ZONES,GROW,CREATURES,DODGE,depthOf,fleeK,ptsOf,growOf,bite,spawnFish,setCreature,get titleT(){return T.t},get titleShark(){return T.sr},get titleLog(){return T.log},get titleTorn(){return T.torn||T.bitten},get titleArt(){return T.art},get titleArtOK(){return artOK},TITLE:{PASS:TITLE_PASS,TURN:TITLE_TURN,OVER:TITLE_OVER,SWIM:TITLE_SWIM,FADE:TITLE_ART_FADE},get titleRect(){return titleRect()},get rotPaused(){return fsRot},BUILD,set god(v){godMode=!!v},get SURF(){return SURF},get BED(){return BED},trait,maxSpeed:()=>sharkMax(shark.lvl),power,canLaunch,rel,feed,need,beatNow,beatLen,setRound(s){window.__saRound=s},
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti,kind){const f=fish[0];kind=kind||(shark.lvl===0?"plankton":"fish");setCreature(f,kind==="plankton"?bite()*.4:TIERS[ti||0].s,kind);f.band=[SURF+6,Infinity];f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>!q.used)||fish[0];setCreature(f,TIERS[ti].s,"fish");f.band=[SURF+6,Infinity];f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},

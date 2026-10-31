@@ -16,9 +16,10 @@ def intro_runs(pg,tag,shots=False):
   if shots: pg.screenshot(path=f'{SHOTS}/intro-1-swim-past.png')
   pg.wait_for_timeout(1100)
   if shots: pg.screenshot(path=f'{SHOTS}/intro-2-around-title.png')
-  check(pg.evaluate('__sa.titleShark')!=None,f'{tag}: shark swims in the intro')
+  check(pg.evaluate('__sa.titleShark')!=None and pg.evaluate('__sa.titleShark.open')==True,f'{tag}: shark swims in the intro, mouth wide open (b46)')
+  check(pg.evaluate('__sa.TITLE.SWIM')<=20,f'{tag}: b46 intro swim part is at most 20 s')
   check(pg.evaluate('__sa.titleMusicPlaying'),f'{tag}: intro music plays')
-  pg.wait_for_function('window.__saTitleDone===true',timeout=8000)
+  pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
   if shots: pg.wait_for_timeout(400);pg.screenshot(path=f'{SHOTS}/intro-3-dive-done.png')
   check(True,f'{tag}: intro finishes')
 try:
@@ -36,9 +37,9 @@ try:
   # music switch respected: songs off -> intro runs, music silent
   pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.evaluate('localStorage.setItem("sharkAttack_songs","0")');pg.reload();pg.wait_for_timeout(300)
   pg.click('#tap');pg.wait_for_timeout(300);check(pg.evaluate('__sa.state')=='title' and not pg.evaluate('__sa.titleMusicPlaying'),'music off: intro still runs, no music')
-  pg.wait_for_function('window.__saTitleDone===true',timeout=8000);check(True,'music off: intro finishes')
+  pg.wait_for_function('window.__saTitleDone===true',timeout=15000);check(True,'music off: intro finishes')
   # calm mode: intro still runs
-  pg.evaluate('localStorage.setItem("sharkAttack_calm","1")');pg.reload();pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=8000);check(True,'calm mode: intro runs')
+  pg.evaluate('localStorage.setItem("sharkAttack_calm","1")');pg.reload();pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000);check(True,'calm mode: intro runs')
   check(not errs,f'no page errors {errs[:2]}')
   b.close()
 finally: srv.terminate()
