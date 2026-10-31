@@ -10,7 +10,7 @@ def check(c,m):
 TMP=tempfile.mkdtemp(prefix='sa-b46-');APP=os.path.join(TMP,'app')
 shutil.copytree(ROOT,APP,ignore=shutil.ignore_patterns('.git','tests','tools','V9C-NOTES.txt','title-art-crop-preview.png'))
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-OLD=os.path.join(TMP,'b45');shutil.copytree(APP,OLD);open(os.path.join(OLD,'game.js'),'w').write(subprocess.run(['git','-C',ROOT,'show','bb4f91a2379c71068ed8cd5544538338d77e6138:game.js'],capture_output=True,text=True).stdout);PORT3=8899
+OLD=os.path.join(TMP,'b45');shutil.copytree(APP,OLD);open(os.path.join(OLD,'game.js'),'w').write(subprocess.run(['git','-C',ROOT,'show','e2fc027fdb9c7db1e6f9124f9e0e6e97fbc68601:game.js'],capture_output=True,text=True).stdout);PORT3=8899
 srv3=subprocess.Popen([sys.executable,'-m','http.server',str(PORT3),'--bind','127.0.0.1'],cwd=OLD,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 srv2=subprocess.Popen([sys.executable,'-m','http.server',str(PORT2),'--bind','127.0.0.1'],cwd=APP,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(.8)
 ST='({ac:AC?AC.state:"none",paused:music.title?music.title.paused:null,t:music.title?music.title.currentTime:-1,chip:!!chip.src,state:state,cur:music.cur===music.title})'
