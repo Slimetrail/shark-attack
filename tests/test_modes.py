@@ -1,4 +1,4 @@
-# Game-mode tests: Timed vs Endless, diver speed-up + cap, "Divers are faster!" hint, per-mode best. Run: python3 tests/test_modes.py
+# Game-mode tests: Timed vs Endless, per-mode best (b52: divers removed). Run: python3 tests/test_modes.py
 import subprocess,time,sys,os
 from playwright.sync_api import sync_playwright
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=int(os.environ.get('SA_PORT6','8881'))
@@ -28,20 +28,10 @@ try:
   Q='()=>{__sa.clearFood();__sa.touch.on=false}'
   t0=ev(pg,'__sa.timeLeft');ev(pg,f'__sa.sim(5,{Q})');check(ev(pg,'__sa.timeLeft')==t0 and ev(pg,'__sa.state')=='play',f'no countdown in endless (state={ev(pg,"__sa.state")} end={ev(pg,"__sa.endReason")})')
   ev(pg,f'__sa.timeLeft=0;__sa.sim(.5,{Q})');check(ev(pg,'__sa.state')=='play','timeLeft 0 does not end endless')
-  ev(pg,'__sa.setAmbushForce(false)')
-  for i in range(5): ev(pg,'__sa.amb.on=false;__sa.netHit(null);__sa.shark.stun=0')
-  check(ev(pg,'__sa.state')=='play' and ev(pg,'__sa.netHits')==5,'5 net hits do not end endless')
-  D=ev(pg,'({...__sa.DIV,...__sa.MODE})')
-  for k in range(3): ev(pg,'__sa.surferCaught()')
-  base=ev(pg,'__sa.diverSpeed()/__sa.maxSpeed()');check(abs(base-D['DIVER_SPEED_FRACTION'])<1e-9,f'diver speed at trigger = base fraction ({base:.2f})')
-  for k in range(3): ev(pg,'__sa.surferCaught()')
-  v6=ev(pg,'__sa.diverSpeed()/__sa.maxSpeed()');exp=D['DIVER_SPEED_FRACTION']*(1+D['DIVER_SPEEDUP_PER_SURFER']*3)
-  check(abs(v6-exp)<1e-9,f'diver speed grows with surfers ({v6:.3f}=={exp:.3f})')
-  check(ev(pg,'__sa.fasterT')>0,'"Divers are faster!" hint at milestone')
-  ev(pg,'__sa.sim(.3,()=>{__sa.touch.on=false})');pg.wait_for_timeout(200);pg.screenshot(path=f'{SHOTS}/endless-play-faster.png')
-  for k in range(200): ev(pg,'__sa.surferCaught()')
-  check(abs(ev(pg,'__sa.diverSpeed()/__sa.maxSpeed()')-D['DIVER_SPEED_CAP'])<1e-9,'diver speed capped at DIVER_SPEED_CAP × shark top speed')
-  ev(pg,'localStorage.removeItem("sharkAttack_best_endless")');ev(pg,'__sa.setAmbushForce(null)')
+  for k in range(206): ev(pg,'__sa.surferCaught()')
+  ev(pg,f'__sa.sim(5,{Q})');check(ev(pg,'__sa.state')=='play','b52: 206 surfers caught, no divers come, endless keeps going')
+  check(ev(pg,'__sa.DIV')==None and ev(pg,'"spawnDiver" in __sa')==False,'b52: no diver hooks')
+  ev(pg,'localStorage.removeItem("sharkAttack_best_endless")')
   check(ev(pg,'__sa.state')=='play','still playing before the end')
   pg.evaluate('()=>gameOver("eaten")')
   pg.wait_for_function('__sa.state==="over"',timeout=4000);pg.wait_for_timeout(100)
@@ -49,12 +39,13 @@ try:
   st=pg.inner_text('#stats');check('Surfers eaten: 206' in st and 'Survived' in st,f'endless score screen shows surfers + time survived ({st})')
   check('Endless' in pg.inner_text('#bestTxt') and ev(pg,'+localStorage.getItem("sharkAttack_best_endless")')==ev(pg,'__sa.score'),'endless best saved separately')
   pg.screenshot(path=f'{SHOTS}/endless-score.png')
-  # timed still ends on 3rd net hit
+  # b52: timed has no "Caught!" any more; it ends on time
   tb=ev(pg,'localStorage.getItem("sharkAttack_best")')
-  ev(pg,'__sa.startAs("white","timed")');ev(pg,'__sa.setAmbushForce(false)')
-  for i in range(3): ev(pg,'__sa.amb.on=false;__sa.netHit(null);__sa.shark.stun=0')
-  pg.wait_for_timeout(200)
-  check(ev(pg,'__sa.state')=='over' and pg.inner_text('#reason')=='Caught!','Timed: 3 net hits = Caught!')
+  ev(pg,'__sa.startAs("white","timed")')
+  for k in range(20): ev(pg,'__sa.surferCaught()')
+  ev(pg,'__sa.sim(5,()=>{__sa.touch.on=false})');check(ev(pg,'__sa.state')=='play','Timed: 20 surfers caught, still playing (no Caught!)')
+  ev(pg,'__sa.timeLeft=.05');ev(pg,'__sa.sim(.3,()=>{__sa.touch.on=false})');pg.wait_for_timeout(200)
+  check(ev(pg,'__sa.state')=='over' and pg.inner_text('#reason')=="Time's up!",'Timed ends with Time\'s up!')
   check(ev(pg,'localStorage.getItem("sharkAttack_best")')==tb or ev(pg,'__sa.score')>0,'timed best untouched by endless')
   ev(pg,'__sa.startAs("white","timed")');t0=ev(pg,'__sa.timeLeft');ev(pg,'__sa.sim(2,()=>{__sa.touch.on=false})');check(ev(pg,'__sa.timeLeft')<t0-1.9,'timed still counts down')
   check(not errs,f'no console errors {errs}')

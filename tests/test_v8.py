@@ -21,7 +21,7 @@ try:
     check(ev('__sa.shark.lvl')==0 and abs(ev('__sa.worldK')-1/G['START'])<1e-6,f'{tag}: starts as a minnow (world drawn {1/G["START"]:.1f}x big)')
     if w==915: pg.wait_for_timeout(600);pg.screenshot(path=f'{SHOTS}/v8-minnow-start.png')
     # world scale: monotonic + shark drawn size fixed
-    ks=ev('()=>{const o=[];for(let l=0;l<=__sa.MAX_LEVEL;l++)o.push(1/__sa.trueGrow(l));return o}')
+    ks=ev('()=>{const o=[];for(let l=0;l<=10;l++)o.push(1/__sa.trueGrow(l));return o}')
     check(all(ks[i+1]<ks[i] for i in range(len(ks)-1)),f'{tag}: world scale shrinks every stage ({ks[0]:.2f} -> {ks[-1]:.2f})')
     # no popping: grow one level during play, sample per-frame change
     r=ev('''()=>{__sa.clearFood();const s=__sa.shark;s.x=innerWidth/2;s.y=__sa.SURF+innerHeight*.45;s.spd=0;const f=__sa.fish[3];__sa.setCreature(f,20,"fish");f.x=s.x+300;f.y=s.y;f.vx=0;
@@ -30,7 +30,7 @@ try:
     check(r['lvl']==1 and r['k1']<r['k0'] and r['mx']<.06,f'{tag}: growing eases the world smaller with no pop (max {r["mx"]*100:.1f}% per frame)')
     # v9 (Jeremy): the player's drawn size now GROWS each stage (was: stays fixed). Eased, no pop jump.
     check(abs(r['Lend']/L0-1)<.005 and r['Lmax']<.005,f'{tag}: b48 shark drawn size stays the same when it grows (x{r["Lend"]/L0:.3f})')
-    dk=ev('()=>{const o=[];for(let l=0;l<=__sa.MAX_LEVEL;l++)o.push(__sa.drawK(l));return o}')
+    dk=ev('()=>{const o=[];for(let l=0;l<=10;l++)o.push(__sa.drawK(l));return o}')
     check(all(abs(x-1)<1e-9 for x in dk),f'{tag}: b48 drawn size is the same at every stage ({dk[0]:.2f} -> {dk[-1]:.2f})')
     check(abs(r['ratio']-r['k1']/r['k0'])<.01,f'{tag}: other creatures shrink by the same world factor')
     # eat rules use relative size: same true-size fish stays food/not-food across world scale

@@ -110,7 +110,7 @@ try:
   for i in range(20): ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(60)
   check(ev(pg,'__sa.sfxCount.chomp')>=c0+6,'eating a fish triggers the chomp sound hook')
   pg.wait_for_timeout(1500);check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.worldK')<L0 and abs(ev(pg,'__sa.shark.L')/D0-1)<.005 and ev(pg,'__sa.maxSpeed()')>v0,'eating small fish grows the shark (b48: drawn shark stays the same size, the world shrinks) and speeds it up')
-  ev(pg,'__sa.feed(9999)');check(ev(pg,'__sa.shark.lvl')==ev(pg,'__sa.MAX_LEVEL'),'size capped at MAX_LEVEL')
+  ev(pg,'__sa.feed(9999)');check(ev(pg,'__sa.shark.lvl')>10 and ev(pg,'__sa.MAX_LEVEL===Infinity'),'b52: no size cap (MAX_LEVEL is Infinity)')
   # bubbles on fast crossing with cooldown
   def go_fast():
     ev(pg,'()=>{const s=__sa.shark;s.spd=__sa.maxSpeed()*.4;s.y=__sa.SURF+innerHeight*.45;s.x=innerWidth/2;s.ang=0;Object.assign(__sa.touch,{on:true,dir:0,drive:1,lastMove:performance.now()+9e9})}')
@@ -120,7 +120,7 @@ try:
   # v9: no red tint/'!' marker any more; the data flag (eater) still flips once the shark outgrows it
   stage(pg,.7,0);ev(pg,'__sa.setLevel(0)');i3=ev(pg,'()=>{const i=__sa.placeFishAt(3,innerWidth*.8,__sa.SURF+90,-1);__sa.setCreature(__sa.fish[i],__sa.bite()*2,"shark");return i}');pg.wait_for_timeout(100);d0=ev(pg,f'__sa.fish[{i3}].danger')
   pg.screenshot(path=f'{SHOTS}/danger-fish.png')
-  ev(pg,'__sa.setLevel(10)');pg.wait_for_timeout(100);d1=ev(pg,f'__sa.fish[{i3}].danger')
+  ev(pg,'__sa.setLevel(8)');pg.wait_for_timeout(100);d1=ev(pg,f'__sa.fish[{i3}].danger')
   check(d0 and not d1,f'bigger shark is an eater (data only, no marker) while bigger, becomes food once the shark outgrows it ({d0}->{d1})')
   # leaping shark is safe from big fish (arc only)
   stage(pg,.06,-math.pi/2,'__sa.maxSpeed()');ev(pg,'__sa.setLevel(0);__sa.shark.run=innerHeight*.5;__sa.touch.on=true;__sa.touch.dir=-Math.PI/2;__sa.touch.drive=1;__sa.touch.lastMove=performance.now()+9e9')
@@ -194,8 +194,8 @@ try:
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v51' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v51')
-  check('audio/play-swim-piano.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v51").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
+  check('sharkattack-v52' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v52')
+  check('audio/play-swim-piano.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v52").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
   pg.wait_for_function('__sa.chip',timeout=8000);pg.wait_for_timeout(300)
   check(ev(pg,'__sa.chipPlaying') and not ev(pg,'__sa.placeholder'),'offline: real chiptune plays from cache (placeholder not used)')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()

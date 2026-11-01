@@ -74,10 +74,10 @@ try:
        Object.assign(__sa.touch,{on:true,dir:Math.sin(t*.3)*.3+(y<deep*.3?.5:y>deep*.7?-.5:0),drive:1});if(s.stun>0||s.air||y<s.L*.5)skip=1.5;
        if(skip>0){skip-=dt;return}if(t>3){mn=Math.min(mn,s.spd/top0);mxs=Math.max(mxs,s.spd/top0)}});out.push({lv,mn,mxs,same:__sa.maxSpeed()===top0})}return out}''')
   for q in r: check(q['mn']>.97 and q['mxs']<=1+1e-6 and q['same'],f"size {q['lv']+1}: 60 s at full drive, speed stays at top ({q['mn']:.3f}-{q['mxs']:.3f}), top speed unchanged over time")
-  # struggle still works while netted
-  stage();ev('()=>{__sa.shark.stun=3}');s0=ev('__sa.shark.stun');pg.mouse.move(300,200);pg.mouse.down()
+  # b52: no nets; wiggling the finger is plain steering and never stuns
+  stage();pg.mouse.move(300,200);pg.mouse.down()
   for i in range(30): pg.mouse.move(300+(60 if i%2 else -60),200);pg.wait_for_timeout(16)
-  pg.mouse.up();s1=ev('__sa.shark.stun');check(s1<s0-.5,f'netted: wiggling the finger still shortens the stun ({s0:.2f} -> {s1:.2f} s)')
+  pg.mouse.up();check(ev('__sa.shark.stun')==0 and ev('__sa.state')=='play','b52: wiggling never stuns (no nets)')
   check(not errs,f'no page errors {errs[:2]}')
   b.close()
 finally: srv.kill()

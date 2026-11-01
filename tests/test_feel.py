@@ -18,8 +18,7 @@ try:
   pg.goto(URL+'?round=300');pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000);pg.click('#start');pg.wait_for_timeout(150);pg.click('.pick[data-type=white]');pg.wait_for_timeout(300)
   def stage(): ev(pg,'()=>{__sa.clearFood();const s=__sa.shark;s.x=innerWidth/2;s.y=__sa.SURF+innerHeight*.45;s.ang=0;s.spd=__sa.maxSpeed()*.2;__sa.touch.on=false;__sa.touch.drive=0}')
   # tuning constants are exposed and sane
-  D=ev(pg,'__sa.DIV');src=open(os.path.join(ROOT,'game.js')).read();check('return m?+m[1]:60' in src and D['DIVER_CATCHES_TO_LOSE']==3 and D['AMBUSH_ON_HIT'][1]==False and D['AMBUSH_CHANCE']==.5 and D['AMBUSH_ON_HIT'][3]==True,'defaults: 60 s round, 3 net hits, ambush hit1 never / hit2 50% / hit3 ends')
-  check(D['AMBUSH_ARRIVE_MS']>=1200,'ambush warning time >= 1.2 s')
+  src=open(os.path.join(ROOT,'game.js')).read();check('return m?+m[1]:60' in src and ev(pg,'__sa.DIV')==None,'defaults: 60 s round; b52: no net/ambush constants (divers removed)')
   # v10 analog: no dead spot; a jitter of 1-2 px from the first touch gives only a tiny drive (slow), never a burst
   stage();pg.mouse.move(200,200);pg.mouse.down();a0=ev(pg,'__sa.shark.ang')
   for dx,dy in [(1,1),(2,-1),(-1,2),(1,-2)]: pg.mouse.move(200+dx,200+dy);pg.wait_for_timeout(20)
@@ -35,11 +34,11 @@ try:
   # pointercancel ends steering
   stage();pg.mouse.move(100,200);pg.mouse.down();pg.mouse.move(200,200,steps=4)
   ev(pg,'document.getElementById("c").dispatchEvent(new PointerEvent("pointercancel",{bubbles:true}))');check(ev(pg,'__sa.touch.on')==False,'pointercancel releases the finger (no stuck steering)');pg.mouse.up()
-  # wiggle escape with real pointer events
-  stage();ev(pg,'__sa.setAmbushForce(true);__sa.netHit(null)');ev(pg,'__sa.shark.stun=0;__sa.shark.safe=0');ev(pg,'__sa.ambCool=0;__sa.amb.on=false;__sa.netHit(null)')
+  # b52: no nets, so wiggling never stuns or frees anything; the shark just keeps playing
+  stage()
   pg.mouse.move(150,250);pg.mouse.down()
   for i in range(6): pg.mouse.move(260 if i%2==0 else 150,250,steps=3);pg.wait_for_timeout(25)
-  pg.mouse.up();check(ev(pg,'__sa.shark.stun')==0,'wiggle escape frees the shark before the ambusher arrives');pg.wait_for_timeout(1600);check(ev(pg,'__sa.state')=='play','escaped shark survives the ambush')
+  pg.mouse.up();check(ev(pg,'__sa.shark.stun')==0,'wiggling never stuns the shark (no nets in b52)');pg.wait_for_timeout(1600);check(ev(pg,'__sa.state')=='play','shark still playing after wiggling')
   # surface glide: shallow upward angle keeps speed (no speed-killing bumps)
   stage();ev(pg,'()=>{const s=__sa.shark;s.y=__sa.SURF+s.L*.1;s.ang=-.2;s.spd=__sa.maxSpeed()*.4;s.run=0;Object.assign(__sa.touch,{on:true,dir:-.2,drive:1,lastMove:performance.now()+9e9})}');sp0=ev(pg,'__sa.shark.spd');pg.wait_for_timeout(300);ev(pg,'__sa.touch.on=false')
   check(ev(pg,'__sa.shark.spd')>=sp0*.95,'shallow angle into the surface glides along it without losing speed')

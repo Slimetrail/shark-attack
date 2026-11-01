@@ -7,11 +7,11 @@ ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=int(os.env
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(1)
 BOT=r'''(wig)=>{const S=__sa,s=S.shark,W=innerWidth,H=innerHeight;let mode="hunt",wt=0,t=0;const st={py:-1e9,pt:0,get mode(){return mode},amb:0,ambEaten:0,ambWarn:[],netT:[]};let ambSeen=false,ambT0=0;
  return {st,fn(dt){t+=dt;const T=S.touch;T.on=true;T.lastMove=performance.now()+9e9;
-  if(S.amb.on&&S.amb.phase==="come"&&!ambSeen){ambSeen=true;st.amb++;ambT0=t}if(!S.amb.on)ambSeen=false;
-  if(s.stun>0){wt+=dt;if(wig&&wt>1/wig){wt=0;S.struggle(W*S.DIV.STRUGGLE_PX)}return}
+  
+  
   let ax=0,ay=0;const L=s.L;
   for(const f of S.fish)if(!f.off&&f.kind!=="plankton"&&f.kind!=="star"&&f.s/S.bite()>=S.EAT.RATIO*.92){/* v9: size judged from data (f.s vs bite), there is no on-screen indicator */const dx=s.x-f.x,dy=s.y-f.y,d=Math.hypot(dx,dy);if(d<L*2.2+f.s){ax+=dx/d*(1/Math.max(.3,d/L));ay+=dy/d*(1/Math.max(.3,d/L))}}
-  for(const d of S.divers)if(d.grace<=0){const dx=s.x-d.x,dy=s.y-d.y,q=Math.hypot(dx,dy);if(q<H*.3){ax+=dx/q*1.5;ay+=dy/q*1.5}}
+  
   if(Math.hypot(ax,ay)>.4){T.dir=Math.atan2(ay,ax);T.drive=1;return}
   const cx=S.camX,cy=S.camY,sf=S.surf.filter(q=>q.zip<=0&&q.x>cx+40&&q.x<cx+W-40);/* v8 endless world: everything is camera-relative */
   if(sf.length&&!s.air&&s.lvl>=S.GROW.SURF_LVL){/* v8: only a shark big enough for surfers goes for them */
@@ -29,7 +29,7 @@ try:
   for wig,label in [(4,'good(wig4)'),(1.5,'weak(wig1.5)')]:
    for t in ['white','hammer','tiger']:
     res[(label,t)]=pg.evaluate("""([N,t,wig,BOT,CAP])=>{const mk=eval(BOT),out=[];for(let i=0;i<N;i++){__sa.startAs(t,"endless");localStorage.setItem("sharkAttack_diverTip","1");const B=mk(wig);let _ft=-1,_lt=-1,_tt=0;const _fn=dt=>{_tt+=dt;if(_ft<0&&__sa.surfersCaught>0)_ft=_tt;if(_lt<0&&__sa.shark.lvl>=6)_lt=_tt;B.fn(dt)};const el=__sa.sim(CAP,_fn,1/30);
-      out.push({ft:_ft,lt:_lt,score:__sa.score,end:__sa.endReason||"alive",surf:__sa.surfersCaught,hits:__sa.netHits,t:el,dv:__sa.diverSpeed()/__sa.maxSpeed()})}__sa.setMode("timed");return out}""",[N,t,wig,BOT,CAP])
+      out.push({ft:_ft,lt:_lt,score:__sa.score,end:__sa.endReason||"alive",surf:__sa.surfersCaught,hits:0,t:el,dv:0})}__sa.setMode("timed");return out}""",[N,t,wig,BOT,CAP])
   b.close()
 finally: srv.terminate()
 def med(a): a=sorted(a);return a[len(a)//2]
