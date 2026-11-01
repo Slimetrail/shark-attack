@@ -5,33 +5,24 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
 ## How to play
 - **Steer:** slide your finger and the shark swims in the direction you slide (it faces that way). The farther you keep sliding, the faster it goes, building up gradually. If you lift your finger it drifts and slows down.
 - **Leap:** *Swim down to build speed, then swim up fast to leap!* Leap height depends on speed × run-up distance at speed, up to a cap. Too little just bumps the surface. The power gauge shows your launch power.
-- **Surfers** can only be caught in the air. Kneeling surfers are worth 3 and standing surfers 5.
+- **Surfers** can only be caught in the air. Kneeling surfers are worth 15 and standing surfers 20 (build 52).
 - **Landing on the beat:** if a landing comes within ±80 ms of the music beat, it gets nudged onto the beat for a +1 perfect bonus. The beat follows the gameplay track's eighth-note pulse, `BEAT.CHIPTUNE_BPM` = 80, so a beat every 0.75 s. `PLACEHOLDER_BPM` (100) is only used by the fallback loop.
 - **Fish:**
   - Eat smaller fish to fill the growth meter. The shark grows in size steps (max 10) and gets a little faster each step.
   - Nothing marks which fish are bigger than you (v9): judge size by eye. If a clearly bigger creature touches you, it's **Gulp!** and the round ends.
   - Fish the same size as you just bump you.
   - You're safe from fish only while you're in the air.
-- **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!", "Gulp!" or "Caught!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
+- **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!" or "Gulp!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
 
-## Divers and the ambush
-- **Divers** turn up after you catch your **3rd surfer** in a round (`DIVER_TRIGGER_SURFERS`). You get a "Divers!" banner and a warning sound.
-  - One more diver comes for every 3 more surfers, with up to 3 at once (`DIVER_MAX`).
-  - Divers start at a screen edge or near the surface, away from you, and can't net you for their first 2 s.
-  - They swim at 58% of your top speed (`DIVER_SPEED_FRACTION`) and only notice you within 1/3 of the screen height (`DIVER_DETECT_RANGE`). Out of range they wander, and they give up a chase after 3 s.
-  - They stay underwater and can't net you mid-leap.
-  - When an off-screen diver is close, an orange arrow shows at the screen edge.
-- **Net hits:** you're stunned for 1 s (`STUN_MS`) and lose 2 points of growth, and that diver waits 2 s before it can net again.
-  - The three icons under the timer show your hits.
-  - **The 3rd net hit ends the round with "Caught!".**
-- **Ambush:** a big dark shark, 1.6× your current size, may come for you while you're stunned.
-  - Hit 1 never brings one. Hit 2 brings one half the time (`AMBUSH_CHANCE` 0.5). Hit 3 always would, but it ends the round first.
-  - It comes in from the far edge (faded in, with a warning sound; v9: no "!" marker), and reaches you 1.35 s after the hit (`AMBUSH_ARRIVE_MS`).
-  - A hit that brings an ambush stuns you for 2 s (`AMBUSH_STUN_MS`) so the threat is real. Wiggle or drag to break free: every 1/5 screen width of finger travel takes 0.25 s off the stun (`STRUGGLE_SHORTEN_MS`), so about 3 quick wiggles gets you out in time.
-  - If you're still stunned when it arrives, it's **Gulp!**. If you got free, it circles off and leaves after 3 s.
-  - It can't eat a shark that isn't stunned or is mid-leap. Only one comes at a time, with 6 s between ambushes (`AMBUSH_COOLDOWN_MS`).
-  - The first time divers appear, you get a tip: "Nets stun you. Big sharks love a stunned shark!"
-- **The 3-hit lose rule and the ambush odds and timing are OUR choice, still to confirm with Jeremy.** Everything above is a constant at the top of `game.js`.
+## Build 52 (Jeremy, via Eve)
+- **No divers.** Divers, nets, the stun, the wiggle-free and the ambush shark are gone (Jeremy: "for shark no more divers"). A round ends only with "Time's up!" or "Gulp!". Older notes below that mention them are history.
+- **Infinite growth.** There is no size cap (`MAX_LEVEL` = Infinity). The shark stays the same size on screen and the world keeps shrinking. Top speed stops rising after size 11 (`SPEED_LVL_CAP`).
+- **Surface prey chain.** Surfers keep shrinking. From size 13 sail boats join them (`SURFACE.SAIL_LVL`), from size 18 cargo ships (`SURFACE.CARGO_LVL`). Boats can be caught in a leap or bitten from just under the surface. Boats and ships are drawn in code.
+- **Bonus points.** Kneeling surfer 15, standing surfer 20, sail boat 40, cargo ship 100 (fish give about 1-4). Each shows a big gold "+N" pop.
+- **Fish leave the shallows as you grow.** Depth bands 0-.3, .3-.62, .62-1.0 and 1.0-1.6 of the water empty out at sizes 10, 14, 18 and 23 (`VANISH`); fish there fade out. The water below 1.6 always has fish.
+- **Boost** is now 2.2x top speed for 1.2 s, whatever the finger asks, then a 4 s recharge (`BOOST`), with a pale wake behind the tail.
+- **3D turn.** When the shark reverses it no longer mirrors in one frame: the body narrows through a head-on view over about 0.6 s, the tail lags, and the belly catches the light (`TURN3D`). Based on general knowledge of how sharks turn, not on footage.
+- Tests: `tests/test_b52.py`. Tested on a pretend phone (Chromium touch emulation), not a real phone.
 
 ## Shark types (`TYPES_MECHANICAL`)
 The **numbers below are our own choice and easy to tune** in the `TYPES` table in `game.js`. Add `?flat` to the URL to make all types play the same.

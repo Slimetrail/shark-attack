@@ -3,17 +3,19 @@
 // ======================= EASY-TO-CHANGE SETTINGS =======================
 // ROUND_SECONDS: round length. 60 s is the DEFAULT and is NOT YET CONFIRMED by Jeremy. Test override: ?round=N
 const ROUND_SECONDS=(()=>{const m=/[?&]round=(\d+(\.\d+)?)/.exec(location.search);return m?+m[1]:60})();
-const N_SURF=3,MAX_LEVEL=10,MAX_PARTS=30,BEST_KEY="sharkAttack_best",SND_KEY="sharkAttack_sound",SONGS_KEY="sharkAttack_songs",SFX_KEY="sharkAttack_sfx",CALM_KEY="sharkAttack_calm",TYPE_KEY="sharkAttack_type",HINT_KEY="sharkAttack_hinted";
+const N_SURF=3,MAX_LEVEL=Infinity,/* b52 (Jeremy t1339u "infinite growth"): no size cap */MAX_PARTS=30,BEST_KEY="sharkAttack_best",SND_KEY="sharkAttack_sound",SONGS_KEY="sharkAttack_songs",SFX_KEY="sharkAttack_sfx",CALM_KEY="sharkAttack_calm",TYPE_KEY="sharkAttack_type",HINT_KEY="sharkAttack_hinted";
 // Fish tiers: small / medium / big / giant. Fish clearly bigger than the shark eat it (v9: no markers; judge size by eye).
 const TIERS=[{s:16,pts:1,grow:1,col:"#ffd23f",n:8},{s:28,pts:2,grow:2,col:"#7be04a",n:3},{s:44,pts:3,grow:3,col:"#b06cff",n:1},{s:62,pts:5,grow:4,col:"#ff7a1e",n:1}];
 const N_FISH=TIERS.reduce((a,t)=>a+t.n,0);
 // Steering: the finger's SLIDE direction = swim direction. Each px slid adds "drive" (speed); drive fades when the finger rests.
 const STEER={MIN:.2,FULL:.25,DIR_PX:1.5,DRIVE_DECAY:.5,TURN:12,ACC:1.8,DEC:1.2,VK:.45,VDEAD:.18,PITCH_TURN:.6};/* b46 (Jeremy: "way too sensitive with up and down"): VK scales the up/down part of a finger move (0.45: a 45-degree drag now aims about 24 degrees), VDEAD ignores small up/down wobble (|uy|<0.18 of the move), PITCH_TURN slows turning when the turn is mostly up/down */
-const BOOST={MUL:1.15,ACC:1.4,DUR:1.2,CD:4};/* b46 boost: 1.2 s at 1.15x speed (1.4x acceleration), then 4 s recharge. Tuned with tests/measure_flee.py: a slight edge, not a sure catch */
+const TURN3D={SEC:.7,TAIL:7,DEAD:.06,PITCH_MIN:.35,BANK:.12,HEAD:.38};/* b52: visual yaw eases through 180 deg in .7 s, tail lags; based on general knowledge of how sharks turn, not footage */
+const BOOST={MUL:2.2,ACC:4,DUR:1.2,CD:4};/* b52 (Jeremy: "the shark should go really fast"): 1.2 s at 2.2x top speed, whatever the finger asks, then 4 s recharge *//* b46 boost: 1.2 s at 1.15x speed (1.4x acceleration), then 4 s recharge. Tuned with tests/measure_flee.py: a slight edge, not a sure catch */
 const boost={t:0,cd:0,n:0};// v10 ANALOG: drive = distance of the finger from its FIRST touch point / (FULL x screen width), 0..1. Held = no decay (the shark never tires; top speed depends only on size). DRIVE_DECAY only after the finger lifts (back to the MIN idle drift).
 // Launch: heading up through the surface. power = LAUNCH.K * (speed/max) * (run-up distance at speed / screen height), capped at 1.
 const LAUNCH={K:2.2,MIN_POWER:.22,MIN_SPEED:.45,UP:-.35,H_MAX:.32,G:1.6,COOL:.3};// H_MAX: max height as fraction of screen height, G: gravity in screen-heights/s^2
-const SURFERS=[{kind:"kneel",pts:3,hy:16},{kind:"stand",pts:5,hy:46}];// hy: how high above the water the surfer's catch point is
+const SURFERS=[{kind:"kneel",pts:15,hy:16,grow:2,label:"SPLASH!"},{kind:"stand",pts:20,hy:46,grow:2,label:"SPLASH!"},{kind:"sail",pts:40,hy:8,hw:100,grow:5,label:"SAIL BOAT!"},{kind:"cargo",pts:100,hy:16,hw:320,grow:10,label:"CARGO SHIP!"}];/* b52 (Jeremy t1343u "extra points for eating surfers, sailboats and cargo ships"): fish give about 1-4 */
+const SURFACE={SAIL_LVL:12,CARGO_LVL:17,MINK:.0005};/* b52: from size 13 sail boats join the surfers, from size 18 cargo ships (world px: sail 200 long, cargo 640) */// hy: how high above the water the surfer's catch point is
 const BEAT={PLACEHOLDER_BPM:100,CHIPTUNE_BPM:120/*v10: eighth-note pulse of "Open Water" v2 (6/8, eighth = 0.5 s)*/,ASSIST_MS:80,PERFECT_MS:45,PERFECT_BONUS:1,on:true};
 const SAFE_SPAWN_S=1.5;
 // ---- v6: LANDSCAPE WORLD + DEPTH ----
@@ -25,8 +27,8 @@ const ZONES=[{d:0,name:"Sunlit",col:"#3fc4f0"},{d:.3,name:"Twilight",col:"#1a5f9
 // GROWTH (slowed a lot in v6): growth needed for the next size = NEED_BASE + NEED_PER_LVL × size; a creature gives size/GROW_DIV growth; a surfer gives SURFER.
 // v8 growth: the shark starts as a minnow (START x full size) and gets STEP x bigger per level. Surfers need level SURF_LVL.
 // The shark is DRAWN the same size all game; instead the world shrinks around it (worldK = 1/true size), eased so nothing pops.
-const GROW={NEED_BASE:3,NEED_PER_LVL:1,REL:3,SURFER:2,START:.4,STEP:1.175,SURF_LVL:6,EASE:3};
-const trueGrow=l=>GROW.START*Math.pow(GROW.STEP,l);
+const GROW={NEED_BASE:3,NEED_PER_LVL:1,REL:3,SURFER:2,START:.4,STEP:1.175,SURF_LVL:6,EASE:3,NUM_L:2000};
+const trueGrow=l=>GROW.START*Math.pow(GROW.STEP,Math.min(l,GROW.NUM_L));/* b52: exponent clamped only so the number stays finite (1.175^2000 ~ 1e140); the world keeps shrinking far past any reachable size */
 // v10 b42 DIVE: swimming DOWN takes longer the smaller the shark is. Down speed x diveK = true size / true size at SURF_LVL (clamped MIN..1).
 // The world (zones, floor, spawn bands) stays the same; only the downward part of the shark's swim is slowed, so depth in body lengths grows as the shark shrinks.
 const DIVE={REF_LVL:6,MIN:.4};const diveK=l=>Math.max(DIVE.MIN,Math.min(1,trueGrow(l)/trueGrow(DIVE.REF_LVL)));
@@ -41,12 +43,10 @@ const DIVE={REF_LVL:6,MIN:.4};const diveK=l=>Math.max(DIVE.MIN,Math.min(1,trueGr
 // then flees again. Same flee speed (fish stay slower than the shark). Never turns into the surface or the floor.
 const DODGE={ON:true,TIRED:true,R:2.5,R_TIRED:1.2,WIG:.15,GAIN:7,ANG_SHALLOW:60,ANG_DEEP:80,CD_SHALLOW:1.4,CD_DEEP:.8,ZIG_P:.25,ZIG_AT:.25,DUR:.45,
  SMALL_Q:.35,SMALL:{ang:85,dur:.35,cd:.8},MID:{ang:55,dur:.55,cd:1.2},NEAR_Q:.7,NEAR:{ang:40,dur:.45,cdS:2.5},CD_LVL:.03,CD_MIN:.6};
-const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.60,FLEE_MAX:.72,FLEE_SHALLOW:[.62,.66],FLEE_DEEP:[.66,.69],FLEE_LVL:.008,FLEE_CAP:.72,FLEE_NEAR_R:.7,FLEE_NEAR_K:.9,FLEE_BURST_S:1.8,FLEE_TIRED:.65,FLEE_TIRED_S:.8,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,DIVER_BAND:1.1,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
-// DIVERS + AMBUSH. The 3-hit lose rule and the ambush odds/timing are OUR choice, to confirm with Jeremy.
-// GAME MODES. "timed" = 60 s round, 3 net hits = Caught!. "endless" = no timer, ends only when eaten (Gulp!);
-// net hits only stun + cost growth there (OUR reading of Jeremy's "does not end until you are eaten").
+const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.60,FLEE_MAX:.72,FLEE_SHALLOW:[.62,.66],FLEE_DEEP:[.66,.69],FLEE_LVL:.008,FLEE_CAP:.72,FLEE_NEAR_R:.7,FLEE_NEAR_K:.9,FLEE_BURST_S:1.8,FLEE_TIRED:.65,FLEE_TIRED_S:.8,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
+// GAME MODES. "timed" = 60 s round. "endless" = no timer, ends only when eaten (Gulp!). b52 (Jeremy t1343u "no more divers"): no divers, nets or ambush.
 // v8b world: endless left/right/down (only the surface is a boundary). Depth layers (fractions of SURF..BED, BED = start of the dark cap):
-const LAYERS={TOP:.3,MID:.62};// top < .3 <= mid < .62 <= deep (deep continues forever below)
+const LAYERS={TOP:.3,MID:.62};const VANISH={EDGES:[.3,.62,1,1.6],LVL:[9,13,17,22],FADE:.8};/* b52 (Jeremy): above these sizes (index = size-1) the fish in each depth band are gone; the band below depth 1.6 always has fish */// top < .3 <= mid < .62 <= deep (deep continues forever below)
 // v9: no depth lock. Every stage may dive anywhere; the danger (big creatures that eat you) is the limit.
 const DEPTH_LIMIT={FREE_LVL:0};const allowedD=l=>Infinity;
 // depth-locked spawn tables (weights per layer). Fish = small fish on top, mid fish in the middle; deep = glow fish, anglerfish, octopus, starfish (seabed strip)
@@ -55,15 +55,6 @@ const ALLOWED={plankton:[0],fish:[0,1],shark:[1,2],glow:[2],octo:[2],angler:[2],
 const ANGLER_D=.75,STAR_P=.5;// anglerfish only in the lower deep (needs stage 5+ to reach); starfish: share of deep spawns on the seabed strip
 const CAP_COL="#03070f",FLOOR_CUT=.62;// seabed sprite reaches the cap colour at 62% of its height; below that a solid fill is drawn
 const MODES=["timed","endless"],MODE_KEY="sharkAttack_mode";
-// DIVER SPEED-UP (both modes): speed = shark top speed × DIVER_SPEED_FRACTION × (1 + DIVER_SPEEDUP_PER_SURFER × surfers past the trigger),
-// capped at DIVER_SPEED_CAP × shark top speed. "Divers are faster!" hint every DIVER_SPEEDUP_HINT_EVERY extra surfers.
-const DIVER_SPEEDUP_PER_SURFER=.05,DIVER_SPEED_CAP=1.05,DIVER_SPEEDUP_HINT_EVERY=3;
-const DIVER_TRIGGER_SURFERS=3,DIVER_SPEED_FRACTION=.5,DIVER_DETECT_RANGE=.28,DIVER_GIVEUP_MS=3000,DIVER_GRACE_MS=2000,DIVER_COOLDOWN_MS=4000,DIVER_SAFE_AFTER_STUN_MS=1500,DIVER_CATCHES_TO_LOSE=3,DIVER_MAX=3,DIVER_SIZE=46,DIVER_NET_REACH=.25,DIVER_GROWTH_LOSS=2;
-const STUN_MS=1000,AMBUSH_STUN_MS=2000;// a hit that brings an ambush stuns longer so the threat is real (it arrives at AMBUSH_ARRIVE_MS)
-const AMBUSH_ON_HIT=[false,false,null,true],AMBUSH_CHANCE=.5;// index = net hit number; null = roll AMBUSH_CHANCE. Hit 3 also ends the round ("Caught!") so it never actually ambushes
-const AMBUSH_ARRIVE_MS=1350,AMBUSH_COOLDOWN_MS=6000,STRUGGLE_SHORTEN_MS=250,STRUGGLE_PX=.2,AMBUSHER_SIZE=1.6,AMBUSHER_LEAVE_MS=3000;// STRUGGLE_PX: short-side screen lengths of drag/wiggle per shorten step
-const AMB_T={body:"#3a4552",hi:"#5f6d7b",belly:"#c4ccd2",ext:"#141b22",stripe:null,hammer:false};// dark bull-style, unlike the 3 pick types
-const DIVER_TIP_KEY="sharkAttack_diverTip";
 // Shark types — they differ in size and play (decided with Jeremy: numbers are OUR choice, tune them here).
 // size: start-size multiplier (fish danger is always judged against the shark's CURRENT size), speed: top speed, acc: acceleration,
 // turn: turning rate, catchR: air catch radius for surfers, leap: launch height, grow: growth-meter fill rate. bars: pick-screen stat bars 1..5.
@@ -193,20 +184,37 @@ function drawSpecies(g,s,p){g.lineJoin="round";g.lineCap="round";const L=p.lng||
  if(!p.fang&&!p.gulp){g.strokeStyle="rgba(0,0,0,.45)";g.lineWidth=Math.max(1,s*.02);g.beginPath();g.moveTo(nose*(p.snout?1.08:1),s*.03);g.lineTo(nose-s*.07,s*.05);g.stroke()}}
 // the cheap lure / eye dot (baked into a tiny glow sprite, drawn with the halo pass): offset of the lit spot per deep species
 function spLure(p,s){const nose=s*.62*1.05,bh=s*p.h;return p.barbel?[nose*.95,bh*4.2]:p.gulp?[-s*.5*p.lng-s*.75,s*.05]:null}
-// diver: side view facing right, black wetsuit with shading, steel tank, mask, fins, net on a pole
-function drawDiver(g,s){g.lineJoin="round";g.lineCap="round";
- const limb=(pts,w,c)=>{g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(pts[0]*s,pts[1]*s);for(let i=2;i<pts.length;i+=2)g.lineTo(pts[i]*s,pts[i+1]*s);g.stroke()};
- limb([-.3,.02,-.6,.12,-.82,.06],s*.11,"#14181d");limb([-.3,-.02,-.62,-.04,-.84,-.14],s*.12,"#1e242b");
- g.fillStyle="#d9a400";for(const [y,a] of[[.06,.3],[-.14,-.2]]){g.save();g.translate(-s*.86,y*s);g.rotate(a);g.beginPath();g.moveTo(0,-s*.05);g.lineTo(-s*.26,-s*.1);g.lineTo(-s*.26,s*.08);g.lineTo(0,s*.05);g.closePath();g.fill();g.restore()}
- let q=g.createLinearGradient(0,-s*.36,0,-s*.2);q.addColorStop(0,"#e6ecf0");q.addColorStop(.5,"#8f9aa3");q.addColorStop(1,"#4b545c");g.fillStyle=q;g.beginPath();g.roundRect(-s*.42,-s*.37,s*.52,s*.16,s*.08);g.fill();
- q=g.createLinearGradient(0,-s*.2,0,s*.2);q.addColorStop(0,"#3a434d");q.addColorStop(.5,"#1a1f25");q.addColorStop(1,"#0b0e11");g.fillStyle=q;g.beginPath();g.ellipse(-s*.08,0,s*.4,s*.17,0,0,7);g.fill();
- g.fillStyle="#e2463c";g.fillRect(-s*.3,-s*.17,s*.04,s*.33);
- limb([.15,-.02,.35,.1,.55,.04],s*.08,"#262c33");
- q=g.createRadialGradient(s*.3,-s*.1,1,s*.32,-s*.04,s*.17);q.addColorStop(0,"#4a525c");q.addColorStop(1,"#101317");g.fillStyle=q;g.beginPath();g.arc(s*.32,-s*.04,s*.16,0,7);g.fill();
- q=g.createLinearGradient(0,-s*.15,0,0);q.addColorStop(0,"#bff2ff");q.addColorStop(1,"#3b8fb0");g.fillStyle=q;g.beginPath();g.roundRect(s*.36,-s*.14,s*.15,s*.11,s*.03);g.fill();g.fillStyle="rgba(255,255,255,.7)";g.fillRect(s*.38,-s*.13,s*.04,s*.03);
- g.strokeStyle="#5a4128";g.lineWidth=s*.04;g.beginPath();g.moveTo(s*.45,s*.06);g.lineTo(s*.85,-s*.1);g.stroke();
- g.strokeStyle="rgba(220,235,240,.8)";g.lineWidth=s*.03;g.beginPath();g.ellipse(s*.98,-s*.14,s*.18,s*.22,0,0,7);g.stroke();
- g.strokeStyle="rgba(220,235,240,.35)";g.lineWidth=1;g.beginPath();for(let i=-2;i<=2;i++){g.moveTo(s*.82,-s*.14+i*s*.08);g.lineTo(s*1.14,-s*.14+i*s*.08);g.moveTo(s*.98+i*s*.07,-s*.34);g.lineTo(s*.98+i*s*.07,s*.06)}g.stroke()}
+// b52: sail boat, side view facing right, waterline at y=0, 200 px long. Our own art, drawn in code.
+function drawSailBoat(g){g.lineJoin="round";g.lineCap="round";
+ let q=g.createLinearGradient(0,0,0,26);q.addColorStop(0,"rgba(20,40,55,.55)");q.addColorStop(1,"rgba(20,40,55,0)");g.fillStyle=q;g.beginPath();g.moveTo(-70,0);g.quadraticCurveTo(-10,10,60,0);g.lineTo(18,0);g.lineTo(6,24);g.lineTo(-14,24);g.lineTo(-22,0);g.closePath();g.fill();
+ q=g.createLinearGradient(0,-19,0,2);q.addColorStop(0,"#ffffff");q.addColorStop(.55,"#e4eaee");q.addColorStop(1,"#a9b6bf");g.fillStyle=q;g.beginPath();g.moveTo(-97,-15);g.quadraticCurveTo(0,-13,104,-19);g.quadraticCurveTo(96,-8,86,0);g.quadraticCurveTo(0,3,-88,0);g.quadraticCurveTo(-96,-6,-97,-15);g.closePath();g.fill();
+ g.strokeStyle="#1d3550";g.lineWidth=2.2;g.beginPath();g.moveTo(-96,-12.5);g.quadraticCurveTo(0,-10.5,101,-16);g.stroke();
+ g.fillStyle="#1d3550";g.beginPath();g.moveTo(-89,-2.5);g.quadraticCurveTo(0,.5,87,-2.5);g.lineTo(86,0);g.quadraticCurveTo(0,3,-88,0);g.closePath();g.fill();
+ q=g.createLinearGradient(0,-29,0,-15);q.addColorStop(0,"#fbfcfd");q.addColorStop(1,"#c9d2d8");g.fillStyle=q;g.beginPath();g.moveTo(-46,-15);g.lineTo(-40,-27);g.lineTo(22,-28);g.lineTo(34,-16);g.closePath();g.fill();
+ g.fillStyle="#22313d";for(const x of[-30,-16,-2,12])g.fillRect(x,-24,8,3.5);
+ g.strokeStyle="#9aa3aa";g.lineWidth=1;g.beginPath();g.moveTo(14,-246);g.lineTo(102,-19);g.moveTo(10,-246);g.lineTo(-96,-15);g.moveTo(12,-200);g.lineTo(-6,-16);g.lineTo(28,-16);g.lineTo(12,-200);g.stroke();
+ q=g.createLinearGradient(-86,0,10,0);q.addColorStop(0,"#cfc9bd");q.addColorStop(.6,"#f1eee6");q.addColorStop(1,"#fbfaf6");g.fillStyle=q;g.beginPath();g.moveTo(9,-244);g.quadraticCurveTo(-30,-150,-86,-40);g.lineTo(9,-38);g.closePath();g.fill();
+ g.strokeStyle="rgba(120,112,98,.35)";g.lineWidth=.8;g.beginPath();for(let i=1;i<6;i++){const y=-38-i*34;g.moveTo(9,y);g.lineTo(9-(y+244)/206*95*.98,y)}g.stroke();
+ q=g.createLinearGradient(14,0,100,0);q.addColorStop(0,"#fbfaf6");q.addColorStop(1,"#d3cdc1");g.fillStyle=q;g.beginPath();g.moveTo(15,-212);g.quadraticCurveTo(62,-110,98,-22);g.lineTo(20,-30);g.closePath();g.fill();
+ g.strokeStyle="rgba(90,84,74,.35)";g.lineWidth=1;g.beginPath();g.moveTo(15,-212);g.lineTo(20,-30);g.stroke();
+ q=g.createLinearGradient(6,0,13,0);q.addColorStop(0,"#d8dde0");q.addColorStop(.5,"#ffffff");q.addColorStop(1,"#8f989e");g.fillStyle=q;g.fillRect(8,-250,4.5,236);
+ g.fillStyle="#7d868c";g.fillRect(-88,-41,98,3.5);
+ g.fillStyle="rgba(255,255,255,.55)";g.beginPath();g.ellipse(84,1,22,2.2,0,0,7);g.fill()}
+// b52: cargo ship, side view facing right, waterline at y=0, 640 px long. Our own art, drawn in code.
+function drawCargoShip(g){g.lineJoin="round";
+ let q=g.createLinearGradient(0,0,0,24);q.addColorStop(0,"rgba(90,24,20,.6)");q.addColorStop(1,"rgba(40,12,10,0)");g.fillStyle=q;g.beginPath();g.moveTo(-316,0);g.lineTo(300,0);g.quadraticCurveTo(318,10,296,22);g.lineTo(-300,22);g.closePath();g.fill();
+ q=g.createLinearGradient(0,-46,0,0);q.addColorStop(0,"#2c3d4c");q.addColorStop(.25,"#1c2833");q.addColorStop(1,"#0c1218");g.fillStyle=q;g.beginPath();g.moveTo(-320,-44);g.lineTo(312,-46);g.quadraticCurveTo(318,-24,302,0);g.lineTo(-312,0);g.lineTo(-322,-30);g.closePath();g.fill();
+ g.fillStyle="#8a2a22";g.beginPath();g.moveTo(-313,-7);g.lineTo(305,-7);g.lineTo(302,0);g.lineTo(-312,0);g.closePath();g.fill();
+ g.strokeStyle="rgba(230,236,240,.7)";g.lineWidth=1.4;g.beginPath();g.moveTo(-318,-40);g.lineTo(312,-42);g.stroke();
+ g.strokeStyle="rgba(255,255,255,.12)";g.lineWidth=1;g.beginPath();for(let x=-280;x<300;x+=40){g.moveTo(x,-38);g.lineTo(x,-8)}g.stroke();
+ const C=["#8c3b2c","#2f5a87","#7c8388","#3d6b4a","#c9c4b8","#b8652a","#5d3f6a","#2a6f78"];let sd=7;const r=()=>(sd=(sd*9301+49297)%233280)/233280;
+ for(let x=-196;x<282;x+=13){if(Math.abs(x+40)<5||Math.abs(x-120)<5)continue;const tiers=4+Math.floor(r()*3);for(let t=0;t<tiers;t++){const y=-46-(t+1)*6.4,c=C[Math.floor(r()*C.length)];q=g.createLinearGradient(0,y,0,y+6.4);q.addColorStop(0,c);q.addColorStop(1,"rgba(0,0,0,.35)");g.fillStyle=c;g.fillRect(x,y,12.4,6.2);g.fillStyle=q;g.fillRect(x,y,12.4,6.2);g.fillStyle="rgba(0,0,0,.25)";g.fillRect(x+12.2,y,.8,6.2)}}
+ q=g.createLinearGradient(-262,0,-196,0);q.addColorStop(0,"#d9dee2");q.addColorStop(.5,"#f6f8f9");q.addColorStop(1,"#b9c1c7");g.fillStyle=q;g.fillRect(-254,-96,52,52);
+ g.fillStyle="#26323c";for(let y=-90;y<-50;y+=9)for(let x=-250;x<-206;x+=7)g.fillRect(x,y,4.2,3.2);
+ g.fillStyle="#e9edf0";g.fillRect(-266,-104,76,8);g.fillStyle="#1a242c";g.fillRect(-264,-102,72,3.4);
+ q=g.createLinearGradient(-300,0,-276,0);q.addColorStop(0,"#1a1f24");q.addColorStop(.5,"#3a4148");q.addColorStop(1,"#15191d");g.fillStyle=q;g.beginPath();g.moveTo(-298,-44);g.lineTo(-296,-100);g.lineTo(-276,-102);g.lineTo(-278,-44);g.closePath();g.fill();g.fillStyle="#a8322a";g.fillRect(-297,-90,20,6);
+ g.strokeStyle="#c8cfd4";g.lineWidth=1.6;g.beginPath();g.moveTo(-228,-104);g.lineTo(-228,-122);g.moveTo(-236,-116);g.lineTo(-220,-116);g.moveTo(296,-46);g.lineTo(296,-66);g.stroke();
+ g.fillStyle="rgba(255,255,255,.55)";g.beginPath();g.ellipse(300,1,40,2.6,0,0,7);g.fill();g.beginPath();g.ellipse(-310,1,28,2,0,0,7);g.fill()}
 // surfer on a board, side view, board centred at 0,0 on the water line. Shaded skin, wetsuit, hair, board with stringer.
 function drawSurfer(g,s,stand){g.lineJoin="round";g.lineCap="round";const skin="#d89a6a",skinD="#a8693f",suit=stand?"#1f4f7a":"#27313b";
  let q=g.createLinearGradient(0,-s*.08,0,s*.09);q.addColorStop(0,stand?"#fdfdf7":"#ffe7b0");q.addColorStop(.5,stand?"#d7e4ea":"#f2c76f");q.addColorStop(1,stand?"#8aa2ae":"#b08436");g.fillStyle=q;g.beginPath();g.moveTo(-s*.7,0);g.quadraticCurveTo(-s*.68,-s*.08,0,-s*.08);g.quadraticCurveTo(s*.62,-s*.08,s*.74,-s*.02);g.quadraticCurveTo(s*.6,s*.08,0,s*.08);g.quadraticCurveTo(-s*.66,s*.08,-s*.7,0);g.fill();
@@ -403,9 +411,8 @@ function renderFrontShark(S,open){const k=S/400,c=mk(S*1.6,S*1.12),g=c.getContex
 // ---------- world ----------
 const shark={stun:0,safe:0,x:0,y:0,ang:0,spd:0,lvl:0,L:70,Lt:70,wag:0,chomp:0,meter:0,run:0,air:false,vx:0,vy:0,h:0,sq:0,cool:0,perfect:false,face:1};
 const fish=[],surf=[],parts=[],pops=[];
-const divers=[];const amb={on:false,t:0,x:0,y:0,x0:0,y0:0,dir:1,phase:"",lt:0,reachT:-1,ate:false,spr:null,L:0};
-let mode=MODES.includes(localStorage.getItem(MODE_KEY))?localStorage.getItem(MODE_KEY):"timed",fasterT=0;
-let netHits=0,surfersCaught=0,ambCool=0,bannerT=0,diverTipT=0,diverSpr=null,struggles=0;
+let mode=MODES.includes(localStorage.getItem(MODE_KEY))?localStorage.getItem(MODE_KEY):"timed";
+let surfersCaught=0;
 for(let i=0;i<CREATURES.N;i++)fish.push({x:0,y:0,vx:0,vy:0,ph:Math.random()*6,tier:0,s:16,kind:"fish",pal:0,danger:false,bump:0,chase:0,rest:0,st:""});
 for(let i=0;i<N_SURF;i++)surf.push({x:0,vx:0,ph:Math.random()*6,k:i===0?1:0,zip:0});
 for(let i=0;i<MAX_PARTS;i++)parts.push({x:0,y:0,vx:0,vy:0,t:0});
@@ -414,13 +421,14 @@ const waves=[];for(let i=0;i<10;i++)waves.push({x:Math.random(),y:Math.random(),
 let score=0,timeLeft=ROUND_SECONDS,best=+(localStorage.getItem(BEST_KEY)||0),elapsed=0,endReason="",shake=0,hintT=0;
 let calm=localStorage.getItem(CALM_KEY)==="1"||matchMedia("(prefers-reduced-motion: reduce)").matches;
 const touch={on:false,x:0,y:0,dx:0,dy:0,drive:0};
-let bg=null,sprC=null,sprO=null,fishSpr=[],surfSpr=[],title=null,tFront=null,tFrontC=null;
+let bg=null,sprC=null,sprO=null,sprB=null,sprF=null,fishSpr=[],surfSpr=[],title=null,tFront=null,tFrontC=null;
 const need=l=>GROW.NEED_BASE+GROW.NEED_PER_LVL*l;
 const ptsOf=f=>f.kind==="plankton"?1:Math.max(1,Math.round(1+3*f.s/bite()))*(f.kind==="fish"?1:f.kind==="angler"?4:2),growOf=f=>GROW.REL*f.s/bite();
 let specSpr=[],camX=0,gradSpr=null,sunSpr=null,decoSpr=null,tiles=[],tileC={x:1e9,y:1e9},plankSpr=[],anglerSpr=null,octoSpr=[],starSpr=[],lureSpr=null,spawnStats={n:0,wrong:0,byKind:{}},depthHintT=0;
 let haloSpr=[],worldK=1/GROW.START,sizeK=1,camY=0,WORLD_H=4000,gradW=null,raysSpr=null,fogSpr=null,skySpr=null,floorSpr=null,ventSpr=null,vigSpr=null,gradeSpr=null,bgSpr=null,busy=false,sharkSpr=[],glowSpr=[],deco=[],snow=[],murk=[],fsRot=false;
 const depthOf=y=>Math.max(0,Math.min(1,(y-SURF)/(BED-SURF)));
 const depthRaw=y=>(y-SURF)/(BED-SURF);
+function goneAt(y){if(state!=="play")return false;const d=depthRaw(y),V=VANISH;for(let i=0;i<V.EDGES.length;i++)if(d<V.EDGES[i])return shark.lvl>=V.LVL[i];return false}
 const layerOf=y=>{const d=depthRaw(y);return d<LAYERS.TOP?0:d<LAYERS.MID?1:2};
 function bandOf(L){const y=d=>SURF+d*(BED-SURF);return L===0?[SURF+6,y(LAYERS.TOP)-2]:L===1?[y(LAYERS.TOP)+2,y(LAYERS.MID)-2]:[y(LAYERS.MID)+2,Infinity]}
 // v9: the DRAWN shark grows ×DRAW.STEP per stage up to DRAW.CAP (start 0.2×screen height, cap 1.75× = 0.35×height, so the screen stays playable
@@ -431,14 +439,14 @@ const DRAW={BASE:.2,STEP:1,CAP:1,/* b48 (Jeremy): the shark stays the SAME size 
 const sharkL=l=>Math.min(W,H)*DRAW.BASE*drawK(l)*trait("size");
 const bite=()=>shark.L*.4;
 function setWorldK(k){const r=k/worldK;if(r!==1)for(const f of fish)f.s*=r;worldK=k}
-const surfK=()=>Math.max(.55,Math.min(1.8,worldK));
+const surfK=()=>Math.max(SURFACE.MINK,Math.min(1.8,worldK));/* b52: surfers keep shrinking with the world */
 // v9c (Jeremy: "the shark the same size but everything else bigger"): every creature except plankton is DRAWN (and touches) LOOK.K x its
 // true size f.s; eat/bump/danger is still judged from f.s vs bite() (rel, EAT.RATIO unchanged), so relative sizes keep the same proportions.
 // LOOK.MIN: no non-plankton creature spawns smaller than MIN x bite (no tiny fish sitting by the fin). RINGS: no rings around shark/fish.
-const LOOK={K:1.25,MIN:.4},RINGS=false;const lk=f=>f.kind==="plankton"?1:LOOK.K;
+const LOOK={K:1.25,MIN:.4,SHRINK_FROM:10,SHRINK:.95,FLOOR:.15},lookMin=()=>shark.lvl<=LOOK.SHRINK_FROM?LOOK.MIN:Math.max(LOOK.FLOOR,LOOK.MIN*Math.pow(LOOK.SHRINK,shark.lvl-LOOK.SHRINK_FROM)),RINGS=false;const lk=f=>f.kind==="plankton"?1:LOOK.K;
 function fleeK(f){const C=CREATURES,d=Math.max(0,Math.min(1,depthOf(f.y))),lo=C.FLEE_SHALLOW[0]+(C.FLEE_DEEP[0]-C.FLEE_SHALLOW[0])*d,hi=C.FLEE_SHALLOW[1]+(C.FLEE_DEEP[1]-C.FLEE_SHALLOW[1])*d;let k=Math.min(C.FLEE_CAP,lo+(hi-lo)*(f.fu==null?.5:f.fu)+C.FLEE_LVL*shark.lvl);if(f.s/bite()>C.FLEE_NEAR_R)k*=C.FLEE_NEAR_K;return k}// always < 1 = slower than your top speed
 function rel(f){if(f.kind==="plankton")return -1;const r=f.s/bite();return r<.87?-1:r>1.15?1:0}// -1 food, 0 same size (bump), 1 danger
-const sharkMax=l=>Math.min(W,H)*.75*(1+.04*l)*trait("speed");
+const sharkMax=l=>Math.min(W,H)*.75*(1+.04*Math.min(l,SPEED_LVL_CAP))*trait("speed");const SPEED_LVL_CAP=10;/* b52: top speed stops rising after size 11 (boost is the way to go faster) */
 const FISH_PAL=["#ffd23f","#7be04a","#ff7a9c","#5fd0ff","#ff9f1c","#c48bff"],DEEP_PAL=["#6c7fa8","#8a6fb0","#5e8c8a"],GLOW_PAL=["#3dfcff","#ff4fd8","#b6ff3d"];
 const SHARK_PALS_OLD=[{body:"#55606e",hi:"#7f8b99",belly:"#cfd6dc",ext:"#1f262e",stripe:null,hammer:false},{body:"#3d4a5c",hi:"#5d6b80",belly:"#b9c2cc",ext:"#141a22",stripe:null,hammer:true},{body:"#2a2f3a",hi:"#4a5162",belly:"#8f97a3",ext:"#0b0e13",stripe:"#5b2a1a",hammer:false}];
 function tierOf(sz){return sz<22?0:sz<36?1:sz<54?2:3}
@@ -488,7 +496,6 @@ function buildSprites(){
  if(!tiles.length||tiles.W!==W||tiles.H!==H){initTiles();tiles.W=W;tiles.H=H}// a render-scale change keeps the world as is
  snow=[];for(let i=0;i<80;i++)snow.push({x:Math.random(),y:Math.random(),r:rnd(.6,1.8),sp:rnd(4,12)});/* 80 pooled: 46 shallow/mid, up to 80 deep */murk=[];for(let i=0;i<50;i++)murk.push({x:Math.random(),y:Math.random(),r:rnd(.5,1),sp:rnd(1.5,5),l:i%2});/* v10 item 12 step 4: pooled dark drifting particles, 2 parallax layers */
  buildShark();
- {const s=DIVER_SIZE,c=mk(s*2.5*DPR,s*.9*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(s*1.15,s*.45);drawDiver(q,s);diverSpr=c}
  const FB=48;fishSpr=[0,1,2,3].map(ti=>FISH_PAL.concat(DEEP_PAL).map(col=>{const s=FB,pad=4,c=mk((s*1.8+pad*2)*DPR,(s*1.05+pad*2)*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(s*.88+pad,s*.52+pad);drawFish(q,s,col,ti,false);c.base=FB;return c}));
  glowSpr=GLOW_PAL.map(col=>{const s=FB,pad=26,c=mk((s*1.8+pad*2)*DPR,(s*1.05+pad*2)*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(s*.88+pad,s*.52+pad);drawFish(q,s,"#26323c",2,false);/* v10 item 12: dark body, glow only on small spots */
   q.fillStyle=col;q.globalAlpha=.55;for(let i=0;i<4;i++){q.beginPath();q.arc(-s*.3+i*s*.15,s*.12,1.5,0,7);q.fill()}q.globalAlpha=1;q.strokeStyle="#3a4650";q.lineWidth=1.5;q.beginPath();q.moveTo(s*.3,-s*.3);q.quadraticCurveTo(s*.6,-s*.8,s*.75,-s*.5);q.stroke();q.fillStyle=col;q.shadowColor=col;q.shadowBlur=5;q.globalAlpha=.8;q.beginPath();q.arc(s*.75,-s*.5,3,0,7);q.fill();q.globalAlpha=1;q.shadowBlur=0;c.base=FB;return c});
@@ -500,14 +507,16 @@ function buildSprites(){
  octoSpr=["#5A2F36","#4a3040"].map(col=>crit(q=>drawOcto(q,FB,col),8));
  starSpr=["#ff8a3d","#ff5f8f","#ffc23d"].map(col=>crit(q=>drawStar(q,FB,col),6));
  sharkSpr=SHARK_PALS.map(T=>{const L=170,c=rivalDark(sharkSkin(render3DShark(L*DPR,false,T),L*DPR),L*DPR);c.L=L;c.o=rivalDark(sharkSkin(render3DShark(L*DPR,true,T),L*DPR),L*DPR);return c});
- surfSpr=[0,1].map(k=>{const s=60,c=mk(s*1.5*DPR,s*1.1*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(s*.75,s*.98);drawSurfer(q,s,k);return c});
+ surfSpr=[0,1].map(k=>{const s=60,c=mk(s*1.5*DPR,s*1.1*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(s*.75,s*.98);drawSurfer(q,s,k);c.wl=.89;return c});
+ {const c=mk(240*DPR,290*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(120,262);drawSailBoat(q);c.wl=262/290;surfSpr[2]=c}
+ {const c=mk(700*DPR,160*DPR),q=c.getContext("2d");q.scale(DPR,DPR);q.translate(350,134);drawCargoShip(q);c.wl=134/160;surfSpr[3]=c}
  {/* v10 gfx step 3: darker, natural painted look baked into creature + surfer sprites */const nat=(c,a,col)=>{if(!c||!c.getContext)return;const g=c.getContext("2d");g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-atop";g.globalAlpha=a;g.fillStyle=col||"#0a1a2a";g.fillRect(0,0,c.width,c.height);g.restore()};
   fishSpr.forEach(r=>r.forEach(c=>nat(c,.34)));specSpr.forEach(c=>nat(c,.3));plankSpr.forEach(c=>nat(c,.25));fishSpr.forEach(r=>r.forEach(c=>fishSkin(c,1)));specSpr.forEach(c=>fishSkin(c,.9));plankSpr.forEach(c=>fishSkin(c,.6));/* v10 item 12 step 2 */glowSpr.forEach(c=>fishSkin(c,.8));fishSkin(anglerSpr,1.6);octoSpr.forEach(c=>fishSkin(c,1.2));/* step 3: dark textured deep bodies (lure/halo stay separate small sprites) */nat(anglerSpr,.3);octoSpr.forEach(c=>nat(c,.42));starSpr.forEach(c=>nat(c,.5,"#141a22"));glowSpr.forEach(c=>nat(c,.32,"#06121e"));surfSpr.forEach(c=>nat(c,.14,"#20303a"))}
  const tw=titleW();title=render3DTitle(tw*DPR);title.dw=tw;const L=Math.min(H*.9,420);buildTitleShark();warmSprites()}
 // v9: crop + mip every creature sprite up front (the bigger drawn world hit lazy getImageData crops mid-play = first-encounter stutter)
 function warmSprites(){const all=[].concat(...fishSpr,glowSpr,specSpr,plankSpr,octoSpr,starSpr,[anglerSpr],sharkSpr,sharkSpr.map(c=>c.o));for(const c of all)if(c&&c.width)mip(trim(c),.02)}
 function titleW(){return Math.min(W*.56,H*1.15,560)}
-function buildShark(keep){const L=sharkL(shark.lvl);shark.Lt=L;if(!keep||!(shark.L>0))shark.L=L;const TT=Object.assign({},TYPES[sType],{barA:Math.max(.18,.62-shark.lvl*.045)});sprC=sharkSkin(render3DShark(L*DPR,false,TT),L*DPR);sprO=sharkSkin(render3DShark(L*DPR,true,TT),L*DPR);// tiger bars fade with growth
+function buildShark(keep){const L=sharkL(shark.lvl);shark.Lt=L;if(!keep||!(shark.L>0))shark.L=L;const TT=Object.assign({},TYPES[sType],{barA:Math.max(.18,.62-shark.lvl*.045)});sprC=sharkSkin(render3DShark(L*DPR,false,TT),L*DPR);sprO=sharkSkin(render3DShark(L*DPR,true,TT),L*DPR);{const b=mk(sprC.width,sprC.height),q=b.getContext("2d");q.drawImage(sprC,0,0);q.globalCompositeOperation="source-atop";const gr=q.createLinearGradient(0,0,0,b.height);gr.addColorStop(0,"rgba(214,226,234,.55)");gr.addColorStop(.45,"rgba(235,242,246,.25)");gr.addColorStop(1,"rgba(250,252,253,.7)");q.fillStyle=gr;q.fillRect(0,0,b.width,b.height);b.L=sprC.L;sprB=b}sprF=renderFrontShark(L*.5*DPR,false);/* b52: belly-lit and head-on sprites for the 3D turn */// tiger bars fade with growth
 sprC.L=sprO.L=L}
 let _st=-1;function safeTop(){if(_st<0){const d=document.createElement("div");d.style.cssText="position:fixed;top:env(safe-area-inset-top);";document.body.appendChild(d);_st=d.getBoundingClientRect().top||0;d.remove()}return _st}
 function resize(keep){DPR=Math.max(.5,Math.min(DPR_CAP,window.devicePixelRatio||1)*RS0*RSK);W=innerWidth;H=innerHeight;C.width=Math.round(W*DPR);C.height=Math.round(H*DPR);if(!keep)buildSprites();if(state!=="play")placeAll()}
@@ -516,7 +525,7 @@ function spSprite(p,s){const L=p.lng||1,pad=8,w=(s*(.5*L+.85)+pad)*2,c=mk(w*DPR,
  if(p.z===3&&!lp){q.fillStyle="rgba(120,220,255,.9)";for(let i=0;i<5;i++){q.beginPath();q.arc(s*(.3-i*.15),s*p.h*.75,s*.018,0,7);q.fill()}}// photophore dots
  c.base=s;c.sp=p.n;return c}
 function rnd(a,b){return a+Math.random()*(b-a)}
-function setCreature(f,sz,kind){f.off=false;f.fu=Math.random();f.fk=CREATURES.FLEE_MIN+f.fu*(CREATURES.FLEE_MAX-CREATURES.FLEE_MIN);if(!f.band)f.band=[SURF+6,Infinity];f.s=sz;f.kind=kind;f.tier=tierOf(sz);f.chase=0;f.rest=0;f.bump=0;f.st="";f.dg=0;f.dt=0;f.dcd=0;f.dn=0;f.pal=kind==="shark"?Math.min(2,Math.floor(rnd(0,3))):kind==="glow"?Math.floor(rnd(0,GLOW_PAL.length)):0;if(kind==="fish"||kind==="shark"||kind==="glow")f.band=[SURF+6,Infinity]}
+function setCreature(f,sz,kind){f.off=false;f.fade=0;f.retry=0;f.fu=Math.random();f.fk=CREATURES.FLEE_MIN+f.fu*(CREATURES.FLEE_MAX-CREATURES.FLEE_MIN);if(!f.band)f.band=[SURF+6,Infinity];f.s=sz;f.kind=kind;f.tier=tierOf(sz);f.chase=0;f.rest=0;f.bump=0;f.st="";f.dg=0;f.dt=0;f.dcd=0;f.dn=0;f.pal=kind==="shark"?Math.min(2,Math.floor(rnd(0,3))):kind==="glow"?Math.floor(rnd(0,GLOW_PAL.length)):0;if(kind==="fish"||kind==="shark"||kind==="glow")f.band=[SURF+6,Infinity]}
 // ---- SLIDING TILE POOL: 9 tiles (3x3, one screen each) around the camera. When the camera crosses a tile edge, tiles that fall
 // out of the window are recycled to the new edge with fresh scenery, and the creatures they own get fresh spawns. Only these
 // tiles' creatures exist (update + draw); anything that leaves the window is respawned into its home tile.
@@ -532,7 +541,7 @@ function updTiles(force,noSpawn){const cx=Math.floor((camX+W/2)/W),cy=Math.floor
 function inWindow(x,y,m){const cx=camX+W/2,cy=camY+H/2;return Math.abs(x-cx)<W*(1.5+(m||0))&&Math.abs(y-cy)<H*(1.5+(m||0))}
 function pickKind(L,y,T){const tb=SPAWN[L];let tot=0;for(const e of tb)tot+=e[1]+(e[0]==="plankton"&&shark.lvl<2?.25:0);let r=Math.random()*tot;
  for(const e of tb){r-=e[1]+(e[0]==="plankton"&&shark.lvl<2?.25:0);if(r<=0){if(e[0]==="angler"&&depthRaw(y)<ANGLER_D)return "glow";return e[0]}}return tb[0][0]}
-function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;
+function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;f.fade=0;f.retry=0;
  if(!T&&P0&&f.tile&&(Math.abs(f.tile.ty*H+H/2-shark.y)>H*2.2||Math.abs(f.tile.tx*W+W/2-shark.x)>W*2.2)){camX=shark.x-W/2;camY=shark.y-H/2;updTiles(true,true)}// teleport (tests/respawn): snap pool to the shark
  if(!T){if(f.tile)T=f.tile;else{const ry=P0?shark.y:camY+H/2;T={tx:Math.floor((camX+W/2)/W)+Math.floor(rnd(-1,2)),ty:Math.floor(ry/H)}}}
  let y0=Math.max(SURF+8,T.ty*H),y1=T.ty*H+H;if(y1<SURF+40){y0=SURF+8;y1=SURF+H*.5}
@@ -557,14 +566,16 @@ function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;
  if(kind==="glow"&&P0)sz=Math.min(sz,bite()*C.GLOW_MAX);
  if(P0&&L===2&&kind!=="glow"&&kind!=="star"&&kind!=="plankton"){const g=Math.min(1,Math.max(0,(d-LAYERS.MID)/DEEP.RAMP));if(sz>bite()*.9)sz*=1+DEEP.GROW*g*Math.max(0,1-shark.lvl/DEEP.FADE_LVL);{const ln=kind==="shark"?2.5:1.6;sz=Math.min(sz,W*DEEP.MAX_W/ln);/* v9c: deep width caps stay on true size (deep > mid in the same proportion); giants keep their old drawn size */if(sz*ln>W*DEEP.BIG_W&&fish.filter(q=>q!==f&&!q.off&&!q.giant&&q.s*(q.kind==="shark"?2.5:1.6)>W*DEEP.BIG_W).length>=DEEP.BIG_N)sz=W*DEEP.BIG_W/ln}/* at most BIG_N very big ones around (perf, and so giants stay special) *//* deeper = bigger for a small player (fades out as you grow: perf + you are the big one by then) *//* deeper = bigger (not the prey share) */
   if((kind==="shark"||kind==="octo")&&Math.random()<DEEP.GIANT_P*(.4+g)*Math.max(0,1-shark.lvl/DEEP.FADE_LVL)&&!fish.some(q=>q!==f&&!q.off&&q.giant)){/* one giant at a time */const vl=Math.min(W*DEEP.GIANT_MAXW,shark.L*rnd(DEEP.GIANT_MIN,DEEP.GIANT_MAX));sz=vl/(kind==="shark"?2.5:1.6)/LOOK.K;f.giant=true}else f.giant=false}else f.giant=false
- setCreature(f,Math.max(kind==="plankton"?2:Math.max(C.SIZE_MIN*worldK,P0?bite()*LOOK.MIN:0),sz),kind);
+ setCreature(f,Math.max(kind==="plankton"?2:Math.max(C.SIZE_MIN*worldK,P0?bite()*lookMin():0),sz),kind);
  f.pal=kind==="fish"?Math.floor(rnd(0,L===1?FISH_PAL.length+3:FISH_PAL.length)):kind==="plankton"?Math.floor(rnd(0,2)):kind==="octo"?Math.floor(rnd(0,2)):kind==="star"?Math.floor(rnd(0,3)):f.pal;
  f.sp=-1;if(kind==="fish"){const z=L===0?0:(sz>bite()*.9||depthOf(f.y)>(LAYERS.TOP+LAYERS.MID)/2)?2:1,lst=SP_Z[z];f.sp=lst[Math.floor(Math.random()*lst.length)]}
  else if(kind==="glow"&&Math.random()<.6){const lst=SP_Z[3].filter(i=>SPECIES[i].n!=="Pelican eel"||(sz>bite()*.7&&Math.random()<.3));f.sp=lst[Math.floor(Math.random()*lst.length)]}
  f.L=L;f.band=kind==="star"?[BED-14,BED]:bandOf(L);
  spawnStats.n++;spawnStats.byKind[kind]=(spawnStats.byKind[kind]||0)+1;if(!ALLOWED[kind].includes(layerOf(f.y)))spawnStats.wrong++;
- const dir=Math.random()<.5?1:-1,sp=kind==="star"?rnd(3,7):kind==="plankton"?rnd(8,16):kind==="octo"?rnd(15,25):rnd(25,45);f.vx=dir*sp*(f.s>40?.7:1);f.vy=0}
-function spawnSurf(s,edge){s.zip=0;s.x=camX+(edge?(Math.random()<.5?-50:W+50):rnd(50,W-50));s.vx=(Math.random()<.5?-1:1)*rnd(25,45);s.k=Math.random()<.35?1:0}
+ const dir=Math.random()<.5?1:-1,sp=kind==="star"?rnd(3,7):kind==="plankton"?rnd(8,16):kind==="octo"?rnd(15,25):rnd(25,45);f.vx=dir*sp*(f.s>40?.7:1);f.vy=0;if(P0&&goneAt(f.y)){f.off=true;f.retry=rnd(.5,1.1);spawnStats.gone=(spawnStats.gone||0)+1}}
+function pickSurfK(){const l=shark.lvl,r=Math.random(),sf=()=>Math.random()<.35?1:0;return l>=SURFACE.CARGO_LVL?(r<.5?3:r<.85?2:sf()):l>=SURFACE.SAIL_LVL?(r<.6?2:sf()):sf()}
+function rollSurf(s){s.k=pickSurfK();s.vx=(Math.random()<.5?-1:1)*(s.k===3?rnd(12,20):s.k===2?rnd(20,34):rnd(25,45))}
+function spawnSurf(s,edge){s.zip=0;rollSurf(s);const m=50+(SURFERS[s.k].hw||0)*surfK();s.x=camX+(edge?(Math.random()<.5?-m:W+m):rnd(50,W-50))}
 function placeAll(){for(const T of tiles)T.tx=1e9;updTiles(true,true);for(const f of fish)spawnFish(f,false);for(const s of surf)spawnSurf(s,false)}
 
 // ---------- audio (one AudioContext, synthesized SFX, capped voices) ----------
@@ -597,7 +608,7 @@ const SFX={
  pop(){blip(500,1200,.09,"triangle",.3);blip(900,1600,.08,"triangle",.22,.07)},
  grow(){[523,659,784,1047].forEach((f,i)=>blip(f,f,.12,"square",.16,i*.09))},
  /* v10 item 11: wave/water sounds (splash, surface ripple) removed (Jeremy) */launch(){blip(180,520,.18,"triangle",.25)},bump(){blip(220,180,.06,"triangle",.18)},
- divers(){[880,660,880,660].forEach((f,i)=>blip(f,f,.11,"square",.14,i*.13))},net(){noise(.1,.25,1400);blip(400,200,.2,"triangle",.25)},ambush(){blip(110,90,.5,"sawtooth",.16);blip(130,100,.45,"sawtooth",.12,.3)},caught(){[523,494,466,440].forEach((f,i)=>blip(f,f,.18,"triangle",.25,i*.15))},
+ 
  perfect(){blip(1047,1568,.12,"square",.15)},end(){[784,659,523,392].forEach((f,i)=>blip(f,f*.98,.2,"triangle",.25,i*.16))}};
 // FALLBACK only (used if the chiptune file fails to load/decode): tiny ORIGINAL 8-bit loop (not Debussy, not the real track) at BEAT.PLACEHOLDER_BPM, cheap look-ahead scheduler.
 const PH_NOTES=[63,70,75,79, 61,68,73,77, 60,67,72,75, 58,65,70,74];const PH_BASS=[39,37,36,34];
@@ -690,10 +701,11 @@ function drawTitle(t){const r=titleRect(),bob=(T.rel==null||calm)?0:Math.sin(t*1
 let lastBub=-9,wasFast=false;
 function startGame(){hideAll();state="play";$("boost").classList.remove("hide");score=0;elapsed=0;endReason="";roundLen=window.__saRound||ROUND_SECONDS;timeLeft=roundLen;
  shark.lvl=0;shark.meter=0;shark.dead=false;dead.t=0;worldK=wK(0);shark.pop=0;buildShark();shark.Lt=shark.L;shark.x=W/2;shark.y=SURF+H*.45;camX=0;sizeK=Math.min(1.25,Math.max(.75,bite()/CREATURES.REF_BITE));camY=Math.max(0,shark.y-H*.5);shark.ang=0;shark.spd=sharkMax(0)*.25;shark.run=0;shark.air=false;shark.h=0;shark.cool=0;shark.sq=0;
- touch.on=false;touch.drive=0;boost.t=0;boost.cd=0;boost.n=0;shake=0;shark.stun=0;shark.safe=0;divers.length=0;amb.on=false;amb.ate=false;netHits=0;surfersCaught=0;ambCool=0;bannerT=0;diverTipT=0;fasterT=0;struggles=0;touch.strug=0;wasFast=false;lastBub=-9;for(const p of parts)p.t=0;for(const p of pops)p.t=0;placeAll();playMusic("game");
+ touch.on=false;touch.drive=0;boost.t=0;boost.cd=0;boost.n=0;shake=0;shark.stun=0;shark.safe=0;surfersCaught=0;surfEaten.fill(0);shark.yaw=shark.yawT=shark.yawTgt=0;shark.yawDir=1;wasFast=false;lastBub=-9;for(const p of parts)p.t=0;for(const p of pops)p.t=0;placeAll();playMusic("game");
  hintT=localStorage.getItem(HINT_KEY)?0:6;localStorage.setItem(HINT_KEY,"1")}
 function spark(x,y,big){for(const p of parts)if(p.t<=0){const a=Math.random()*6.28,v=rnd(40,140)*(big?1.4:1);p.x=x;p.y=y;p.vx=Math.cos(a)*v;p.vy=Math.sin(a)*v-(big?60:0);p.t=.5;return}}
-function addPop(x,y,txt){let o=pops[0];for(const p of pops)if(p.t<o.t)o=p;o.x=Math.max(camX+50,Math.min(camX+W-50,x));o.y=y;o.t=1;o.txt=txt}
+function addPop(x,y,txt,big){let o=pops[0];for(const p of pops)if(p.t<o.t)o=p;o.x=Math.max(camX+(big?110:50),Math.min(camX+W-(big?110:50),x));o.y=big?Math.max(y,camY+safeTop()+130):y;o.t=big?1.4:1;/* b52: big pop clear of the HUD */o.txt=txt;o.big=!!big}
+const boatTxt=()=>(surfEaten[2]?` · Sail boats: ${surfEaten[2]}`:"")+(surfEaten[3]?` · Cargo ships: ${surfEaten[3]}`:"");
 function addScore(n){score+=n}
 function feedSurfer(){feed(GROW.SURFER)}
 function feed(g){if(shark.lvl>=MAX_LEVEL){shark.meter=need(shark.lvl);return}shark.meter+=g*trait("grow");
@@ -733,38 +745,9 @@ let godMode=false;// test hook only: never set by the game
 const DEATH_S=1.5,dead={t:0,puffs:[]};let puffSpr=null;
 function gameOver(why){if(godMode&&why==="eaten")return;endReason=why;if(why==="eaten"&&state==="play"){state="dead";shark.dead=true;shark.air=false;shark.stun=0;dead.t=0;dead.puffs=[];for(let i=0;i<6;i++)dead.puffs.push({a:rnd(0,6.28),d:rnd(.05,.3),k:rnd(.6,1.1),dl:i*.08});return}endRound()}
 function updDead(dt){dead.t+=dt;shark.y+=dt*22;camX+=(shark.x-W/2-camX)*Math.min(1,dt*WORLD.CAM_EASE);if(shake>0)shake-=dt;{const tc=Math.max(0,shark.y-H*.5);camY+=(tc-camY)*Math.min(1,dt*WORLD.CAM_EASE)}if(dead.t>=DEATH_S)endRound()}
-function struggle(d){touch.strug=(touch.strug||0)+d;while(touch.strug>=Math.min(W,H)*STRUGGLE_PX&&shark.stun>0){touch.strug-=Math.min(W,H)*STRUGGLE_PX;shark.stun=Math.max(0,shark.stun-STRUGGLE_SHORTEN_MS/1000);struggles++;spark(shark.x,shark.y,0);SFX.bump()}}
-function surferCaught(){surfersCaught++;{const x=surfersCaught-DIVER_TRIGGER_SURFERS;if(x>0&&x%DIVER_SPEEDUP_HINT_EVERY===0&&diverSpeedMul(x-DIVER_SPEEDUP_HINT_EVERY)<DIVER_SPEED_CAP/DIVER_SPEED_FRACTION)fasterT=2.2}const want=Math.min(DIVER_MAX,Math.floor(surfersCaught/DIVER_TRIGGER_SURFERS));while(divers.length<want)spawnDiver()}
-function spawnDiver(x,y){let bx=0,by=0,bd=-1;
- for(let k=0;k<6;k++){const e=k%3,cx=camX+(e===0?-30:e===1?W+30:rnd(40,W-40)),cy=e===2?SURF+20:rnd(SURF+40,Math.min(BED-40,SURF+H*CREATURES.DIVER_BAND)),d=Math.hypot(cx-shark.x,cy-shark.y)-divers.reduce((m,o)=>Math.hypot(cx-o.x,cy-o.y)<80?m+999:m,0);if(d>bd){bd=d;bx=cx;by=cy}}// edge or surface, farthest from the shark
- const d={x:x??bx,y:y??by,ang:0,st:"wander",grace:DIVER_GRACE_MS/1000,cool:0,lost:0,wt:0,ph:Math.random()*6};d.ang=Math.atan2(shark.y-d.y,shark.x-d.x);divers.push(d);
- bannerT=1.5;SFX.divers();if(!localStorage.getItem(DIVER_TIP_KEY)){diverTipT=4.5;localStorage.setItem(DIVER_TIP_KEY,"1")}return d}
-function diverSpeedMul(extra){return 1+DIVER_SPEEDUP_PER_SURFER*Math.max(0,extra)}
-function diverSpeed(){const top=sharkMax(shark.lvl);return Math.min(top*DIVER_SPEED_FRACTION*diverSpeedMul(surfersCaught-DIVER_TRIGGER_SURFERS),top*DIVER_SPEED_CAP)}
-function netPt(d){return [d.x+Math.cos(d.ang)*DIVER_SIZE*.98,d.y+Math.sin(d.ang)*DIVER_SIZE*.98]}
-function wantAmbush(n){if(amb.on||ambCool>0)return false;const r=AMBUSH_ON_HIT[Math.min(n,3)];if(r!==null)return r;if(window.__saAmbushForce!=null)return window.__saAmbushForce;return Math.random()<AMBUSH_CHANCE}
-function netHit(d){netHits++;if(d)d.cool=DIVER_COOLDOWN_MS/1000;SFX.net();addPop(shark.x,shark.y-shark.L*.5,"NETTED!");shark.meter=Math.max(0,shark.meter-DIVER_GROWTH_LOSS);
- if(mode==="timed"&&netHits>=DIVER_CATCHES_TO_LOSE){gameOver("caught");return}
- const a=wantAmbush(mode==="endless"?Math.min(netHits,2):netHits);shark.stun=(a?AMBUSH_STUN_MS:STUN_MS)/1000;touch.strug=0;if(a)startAmbush()}
-function startAmbush(){const L=shark.L*AMBUSHER_SIZE;amb.on=true;amb.t=0;amb.phase="come";amb.reachT=-1;amb.ate=false;amb.dir=shark.x<camX+W/2?-1:1;// enters from the farther edge
- amb.x0=camX+(amb.dir<0?W+L*.7:-L*.7);amb.y0=Math.max(SURF+L*.25,Math.min(BED-L*.25,shark.y+rnd(-40,40)));amb.x=amb.x0;amb.y=amb.y0;
- if(amb.L!==L||!amb.spr){amb.L=L;amb.spr=render3DShark(L*DPR,true,AMB_T);amb.spr.L=L}ambCool=AMBUSH_COOLDOWN_MS/1000;SFX.ambush();window.__saLastAmbush=amb}
-function updDivers(dt){if(ambCool>0)ambCool-=dt;if(bannerT>0)bannerT-=dt;if(diverTipT>0)diverTipT-=dt;
- const v=diverSpeed(),range=H*DIVER_DETECT_RANGE,L=shark.L;
- for(const d of divers){d.ph+=dt*5;if(d.grace>0)d.grace-=dt;if(d.cool>0)d.cool-=dt;const dist=Math.hypot(shark.x-d.x,shark.y-d.y);
-  if(d.cool>0){d.st="wander";d.wa=Math.atan2(d.y-shark.y,d.x-shark.x);d.wt=.5}else   if(dist<range&&!shark.air){d.st="chase";d.lost=0}else if(d.st==="chase"){d.lost+=dt;if(d.lost*1000>=DIVER_GIVEUP_MS)d.st="wander"}
-  let tgt,sp;if(d.st==="chase"){tgt=Math.atan2(shark.y-d.y,shark.x-d.x);sp=v}else{d.wt-=dt;if(d.wt<=0){d.wt=rnd(1.2,2.5);d.wa=d.ang+rnd(-1.4,1.4)}tgt=d.wa??d.ang;sp=v*.45}
-  d.ang+=angDiff(d.ang,tgt)*Math.min(1,dt*2.5);d.x+=Math.cos(d.ang)*sp*dt;d.y+=Math.sin(d.ang)*sp*dt;
-  if(d.y<SURF+16){d.y=SURF+16;d.ang=Math.abs(d.ang)}{const lim=Math.min(BED-20,SURF+H*CREATURES.DIVER_BAND*1.15);if(d.y>lim){d.y=lim;d.ang=-Math.abs(d.ang)}}// stays in the water
-  if(d.x<camX-W*.6){d.x=camX-W*.6;d.ang=Math.PI-d.ang;d.wa=0}else if(d.x>camX+W*1.6){d.x=camX+W*1.6;d.ang=Math.PI-d.ang;d.wa=Math.PI}
-  if(d.grace<=0&&d.cool<=0&&!shark.air&&shark.stun<=0&&shark.safe<=0){const [nx,ny]=netPt(d),r=L*DIVER_NET_REACH+8;if((nx-shark.x)**2+(ny-shark.y)**2<r*r){netHit(d);if(state!=="play")return}}}
- if(amb.on){amb.t+=dt;const La=amb.L;
-  if(amb.phase==="come"){const k=Math.min(1,amb.t*1000/AMBUSH_ARRIVE_MS),e=k*k*(3-2*k);amb.x=amb.x0+(shark.x-amb.dir*L*.2-amb.x0)*e;amb.y=amb.y0+(shark.y-amb.y0)*e;
-   if(Math.hypot(amb.x-shark.x,amb.y-shark.y)<La*.15&&amb.reachT<0)amb.reachT=amb.t;
-   if(k>=1){if(shark.stun>0&&!shark.air){amb.ate=true;gameOver("eaten");return}amb.phase="leave";amb.lt=0;addPop(shark.x,shark.y-L*.6,"ESCAPED!")}}
-  else{amb.lt+=dt;const sp=amb.lt*1000<AMBUSHER_LEAVE_MS?40:320;amb.x-=amb.dir*sp*dt;amb.y+=Math.sin(amb.lt*2)*20*dt;// circles off slowly, then swims away
-   if(amb.lt*1000>=AMBUSHER_LEAVE_MS&&(amb.x<camX-La||amb.x>camX+W+La))amb.on=false}}}
-function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")timeLeft-=dt;if(hintT>0)hintT-=dt;if(mode==="timed"&&timeLeft<=0){timeLeft=0;gameOver("time");return}
+function surferCaught(){surfersCaught++}
+const surfEaten=[0,0,0,0];function eatSurf(s,cx,cy){const SD=SURFERS[s.k],pts=SD.pts;addScore(pts);if(s.k<2)feedSurfer();else feed(SD.grow);SFX.pop();if(s.k>=2)SFX.chomp();shark.chomp=.25;addPop(cx,cy-20-(s.k>=2?30:0),"+"+pts+" "+SD.label,true);const n=s.k===3?18:s.k===2?12:8;for(let i=0;i<n;i++)spark(cx+(s.k>=2?rnd(-1,1)*(SD.hw||0)*surfK()*.6:0),SURF,1);surfEaten[s.k]++;s.zip=s.k>=2?2.4:1.6;if(s.k<2)surferCaught();window.__saLastSurfEat={k:s.k,pts,t:elapsed}}
+function updPlay(dt){elapsed+=dt;if(mode==="timed")timeLeft-=dt;if(hintT>0)hintT-=dt;if(mode==="timed"&&timeLeft<=0){timeLeft=0;gameOver("time");return}
  {if(shark.L!==shark.Lt){shark.L+=(shark.Lt-shark.L)*Math.min(1,dt*DRAW.EASE);if(Math.abs(shark.L-shark.Lt)<.05)shark.L=shark.Lt}if(shark.pop>0)shark.pop-=dt;const wt=wK(shark.lvl);if(worldK!==wt){let nk=worldK+(wt-worldK)*Math.min(1,dt*GROW.EASE);if(Math.abs(nk-wt)<1e-4)nk=wt;setWorldK(nk)}}if(shake>0)shake-=dt;if(shark.cool>0)shark.cool-=dt;if(shark.sq>0)shark.sq-=dt;shark.wag+=dt*(4+shark.spd/40);if(shark.chomp>0)shark.chomp-=dt;
  const max=sharkMax(shark.lvl),L=shark.L;
  if(shark.air){// ballistic arc: safe from fish, can grab surfers
@@ -773,13 +756,11 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
    for(let i=0;i<12;i++)spark(shark.x,SURF,1);const bl=beatLen(),off=Math.abs(((beatNow()+bl/2)%bl)-bl/2)*1000;window.__saLastLand={offMs:off};
    if(BEAT.on&&off<=BEAT.PERFECT_MS){addScore(BEAT.PERFECT_BONUS);SFX.perfect();addPop(shark.x,SURF-30,"PERFECT! +"+BEAT.PERFECT_BONUS)}}}
  else{
-  if(shark.safe>0&&shark.stun<=0)shark.safe-=dt;
-  if(shark.stun>0){shark.stun=Math.max(0,shark.stun-dt);shark.safe=DIVER_SAFE_AFTER_STUN_MS/1000;touch.drive=0;shark.ang+=Math.sin(elapsed*25)*dt*2}
-  else if(touch.on){const ad=angDiff(shark.ang,touch.dir),pv=Math.abs(Math.sin(touch.dir)-Math.sin(shark.ang))/2,hv=Math.abs(Math.cos(touch.dir)-Math.cos(shark.ang))/2,pk=pv>hv?STEER.PITCH_TURN:1;shark.ang+=ad*Math.min(1,dt*STEER.TURN*trait("turn")*pk)}
+  if(touch.on){const ad=angDiff(shark.ang,touch.dir),pv=Math.abs(Math.sin(touch.dir)-Math.sin(shark.ang))/2,hv=Math.abs(Math.cos(touch.dir)-Math.cos(shark.ang))/2,pk=pv>hv?STEER.PITCH_TURN:1;shark.ang+=ad*Math.min(1,dt*STEER.TURN*trait("turn")*pk)}
   else touch.drive=Math.max(0,touch.drive-dt*STEER.DRIVE_DECAY*2);
   if(boost.t>0)boost.t=Math.max(0,boost.t-dt);if(boost.cd>0)boost.cd=Math.max(0,boost.cd-dt);const bst=boost.t>0&&shark.stun<=0;
-  const tgt=shark.stun>0?0:max*(touch.on?STEER.MIN+(1-STEER.MIN)*touch.drive:STEER.MIN)*(bst?BOOST.MUL:1);/* boost multiplies the speed you are already asking for */
-  shark.spd+=(tgt-shark.spd)*Math.min(1,dt*(tgt>shark.spd?STEER.ACC*trait("acc")*(bst?BOOST.ACC:1):STEER.DEC));boostUi();// eased = weighty
+  const tgt=shark.stun>0?0:bst?max*BOOST.MUL:max*(touch.on?STEER.MIN+(1-STEER.MIN)*touch.drive:STEER.MIN);/* boost multiplies the speed you are already asking for */
+  shark.spd+=(tgt-shark.spd)*Math.min(1,dt*(tgt>shark.spd?STEER.ACC*trait("acc")*(bst?BOOST.ACC:1):STEER.DEC*(shark.spd>max?3:1)));boostUi();// eased = weighty
   shark.x+=Math.cos(shark.ang)*shark.spd*dt;{const sy=Math.sin(shark.ang);shark.y+=sy*shark.spd*dt*(sy>0?diveK(shark.lvl):1)}
   if(shark.spd>max*.45)shark.run+=shark.spd*dt*(shark.spd/max);else shark.run*=Math.exp(-dt*2);shark.run=Math.min(shark.run,H*1.2);
   const fr=shark.spd/max;if(fr>=FAST_SFX.AT&&!wasFast&&elapsed-lastBub>=FAST_SFX.COOL){SFX.bubbles();lastBub=elapsed;for(let i=0;i<3;i++)spark(shark.x-Math.cos(shark.ang)*L*.5,shark.y,0)}wasFast=fr>=FAST_SFX.AT;
@@ -789,10 +770,10 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
   }
  if(depthHintT>0)depthHintT-=dt;
  {const k=Math.min(1,dt*WORLD.CAM_EASE),tc=Math.max(0,shark.y-H*.5);if(Math.abs(tc-camY)>H*1.2||Math.abs(shark.x-W/2-camX)>W*1.2){camY=tc;camX=shark.x-W/2}else{camY+=(tc-camY)*k;camX+=(shark.x-W/2-camX)*k}}updTiles();// big jump (teleport) = snap
- updDivers(dt);if(state!=="play")return;
  const [mx,my]=mouth(),er=L*.2;
  const CR=CREATURES,smax=max,sense=Math.max(H*CR.SENSE,L*CR.SENSE_L);/* v9: notice range also scales with the drawn shark */
- for(const f of fish){if(f.off)continue;f.ph+=dt*3;const dx=f.x-shark.x,dy=f.y-shark.y,d2=dx*dx+dy*dy,r=rel(f),dist=Math.sqrt(d2)||1;const eater=f.kind!=="plankton"&&f.kind!=="star"&&f.s/bite()>=EAT.RATIO;f.danger=eater;if(f.rest>0)f.rest-=dt;
+ {const c=Math.cos(shark.ang);if(Math.abs(c)>TURN3D.DEAD)shark.yawTgt=c<0?Math.PI:0;const d=(shark.yawTgt||0)-(shark.yaw||0),st=Math.PI/TURN3D.SEC*dt;if(Math.abs(d)>1e-4)shark.yawDir=d>0?1:-1;shark.yaw=(shark.yaw||0)+Math.max(-st,Math.min(st,d));shark.yawT=(shark.yawT||0)+(shark.yaw-(shark.yawT||0))*Math.min(1,dt*TURN3D.TAIL);const H_=window.__saYawHold;if(H_){shark.yaw=H_[0];shark.yawT=H_[1]}}
+ for(const f of fish){if(f.off){if(f.retry>0&&(f.retry-=dt)<=0)spawnFish(f,true,f.tile);continue}if(f.fade>0){f.fade-=dt;f.danger=false;if(f.fade<=0){f.off=true;f.retry=rnd(.5,1.1)}continue}if(goneAt(f.y)){f.fade=VANISH.FADE;continue}/* b52: band emptied, fade out */f.ph+=dt*3;const dx=f.x-shark.x,dy=f.y-shark.y,d2=dx*dx+dy*dy,r=rel(f),dist=Math.sqrt(d2)||1;const eater=f.kind!=="plankton"&&f.kind!=="star"&&f.s/bite()>=EAT.RATIO;f.danger=eater;if(f.rest>0)f.rest-=dt;
   let tvx=f.vx>=0?Math.max(20,Math.abs(f.vx)):-Math.max(20,Math.abs(f.vx)),tvy=0;f.st="";
   const food=r<0;// v9b (Jeremy): a Size 1 shark eats any fish clearly smaller than its bite (before: plankton only, which left tiny fish next to it uneatable)
   if(!shark.air&&dist<sense){if(food&&f.kind!=="star"){if(f.chase===0)f.dn=0;f.chase+=dt;if(f.chase>CR.FLEE_BURST_S+CR.FLEE_TIRED_S)f.chase=0;const sprint=f.chase<CR.FLEE_BURST_S,v=smax*(f.kind==="plankton"?.15:sprint?fleeK(f):CR.FLEE_TIRED);/* sprint, then tire briefly */tvx=dx/dist*v;tvy=dy/dist*v;f.st="flee";
@@ -807,10 +788,11 @@ function updPlay(dt){elapsed+=dt;if(fasterT>0)fasterT-=dt;if(mode==="timed")time
   else{const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);/* v9c: danger/bump contact stays on true size (drawn 1.25x bigger would mean unfair early deaths) */if(d2<rr*rr){if(eater&&!godMode&&elapsed>EAT.GRACE){gameOver("eaten");return}/* v9: bigger creatures eat you on contact */
     f.vy+=dy/dist*80;shark.x-=dx/dist*6;shark.y-=dy/dist*6;if(f.bump<=0){SFX.bump();f.bump=.4}}}}
  for(const s of surf){s.ph+=dt*2;if(s.zip>0){s.zip-=dt;if(s.zip<=0)spawnSurf(s,true);continue}
-  s.x+=s.vx*dt;if(s.x<camX-60)s.x+=W+115;else if(s.x>camX+W+60)s.x-=W+115;const sk=surfK(),hy=SURFERS[s.k].hy*sk,cx=s.x,cy=SURF-hy;
-  if(shark.air){const ex=cx-mx,ey=cy-my,rr=(L*.22+18*sk)*trait("catchR");if(ex*ex+ey*ey<rr*rr&&shark.lvl<GROW.SURF_LVL){if(!(s.bump>0)){s.bump=.8;SFX.bump()}}
-  else if(ex*ex+ey*ey<rr*rr){const pts=SURFERS[s.k].pts;addScore(pts);feedSurfer();SFX.pop();shark.chomp=.25;addPop(cx,cy-20,"+"+pts+" SPLASH!");for(let i=0;i<8;i++)spark(cx,SURF,1);s.zip=1.6;surferCaught()}}
-  else if(Math.abs(cx-mx)<L*.4&&my<SURF+L*.3&&!(s.bump>0)){s.bump=.6;s.vx=(cx>shark.x?1:-1)*60;SFX.bump();addPop(cx,cy-20,"boing")}
+  s.x+=s.vx*dt;const sk=surfK(),SD=SURFERS[s.k],hw=(SD.hw||18)*sk,mg=60+hw;if(s.x<camX-mg){s.x+=W+2*mg;rollSurf(s)}else if(s.x>camX+W+mg){s.x-=W+2*mg;rollSurf(s)}/* b52: re-rolled off screen, so boats replace surfers as you grow */const boat=s.k>=2,hy=SURFERS[s.k].hy*sk,cx=s.x,cy=SURF-hy;
+  if(shark.air){const ex=cx-mx,ey=cy-my,rr=(L*.22+(boat?hw*.8:18*sk))*trait("catchR");if(ex*ex+ey*ey<rr*rr&&shark.lvl<GROW.SURF_LVL){if(!(s.bump>0)){s.bump=.8;SFX.bump()}}
+  else if(ex*ex+ey*ey<rr*rr)eatSurf(s,cx,cy)}
+  else if(boat&&Math.abs(cx-mx)<hw+L*.2&&my<SURF+L*.35)eatSurf(s,cx,cy);/* b52: boats can also be bitten from below at the surface */
+  else if(!boat&&Math.abs(cx-mx)<L*.4&&my<SURF+L*.3&&!(s.bump>0)){s.bump=.6;s.vx=(cx>shark.x?1:-1)*60;SFX.bump();addPop(cx,cy-20,"boing")}
   if(s.bump>0)s.bump-=dt}
  for(const p of parts)if(p.t>0){p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.94;p.vy=p.vy*.94+140*dt}}
 // MIP LEVELS: sprites are baked large; drawing them shrunk 4-10x is costly (the filter samples the big source every frame).
@@ -836,29 +818,33 @@ const FAR_FOG=.4;/* v10 item 12 step 5: far creatures fade toward the murk (cont
 function dimAt(x,y){return DK.per?1-vigA(x,y):1}
 function drawPlay(t){
  X.font="900 22px system-ui,sans-serif";X.textAlign="center";X.textBaseline="middle";X.lineWidth=5;X.strokeStyle=P.ink;const top=camY-120,bot=camY+H+120;
- let onScr=0;for(const f of fish){if(f.off||f.y<top||f.y>bot||f.x<camX-f.s*3||f.x>camX+W+f.s*3)continue;onScr++;let s,sc;const flip=f.vx<0?-1:1;X.globalAlpha=dimAt(f.x,f.y)*farFog(f.x,f.y);
+ let onScr=0;for(const f of fish){if(f.off||f.y<top||f.y>bot||f.x<camX-f.s*3||f.x>camX+W+f.s*3)continue;onScr++;let s,sc;const flip=f.vx<0?-1:1;X.globalAlpha=dimAt(f.x,f.y)*farFog(f.x,f.y)*(f.fade>0?f.fade/VANISH.FADE:1);
   if(f.kind==="shark"){const sp=sharkSpr[f.pal];s=f.st==="chase"&&Math.sin(t*8+f.ph)>0?sp.o:sp;sc=(f.s*lk(f)*2.5)/sp.L;X.setTransform(DPR*flip*sc,0,0,DPR*sc,(f.x-camX)*DPR,(f.y-camY)*DPR);X.rotate(Math.max(-.5,Math.min(.5,f.vy/(Math.abs(f.vx)+40)))*flip);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2-sp.L*.05+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}
   else{s=f.sp>=0&&(f.kind==="fish"||f.kind==="glow")?specSpr[f.sp]:f.kind==="glow"?glowSpr[f.pal]:f.kind==="plankton"?plankSpr[f.pal]:f.kind==="angler"?anglerSpr:f.kind==="octo"?octoSpr[f.pal]:f.kind==="star"?starSpr[f.pal]:fishSpr[f.tier][f.pal];sc=f.s*lk(f)/s.base;
    const wob=f.kind==="octo"?1+Math.sin(t*3+f.ph)*.06:1;X.setTransform(DPR*flip*sc,0,0,DPR*sc*wob,(f.x-camX)*DPR,(f.y-camY)*DPR);if(f.dg===1)X.rotate(Math.sin(f.dt*70)*.22);/* v10: readable dodge wiggle */if(f.kind==="star")X.rotate(f.ph*.05);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}}
- X.globalAlpha=1;busy=divers.length>0||amb.on||onScr>14;
+ X.globalAlpha=1;busy=onScr>14;
  wT();
- for(const s of surf){if(s.zip>0||SURF>bot)continue;const sp=surfSpr[s.k],dw=sp.width/DPR,dh=sp.height/DPR,y=SURF+Math.sin(s.ph)*2;{const k=surfK();X.setTransform((s.vx<0?-DPR:DPR)*k,0,0,DPR*k,(s.x-camX)*DPR,(y-camY)*DPR)}X.drawImage(sp,-dw/2,-dh*.89,dw,dh)}
- for(const d of divers){const f=Math.cos(d.ang)<0?-1:1,dw=diverSpr.width/DPR,dh=diverSpr.height/DPR;X.setTransform(DPR*f,0,0,DPR,(d.x-camX)*DPR,(d.y-camY+Math.sin(d.ph)*2)*DPR);X.rotate(f>0?d.ang:-(d.ang-Math.PI));X.globalAlpha=d.grace>0?.55:1;X.drawImage(diverSpr,-DIVER_SIZE*1.15,-DIVER_SIZE*.45,dw,dh);X.globalAlpha=1}
- if(amb.on){const s=amb.spr,dw=s.width/DPR,dh=s.height/DPR;const face=amb.phase==="come"?-amb.dir:amb.dir;
-  X.setTransform(DPR*(face<0?-1:1),0,0,DPR,(amb.x-camX)*DPR,(amb.y-camY)*DPR);X.globalAlpha=amb.phase==="come"?.6+.4*Math.min(1,amb.t/(AMBUSH_ARRIVE_MS/1000)):.75;X.drawImage(s,-dw/2,-dh/2,dw,dh);X.globalAlpha=1;wT();
-  if(amb.phase==="come"){const ex=Math.max(camX+22,Math.min(camX+W-22,amb.x)),ey=amb.y-amb.L*.35;/* v9: no "!" warning */}}
+ for(const s of surf){if(s.zip>0||SURF>bot)continue;const sp=surfSpr[s.k],dw=sp.width/DPR,dh=sp.height/DPR,y=SURF+Math.sin(s.ph)*2;{const k=surfK();X.setTransform((s.vx<0?-DPR:DPR)*k,0,0,DPR*k,(s.x-camX)*DPR,(y-camY)*DPR)}X.drawImage(sp,-dw/2,-dh*(sp.wl||.89),dw,dh)}
  wT();const L=shark.L,ks=L/sprC.L,max=sharkMax(shark.lvl),sr=shark.spd/max;
  if(shark.air){const k=Math.max(.25,1-shark.h/(H*.35));X.fillStyle="rgba(4,30,50,.35)";X.beginPath();X.ellipse(shark.x,SURF+4,L*.4*k,6*k,0,0,7);X.fill()}
- else{if(sr>.35){const c=Math.cos(shark.ang),sn=Math.sin(shark.ang),bx=shark.x-c*L*.55,by=shark.y-sn*L*.55,len=L*(.3+sr*.9);X.strokeStyle="rgba(235,252,255,"+(.2+sr*.4)+")";X.lineWidth=3;X.beginPath();
+ else{if(sr>.35){const c=Math.cos(shark.ang),sn=Math.sin(shark.ang),bx=shark.x-c*L*.55,by=shark.y-sn*L*.55,len=L*(.3+Math.min(sr,1.6)*.9);X.strokeStyle="rgba(235,252,255,"+(.2+Math.min(sr,1)*.4)+")";X.lineWidth=3;X.beginPath();
    for(const side of[-1,1]){X.moveTo(bx-sn*side*L*.08,by+c*side*L*.08);X.lineTo(bx-c*len-sn*side*len*.25,by-sn*len+c*side*len*.25)}X.stroke()}
+  if(boost.t>0&&!calm){/* b52 boost wake: a pale V of churned water behind the tail */const c=Math.cos(shark.ang),sn=Math.sin(shark.ang),bx=shark.x-c*L*.6,by=shark.y-sn*L*.6,a=Math.min(1,boost.t/.3),wl=L*(1.1+Math.min(sr,2.2)*.5);for(const side of[-1,1]){const ex=bx-c*wl-sn*side*wl*.32,ey=by-sn*wl+c*side*wl*.32,gw=X.createLinearGradient(bx,by,ex,ey);gw.addColorStop(0,"rgba(240,252,255,"+(.55*a)+")");gw.addColorStop(1,"rgba(240,252,255,0)");X.strokeStyle=gw;X.lineWidth=5;X.beginPath();X.moveTo(bx,by);X.quadraticCurveTo(bx-c*wl*.5-sn*side*wl*.08,by-sn*wl*.5+c*side*wl*.08,ex,ey);X.stroke()}
+   X.fillStyle="rgba(240,252,255,"+(.35*a)+")";for(let i=0;i<6;i++){const k=((t*3+i/6)%1),r=L*(.02+.03*k);X.beginPath();X.arc(bx-c*wl*k+Math.sin(i*7.3+t*9)*L*.06,by-sn*wl*k+Math.cos(i*5.1+t*8)*L*.06,r,0,7);X.fill()}}
   const pw=power(),ok=canLaunch();if(RINGS&&pw>.03){X.lineWidth=ok?5:3;X.strokeStyle=ok?"rgba(255,210,63,.95)":"rgba(235,252,255,.6)";X.beginPath();X.arc(shark.x,shark.y,L*.62,-Math.PI/2,-Math.PI/2+pw*6.283);X.stroke()}}
- const sq=shark.sq>0?Math.sin(shark.sq/.12*Math.PI):0,wob=shark.dead?0:Math.sin(shark.wag)*.04*(shark.air?0:1),flip=(Math.cos(shark.ang)<0?-1:1)*(shark.dead?Math.cos(Math.PI*Math.min(1,dead.t/.7)):1);
- X.setTransform(DPR,0,0,DPR,(shark.x-camX)*DPR,(shark.y-camY)*DPR);X.rotate(shark.ang+wob);const gp=shark.pop>0?Math.sin((1-shark.pop/DRAW.POP_S)*Math.PI)*.22:0;X.scale(ks*(1+sq*.15+gp),ks*(1-sq*.18+gp)*flip);
- const s=shark.chomp>0?sprO:sprC,dw=s.width/DPR,dh=s.height/DPR;X.globalAlpha=shark.safe>0&&shark.stun<=0&&Math.sin(t*20)<0?.45:1;X.drawImage(s,-dw/2-sprC.L*.05,-dh/2,dw,dh);X.globalAlpha=1;wT();
+ const sq=shark.sq>0?Math.sin(shark.sq/.12*Math.PI):0,wob=shark.dead?0:Math.sin(shark.wag)*.04*(shark.air?0:1);
+ X.setTransform(DPR,0,0,DPR,(shark.x-camX)*DPR,(shark.y-camY)*DPR);const gp=shark.pop>0?Math.sin((1-shark.pop/DRAW.POP_S)*Math.PI)*.22:0,sxk=ks*(1+sq*.15+gp),syk=ks*(1-sq*.18+gp);
+ const s=shark.chomp>0?sprO:sprC,dw=s.width/DPR,dh=s.height/DPR,ox=-dw/2-sprC.L*.05;
+ if(shark.dead){const flip=(Math.cos(shark.ang)<0?-1:1)*Math.cos(Math.PI*Math.min(1,dead.t/.7));X.rotate(shark.ang);X.scale(sxk,syk*flip);X.drawImage(s,ox,-dh/2,dw,dh)}
+ else{/* b52 3D turn: no instant mirror. Front and tail halves are squashed by cos(yaw) (tail lags), pitch fades mid-turn, belly light and a head-on view show at the midpoint */
+  const yw=shark.yaw||0,cF=Math.cos(yw),cT=Math.cos(shark.yawT||0),sw=Math.sin(yw),p=Math.atan2(Math.sin(shark.ang),Math.abs(Math.cos(shark.ang))),th=p*cF*(TURN3D.PITCH_MIN+(1-TURN3D.PITCH_MIN)*Math.abs(cF))+TURN3D.BANK*sw*(shark.yawDir||1)+wob;
+  X.rotate(th);const split=Math.abs(cF-cT)>.01||Math.abs(sw)>.01,bl=Math.abs(sw)*.7,hd=Math.max(0,1-Math.abs(cF)/TURN3D.HEAD);window.__saTurn={cF,cT,head:hd,split};
+  const part=(c,clip,bend)=>{X.save();if(bend)X.rotate(bend);X.scale(c,1);X.scale(sxk,syk);if(clip){X.beginPath();if(clip>0)X.rect(-2,-dh,dw,dh*2);else X.rect(-dw,-dh,dw+2,dh*2);X.clip()}X.drawImage(s,ox,-dh/2,dw,dh);if(bl>.02&&sprB&&s===sprC){X.globalAlpha=bl;X.drawImage(sprB,ox,-dh/2,dw,dh);X.globalAlpha=1}X.restore()};
+  if(!split)part(cF,0,0);else{part(cT,-1,(shark.yawT-yw)*.15*(cF<0?-1:1));part(cF,1,0)}
+  if(hd>0&&sprF){const fw=L*.62,fh=fw*sprF.height/sprF.width;X.save();X.globalAlpha=hd*.92;X.drawImage(sprF,cF*L*.18-fw/2,-fh*.48,fw,fh);X.globalAlpha=1;X.restore()}}
+ wT();
  if(RINGS&&shark.pop>0){const e=1-shark.pop/DRAW.POP_S;X.globalAlpha=1-e;X.strokeStyle="#ffe14d";X.lineWidth=4;X.beginPath();X.arc(shark.x,shark.y,L*(.45+e*.5),0,6.283);X.stroke();X.globalAlpha=1}// grow pop ring
  if(shark.dead){const p=Math.min(1,dead.t/1.3);for(const q of dead.puffs){const e=Math.max(0,Math.min(1,(dead.t-q.dl)/1.2));if(e<=0||e>=1)continue;const r=L*(.18+.42*e)*q.k,x=shark.x+Math.cos(q.a)*L*q.d*(1+e),y=shark.y+Math.sin(q.a)*L*q.d*(1+e)-e*L*.15;X.globalAlpha=(1-e)*.8;X.drawImage(puffSpr,x-r,y-r,r*2,r*2)}X.globalAlpha=1}
- if(shark.stun>0){X.fillStyle="#ffe14d";X.strokeStyle=P.ink;X.lineWidth=2;for(let i=0;i<4;i++){const a=t*5+i*1.57,x=shark.x+Math.cos(a)*L*.35,y=shark.y-L*.32+Math.sin(a)*L*.08;X.beginPath();for(let j=0;j<10;j++){const r=j%2?3:8,b=j*.628;X.lineTo(x+Math.cos(b)*r,y+Math.sin(b)*r)}X.closePath();X.fill();X.stroke()}
-  if(amb.on&&amb.phase==="come"){X.font="900 20px system-ui,sans-serif";X.lineWidth=5;X.strokeText("WIGGLE TO BREAK FREE!",camX+W/2,shark.y+L*.6);X.fillStyle="#fff";X.fillText("WIGGLE TO BREAK FREE!",camX+W/2,shark.y+L*.6)}}
  if(FX>=1&&gradeSpr&&!busy){/* v10 item 12: baked vignette in deep water too (off when frames slow) */X.setTransform(1,0,0,1,0,0);X.drawImage(gradeSpr,0,0,X.canvas.width,X.canvas.height)}
  // darkness: the deeper, the smaller the circle of light around you
  const dk=DK.dk;if(dk>0){X.setTransform(1,0,0,1,0,0);const R=DK.R*DPR,sx=(shark.x-camX)*DPR,sy=(shark.y-camY)*DPR;X.globalAlpha=DK.ga;
@@ -868,26 +854,21 @@ function drawPlay(t){
    if(f.kind==="glow"&&!(f.sp>=0)){if(++nh>nhMax()||++ng>2)continue;const r=f.s*.5*lk(f);X.setTransform(DPR,0,0,DPR,0,0);X.globalAlpha=.11+.03*Math.sin(t*3+f.ph);/* v10 gfx: dimmer deep halos (poster murk) */X.drawImage(haloSpr[f.pal],f.x-camX-r*1.2,f.y-camY-r*.8,r*2.4,r*1.6)}// small baked halo (cheap) instead of re-drawing the whole sprite
    else if(f.kind==="angler"){if(++ng>2)continue;const sc=f.s/anglerSpr.base,lx=(f.x+flip2*f.s*.6*(48/anglerSpr.base))-camX,ly=f.y-f.s*.56-camY,r=f.s*(.32+.04*Math.sin(t*4+f.ph));X.setTransform(DPR,0,0,DPR,0,0);X.globalAlpha=.35;X.drawImage(lureSpr,lx-r,ly-r,r*2,r*2)}
    else if(f.kind==="plankton"){if(++nh>nhMax())continue;const g=plankSpr[f.pal],sc=f.s/g.base;X.setTransform(DPR*sc,0,0,DPR*sc,(f.x-camX)*DPR,(f.y-camY)*DPR);X.globalAlpha=.5;X.drawImage(mip(g,sc),-g.width/DPR/2,-g.height/DPR/2,g.width/DPR,g.height/DPR)}}X.globalAlpha=1;X.globalCompositeOperation="source-over";wT()}
- // off-screen warnings (screen space)
- X.setTransform(DPR,0,0,DPR,0,0);for(const d of divers)if(Math.hypot(d.x-shark.x,d.y-shark.y)<H*.9)edgeArrow(d.x,d.y,"#ff9a1e");wT()}
-function drawHud(){X.setTransform(DPR,0,0,DPR,0,0);const top=safeTop()+8,mw=Math.min(150,W*.36),mx=(W-mw)/2,my=top+12,fr=shark.lvl>=MAX_LEVEL?1:shark.meter/need(shark.lvl);
+ wT()}
+function drawHud(){X.setTransform(DPR,0,0,DPR,0,0);const top=safeTop()+8,mw=Math.min(150,W*.36),mx=(W-mw)/2,my=top+12,fr=Math.min(1,shark.meter/need(shark.lvl));
  X.fillStyle=P.ink;X.fillRect(mx-3,my-3,mw+6,22);X.fillStyle="#bfe9ff";X.fillRect(mx,my,mw,16);X.fillStyle="#7be04a";X.fillRect(mx,my,mw*fr,16);
- X.font="900 13px system-ui,sans-serif";X.fillStyle=P.ink;X.textAlign="center";X.textBaseline="top";X.fillText(shark.lvl>=MAX_LEVEL?"MAX SIZE":"SIZE "+(shark.lvl+1),W/2,my+1);
+ X.font="900 13px system-ui,sans-serif";X.fillStyle=P.ink;X.textAlign="center";X.textBaseline="top";X.fillText("SIZE "+(shark.lvl+1),W/2,my+1);
  X.font="900 32px system-ui,sans-serif";X.lineJoin="round";X.lineWidth=7;X.strokeStyle=P.ink;X.textAlign="left";X.strokeText("🐟"+score,12,top);X.fillStyle="#fff";X.fillText("🐟"+score,12,top);
  const tl=Math.ceil(timeLeft),ts=mode==="endless"?"⏱"+fmtT(elapsed):"⏱"+tl;X.textAlign="right";X.strokeText(ts,W-12,top);X.fillStyle=mode==="timed"&&tl<=10?"#ffd23f":"#fff";X.fillText(ts,W-12,top);
- if(mode==="timed"){const iy=top+48;for(let i=0;i<DIVER_CATCHES_TO_LOSE;i++){const x=W-22-i*26;X.lineWidth=2;X.strokeStyle=P.ink;X.fillStyle=i<netHits?"#e2463c":"rgba(255,255,255,.35)";X.beginPath();X.arc(x,iy,9,0,7);X.fill();X.stroke();X.lineWidth=1;X.beginPath();X.moveTo(x-6,iy-3);X.lineTo(x+6,iy-3);X.moveTo(x-6,iy+3);X.lineTo(x+6,iy+3);X.moveTo(x-3,iy-7);X.lineTo(x-3,iy+7);X.moveTo(x+3,iy-7);X.lineTo(x+3,iy+7);X.stroke()}}// net-hit icons
- if(bannerT>0){X.globalAlpha=Math.min(1,bannerT*3);X.textAlign="center";X.font="900 54px system-ui,sans-serif";X.lineWidth=9;X.strokeText("Divers!",W/2,H*.32);X.fillStyle="#ff9a1e";X.fillText("Divers!",W/2,H*.32);X.globalAlpha=1}
- if(fasterT>0){X.globalAlpha=Math.min(1,fasterT*2);X.textAlign="center";X.font="900 26px system-ui,sans-serif";X.lineWidth=7;const y=H*.84;X.strokeText("Divers are faster!",W/2,y);X.fillStyle="#ff9a1e";X.fillText("Divers are faster!",W/2,y);X.globalAlpha=1}
- if(diverTipT>0){X.globalAlpha=Math.min(1,diverTipT);X.textAlign="center";X.font="800 18px system-ui,sans-serif";X.lineWidth=6;const y=H*.5;X.strokeText("Nets stun you.",W/2,y);X.strokeText("Big sharks love a stunned shark!",W/2,y+23);X.fillStyle="#fff";X.fillText("Nets stun you.",W/2,y);X.fillText("Big sharks love a stunned shark!",W/2,y+23);X.globalAlpha=1}
  if(hintT>0){X.globalAlpha=Math.min(1,hintT);X.textAlign="center";X.font="800 19px system-ui,sans-serif";X.lineWidth=6;const y=H*.62;X.strokeText("Swim down to build speed,",W/2,y);X.strokeText("then swim up fast to leap!",W/2,y+24);X.fillStyle="#fff";X.fillText("Swim down to build speed,",W/2,y);X.fillText("then swim up fast to leap!",W/2,y+24);X.globalAlpha=1}
  {const d=depthOf(shark.y),mx2=W-16,y0=top+80,y1=H-14,hh=y1-y0;X.lineWidth=3;X.strokeStyle=P.ink;for(let i=0;i<ZONES.length;i++){const a=ZONES[i].d,b2=i+1<ZONES.length?ZONES[i+1].d:1;X.fillStyle=ZONES[i].col;X.fillRect(mx2-6,y0+a*hh,12,(b2-a)*hh)}X.strokeRect(mx2-6,y0,12,hh);
   const my2=y0+Math.max(0,Math.min(1,d))*hh;X.fillStyle="#fff";X.beginPath();X.moveTo(mx2-8,my2);X.lineTo(mx2-20,my2-7);X.lineTo(mx2-20,my2+7);X.closePath();X.fill();X.stroke();
   const m=Math.max(0,Math.round((shark.y-SURF)/H*60)),z=ZONES.filter(q=>q.d<=d+1e-9).pop();X.font="800 13px system-ui,sans-serif";X.textAlign="right";X.textBaseline="middle";X.lineWidth=4;const lab=(z?z.name:"")+" "+m+" m";X.strokeText(lab,mx2-24,my2);X.fillStyle="#fff";X.fillText(lab,mx2-24,my2)}
  X.textAlign="left"}
-function endRound(){state="over";shark.air=false;shake=0;C.style.transform="";const eaten=endReason==="eaten",caught=endReason==="caught";shark.stun=0;amb.on=false;$("reason").textContent=eaten?"Gulp!":caught?"Caught!":"Time's up!";$("reason").className=eaten?"gulp":caught?"caught":"";
+function endRound(){state="over";shark.air=false;shake=0;C.style.transform="";const eaten=endReason==="eaten";$("reason").textContent=eaten?"Gulp!":"Time's up!";$("reason").className=eaten?"gulp":"";
  const bk=bestKey();best=+(localStorage.getItem(bk)||0);if(score>best){best=score;localStorage.setItem(bk,String(best))}$("final").textContent=score;$("bestTxt").textContent=(score>=best&&score>0?"🏆 New best! ":"Best: ")+best+(mode==="endless"?" (Endless)":" (Timed)");
- $("stats").textContent=mode==="endless"?`Surfers eaten: ${surfersCaught} · Survived ${fmtT(elapsed)}`:`Surfers eaten: ${surfersCaught}`;
- $("roundNote").textContent=mode==="endless"?"Endless: ends only when you get eaten.":`Round length: ${roundLen} seconds.`;if(eaten)SFX.gulp();else if(caught)SFX.caught();else SFX.end();phStop();chipStop();chip.want=false;show("overUi")}
+ $("stats").textContent=mode==="endless"?`Surfers eaten: ${surfersCaught}${boatTxt()} · Survived ${fmtT(elapsed)}`:`Surfers eaten: ${surfersCaught}${boatTxt()}`;
+ $("roundNote").textContent=mode==="endless"?"Endless: ends only when you get eaten.":`Round length: ${roundLen} seconds.`;if(eaten)SFX.gulp();else SFX.end();phStop();chipStop();chip.want=false;show("overUi")}
 
 // ---------- shared draw ----------
 function drawWater(t){darkSetup();X.setTransform(1,0,0,1,0,0);const top=camY,bot=camY+H,CAPY=BED+H*.35,cw=C.width;
@@ -907,7 +888,7 @@ function drawWater(t){darkSetup();X.setTransform(1,0,0,1,0,0);const top=camY,bot
  const sy=SURF-top;if(sy>-10&&sy<H+10){X.lineCap="round";/* v10 gfx step 2: white swoosh marks dropped */
   X.strokeStyle="#e8fbff";X.lineWidth=4;X.beginPath();const st=busy?46:24,x0=-(((camX%st)+st)%st);for(let x=x0;x<=W+st;x+=st){const y=sy+Math.sin(t*2+(x+camX)*.05)*2.5;x===x0?X.moveTo(x,y):X.lineTo(x,y)}X.stroke()}}
 function drawFx(dt,screen){X.setTransform(DPR,0,0,DPR,screen?0:-camX*DPR,screen?0:-camY*DPR);X.fillStyle="#e8fbff";X.strokeStyle=P.ink;X.lineWidth=1.5;for(const p of parts)if(p.t>0){const r=3+p.t*8;X.beginPath();X.arc(p.x,p.y,r,0,7);X.fill();X.stroke()}
- X.textAlign="center";X.textBaseline="middle";X.lineJoin="round";for(const p of pops)if(p.t>0){p.t-=dt*1.1;p.y-=dt*40;X.globalAlpha=Math.min(1,p.t*2);X.font="900 24px system-ui,sans-serif";X.lineWidth=6;X.strokeStyle=P.ink;X.strokeText(p.txt,p.x,p.y);X.fillStyle=P.yel;X.fillText(p.txt,p.x,p.y)}X.globalAlpha=1;X.textAlign="left"}
+ X.textAlign="center";X.textBaseline="middle";X.lineJoin="round";for(const p of pops)if(p.t>0){p.t-=dt*1.1;p.y-=dt*40;X.globalAlpha=Math.min(1,p.t*2);if(p.big){/* b52: bonus prey pop, bigger and gold */X.font="900 34px system-ui,sans-serif";X.lineWidth=8;X.strokeStyle="#3a2600";X.strokeText(p.txt,p.x,p.y);const gg=X.createLinearGradient(0,p.y-17,0,p.y+17);gg.addColorStop(0,"#fff3b0");gg.addColorStop(.5,"#ffc61a");gg.addColorStop(1,"#c98a00");X.fillStyle=gg;X.fillText(p.txt,p.x,p.y)}else{X.font="900 24px system-ui,sans-serif";X.lineWidth=6;X.strokeStyle=P.ink;X.strokeText(p.txt,p.x,p.y);X.fillStyle=P.yel;X.fillText(p.txt,p.x,p.y)}}X.globalAlpha=1;X.textAlign="left"}
 
 // ---------- loop ----------
 let last=0,raf=0,fpsT=0,fpsN=0,fps=0;const perf={frames:0,js:0,dtSum:0,reset(){this.frames=0;this.js=0;this.dtSum=0}};
@@ -934,7 +915,6 @@ function show(id){hideAll();$(id).classList.remove("hide")}
 // which also stops pixel jitter from twitching it). Item 7 (Jeremy): the start point stays fixed where the finger first touched, so dragging back toward it slows the shark; STEER.FULL (fraction of screen width for full speed) is the one knob.
 C.addEventListener("pointerdown",e=>{if(state!=="play")return;e.preventDefault();initAudio();touch.on=true;touch.x=touch.x0=e.clientX;touch.y=touch.y0=e.clientY;touch.ax=0;touch.ay=0;touch.dir=shark.ang;touch.drive=0;touch.lastMove=performance.now();try{C.setPointerCapture(e.pointerId)}catch(_){}});
 C.addEventListener("pointermove",e=>{if(!touch.on)return;const mx=e.clientX-touch.x,my=e.clientY-touch.y,md=Math.hypot(mx,my);touch.x=e.clientX;touch.y=e.clientY;if(md<=0)return;
- if(shark.stun>0){struggle(md);touch.x0=e.clientX;touch.y0=e.clientY;touch.ax=touch.ay=0;return}// netted: wiggles shorten the stun; steering restarts from where the finger is
  touch.ax+=mx;touch.ay+=my;const am=Math.hypot(touch.ax,touch.ay);
  if(am>=STEER.DIR_PX){const ux=touch.ax/am,uy0=touch.ay/am,uy=Math.abs(uy0)<STEER.VDEAD?0:uy0*STEER.VK;touch.dir=Math.atan2(uy,ux);touch.ax=touch.ay=0;
   }// v10 item 7: the start point stays FIXED (no leash); dragging back toward it lowers the drive below
@@ -1020,9 +1000,8 @@ window.__sa={get state(){return state},boost,BOOST,doBoost,shark,fish,surf,touch
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti,kind){const f=fish[0];kind=kind||(shark.lvl===0?"plankton":"fish");setCreature(f,kind==="plankton"?bite()*.4:TIERS[ti||0].s,kind);f.band=[SURF+6,Infinity];f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>!q.used)||fish[0];setCreature(f,TIERS[ti].s,"fish");f.band=[SURF+6,Infinity];f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},
- placeSurfer(i,x,k){const s=surf[i];s.zip=0;s.x=x;s.vx=0;if(k!=null)s.k=k},divers,amb,get netHits(){return netHits},get surfersCaught(){return surfersCaught},get struggles(){return struggles},get ambCool(){return ambCool},set ambCool(v){ambCool=v},get bannerT(){return bannerT},
- DIV:{DIVER_TRIGGER_SURFERS,DIVER_SPEED_FRACTION,DIVER_DETECT_RANGE,DIVER_GIVEUP_MS,DIVER_GRACE_MS,DIVER_COOLDOWN_MS,DIVER_SAFE_AFTER_STUN_MS,DIVER_NET_REACH,DIVER_CATCHES_TO_LOSE,DIVER_MAX,STUN_MS,AMBUSH_STUN_MS,AMBUSH_ON_HIT,AMBUSH_CHANCE,AMBUSH_ARRIVE_MS,AMBUSH_COOLDOWN_MS,STRUGGLE_SHORTEN_MS,STRUGGLE_PX,AMBUSHER_SIZE,AMBUSHER_LEAVE_MS},
- render3DShark,sim(sec,bot,step){step=step||1/60;const n=Math.round(sec/step);let i=0;for(;i<n&&state==="play";i++){if(bot)bot(step);updPlay(step)}return i*step},startAs(t,m){sType=t;if(m)setMode(m);startGame()},setMode,get mode(){return mode},get fasterT(){return fasterT},get elapsed(){return elapsed},MODE:{MODES,DIVER_SPEEDUP_PER_SURFER,DIVER_SPEED_CAP,DIVER_SPEEDUP_HINT_EVERY},surferCaught,spawnDiver,diverSpeed,netHit,struggle,setAmbushForce(v){window.__saAmbushForce=v},
+ placeSurfer(i,x,k){const s=surf[i];s.zip=0;s.x=x;s.vx=0;if(k!=null){s.k=k;s.ate=0}},get surfersCaught(){return surfersCaught},surfEaten,SURFACE,VANISH,TURN3D,goneAt,lookMin,eatSurf,spawnSurf,get sprites(){return {sprB,sprF}},
+ render3DShark,sim(sec,bot,step){step=step||1/60;const n=Math.round(sec/step);let i=0;for(;i<n&&state==="play";i++){if(bot)bot(step);updPlay(step)}return i*step},startAs(t,m){sType=t;if(m)setMode(m);startGame()},setMode,get mode(){return mode},get elapsed(){return elapsed},MODE:{MODES},surferCaught,
  setLevel(l){shark.lvl=l;shark.meter=0;buildShark();shark.Lt=shark.L;setWorldK(wK(l))},drawK,wK,DRAW,DEEP,EAT,get worldK(){return worldK},trueGrow,get dead(){return dead},get camX(){return camX},set camX(v){camX=v},set camY(v){camY=v},get tiles(){return tiles},get tileC(){return tileC},updTiles,spawnStats,LAYERS,SPAWN,ALLOWED,ANGLER_D,allowedD,layerOf,depthRaw,DEPTH_LIMIT,CAP_COL,get bandOf(){return bandOf},inWindow,respawnAll(){updTiles(true,true);for(const f of fish)spawnFish(f,false)},drawWater,get FX(){return FX},set FX(v){FX=v},get DPR(){return DPR},get RSK(){return RSK},adapt,ADAPT,ADAPT_ON,DPR_CAP,RS0,SPECIES,PLANK_SP,get specSpr(){return specSpr},spSprite,drawSpecies,render3DShark,TYPES,sharkMax,get pops(){return pops},get depthHintT(){return depthHintT},BODY,onBody,mouth,LOOK,RINGS,lk};
 
 // Install button + landscape lock (like Dino Colossus). Hidden when already installed; no per-frame cost.
