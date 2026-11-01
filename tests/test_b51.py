@@ -43,6 +43,13 @@ try:
   pg.click('#start');pg.wait_for_timeout(300);pg.click('.pick[data-type=white]');pg.wait_for_timeout(600);pg.evaluate('__sa.timeLeft=0.01');pg.wait_for_selector('#home',state='visible',timeout=8000);pg.wait_for_timeout(800)
   c2=pg.evaluate('__sa.sfxCount.chomp');pg.click('#home');pg.wait_for_timeout(300);pg.wait_for_function('window.__saTitleDone===true',timeout=12000);pg.wait_for_timeout(600);c3=pg.evaluate('__sa.sfxCount.chomp')
   check(c1>=1 and c3==c2+1,f'chomp plays again on the second title visit after Home (counts {c1}, {c2} -> {c3})');cx.close()
+  # b53 (Skeptic gap): the layout is recalculated on resize (915x412 -> 915x330): buttons stay clear of the shark and the title
+  cx=ctx(b,915,412);pg=cx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)));tap_start(pg,915,412,False);m0=pg.evaluate(MEASURE)
+  pg.set_viewport_size({'width':915,'height':330});pg.wait_for_timeout(700);m=pg.evaluate(MEASURE);bx=m['box']
+  check(m['H']==330 and not m['onShark'] and not m['onTitle'],f'resize 915x412 -> 915x330: no button over the shark {m["onShark"]} or the title {m["onTitle"]}')
+  check(bx['t']>=0 and bx['b']<=330 and bx['b']<=m['start']+1,f'resize 915x412 -> 915x330: whole head-on shark on screen and above Start (box {bx["t"]:.0f}-{bx["b"]:.0f}, Start top {m["start"]:.0f})')
+  check(m['title']['h']<m0['title']['h']-1 or m['title']['y']<m0['title']['y']-1,f'resize: title re-laid out (y {m0["title"]["y"]:.0f}->{m["title"]["y"]:.0f}, h {m0["title"]["h"]:.0f}->{m["title"]["h"]:.0f})')
+  check(not errs,f'resize: no page errors {errs[:1]}');cx.close()
   b.close()
 finally: srv.terminate()
 print(f'\n{passes} passed, {len(fails)} failed');sys.exit(1 if fails else 0)

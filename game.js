@@ -446,10 +446,10 @@ const surfK=()=>Math.max(SURFACE.MINK,Math.min(1.8,worldK));
    LATE ramps in from size FROM+1 to FULL+1. Sail boats / cargo ships never draw shorter than SAIL_L / CARGO_L x the shark's length (hit box = drawn size);
    surfers keep shrinking with no floor and stop spawning once they would be under SURF_GONE_PX tall (boats take their place);
    small fish never draw under FISH_PX; the deep water is lifted (LIFT added to the colour) and the deep vignette cut by DARK_CUT so fish show at size 19+. */
-const LATE={FROM:12,FULL:18,LIFT:"rgb(20,44,62)",DARK_CUT:.55,FISH_PX:18,SAIL_L:.55,CARGO_L:.85,SURF_GONE_PX:12,N_EARLY:3};
+const LATE={FROM:12,FULL:18,LIFT:"rgb(20,44,62)",DARK_CUT:.75,FISH_PX:18,SAIL_L:.55,CARGO_L:.85,SURF_GONE_PX:12,N_EARLY:3};
 const lateK=()=>Math.max(0,Math.min(1,(shark.lvl-LATE.FROM)/(LATE.FULL-LATE.FROM)));
 function surfDrawK(s){const k=surfK();if(s.k<2)return k;const SD=SURFERS[s.k];return Math.max(k,(s.k===3?LATE.CARGO_L:LATE.SAIL_L)*shark.L/(2*SD.hw))}
-function fpx(f){const v=f.s*lk(f);return f.kind==="plankton"||f.kind==="shark"?v:Math.max(v,LATE.FISH_PX*lateK())}/* b52: surfers keep shrinking with the world */
+function fpx(f){const v=f.s*lk(f);if(f.kind==="plankton"||lateK()<=0)return v;if(f.kind==="shark")return rel(f)<0?Math.max(v,LATE.FISH_PX*.4*lateK()):v;/* small food sharks are drawn 2.5x their size: floor 0.4 x 18 -> 18 px long */return Math.max(v,LATE.FISH_PX*lateK())}/* b52: surfers keep shrinking with the world */
 // v9c (Jeremy: "the shark the same size but everything else bigger"): every creature except plankton is DRAWN (and touches) LOOK.K x its
 // true size f.s; eat/bump/danger is still judged from f.s vs bite() (rel, EAT.RATIO unchanged), so relative sizes keep the same proportions.
 // LOOK.MIN: no non-plankton creature spawns smaller than MIN x bite (no tiny fish sitting by the fin). RINGS: no rings around shark/fish.
@@ -824,14 +824,14 @@ const DIM_AT=.6;function nhMax(){return FX>=3?40:FX===2?(busy?8:14):FX===1?5:0}/
 const DK={dk:0,ga:0,R:1,per:false};
 function darkSetup(){const dk=Math.max(0,Math.min(1,(depthOf(shark.y)-.34)/.52));DK.dk=dk;DK.ga=Math.min(.88,dk*.85)*(1-LATE.DARK_CUT*lateK());DK.R=Math.max(W,H)*(1.6-dk*.75);DK.per=dk>=DIM_AT||FX===0}
 function vigA(x,y){const u=Math.hypot(x-shark.x,y-shark.y)/DK.R;const a=u<.156?0:u<.536?(u-.156)/.38*.25:u<1?.25+(u-.536)/.464*.72:.97;return a*DK.ga}
-const FAR_FOG=.4;/* v10 item 12 step 5: far creatures fade toward the murk (contrast -40% at the screen edge, none near the shark) */function farFog(x,y){const u=(Math.hypot(x-shark.x,y-shark.y)/(.5*Math.hypot(W,H))-.35)/.5;return 1-FAR_FOG*Math.max(0,Math.min(1,u))}
+const FAR_FOG=.4;/* v10 item 12 step 5: far creatures fade toward the murk (contrast -40% at the screen edge, none near the shark) */function farFog(x,y){const u=(Math.hypot(x-shark.x,y-shark.y)/(.5*Math.hypot(W,H))-.35)/.5;return 1-FAR_FOG*(1-.6*lateK())*Math.max(0,Math.min(1,u))}/* b53: less far fog late in the game */
 function dimAt(x,y){return DK.per?1-vigA(x,y):1}
 function drawPlay(t){
  X.font="900 22px system-ui,sans-serif";X.textAlign="center";X.textBaseline="middle";X.lineWidth=5;X.strokeStyle=P.ink;const top=camY-120,bot=camY+H+120;
  let onScr=0;for(const f of fish){if(f.off||f.y<top||f.y>bot||f.x<camX-f.s*3||f.x>camX+W+f.s*3)continue;onScr++;let s,sc;const flip=f.vx<0?-1:1;X.globalAlpha=dimAt(f.x,f.y)*farFog(f.x,f.y)*(f.fade>0?f.fade/VANISH.FADE:1);
-  if(f.kind==="shark"){const sp=sharkSpr[f.pal];s=f.st==="chase"&&Math.sin(t*8+f.ph)>0?sp.o:sp;sc=(f.s*lk(f)*2.5)/sp.L;X.setTransform(DPR*flip*sc,0,0,DPR*sc,(f.x-camX)*DPR,(f.y-camY)*DPR);X.rotate(Math.max(-.5,Math.min(.5,f.vy/(Math.abs(f.vx)+40)))*flip);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2-sp.L*.05+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}
+  if(f.kind==="shark"){const sp=sharkSpr[f.pal];s=f.st==="chase"&&Math.sin(t*8+f.ph)>0?sp.o:sp;sc=(fpx(f)*2.5)/sp.L;X.setTransform(DPR*flip*sc,0,0,DPR*sc,(f.x-camX)*DPR,(f.y-camY)*DPR);X.rotate(Math.max(-.5,Math.min(.5,f.vy/(Math.abs(f.vx)+40)))*flip);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2-sp.L*.05+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}
   else{s=f.sp>=0&&(f.kind==="fish"||f.kind==="glow")?specSpr[f.sp]:f.kind==="glow"?glowSpr[f.pal]:f.kind==="plankton"?plankSpr[f.pal]:f.kind==="angler"?anglerSpr:f.kind==="octo"?octoSpr[f.pal]:f.kind==="star"?starSpr[f.pal]:fishSpr[f.tier][f.pal];sc=fpx(f)/s.base;
-   const wob=f.kind==="octo"?1+Math.sin(t*3+f.ph)*.06:1;X.setTransform(DPR*flip*sc,0,0,DPR*sc*wob,(f.x-camX)*DPR,(f.y-camY)*DPR);if(f.dg===1)X.rotate(Math.sin(f.dt*70)*.22);/* v10: readable dodge wiggle */if(f.kind==="star")X.rotate(f.ph*.05);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR)}}
+   const wob=f.kind==="octo"?1+Math.sin(t*3+f.ph)*.06:1;X.setTransform(DPR*flip*sc,0,0,DPR*sc*wob,(f.x-camX)*DPR,(f.y-camY)*DPR);if(f.dg===1)X.rotate(Math.sin(f.dt*70)*.22);/* v10: readable dodge wiggle */if(f.kind==="star")X.rotate(f.ph*.05);const dw=s.width/DPR,dh=s.height/DPR,T=trim(s);X.drawImage(mip(T,sc),-dw/2+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR);{const lz=lateK();if(lz>0&&f.kind!=="plankton"&&rel(f)<0){/* b53: late game, food fish lit a little so they read against the deep water */const ga=X.globalAlpha;X.globalCompositeOperation="lighter";X.globalAlpha=ga*.45*lz;X.drawImage(mip(T,sc),-dw/2+T.ox/DPR,-dh/2+T.oy/DPR,T.width/DPR,T.height/DPR);X.globalCompositeOperation="source-over";X.globalAlpha=ga}}}}
  X.globalAlpha=1;busy=onScr>14;
  wT();
  for(const s of surf){if(s.zip>0||SURF>bot)continue;const sp=surfSpr[s.k],dw=sp.width/DPR,dh=sp.height/DPR,y=SURF+Math.sin(s.ph)*2;{const k=surfDrawK(s);X.setTransform((s.vx<0?-DPR:DPR)*k,0,0,DPR*k,(s.x-camX)*DPR,(y-camY)*DPR)}X.drawImage(sp,-dw/2,-dh*(sp.wl||.89),dw,dh)}
