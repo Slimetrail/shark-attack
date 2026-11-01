@@ -961,8 +961,8 @@ function buildPick(){const box=$("pickList");box.innerHTML="";for(const k of Obj
 /* b45 ghost-click guard: on a phone the Tap-to-start finger-up "click" landed on Start (title UI appears under the finger on pointerdown) and skipped the intro.
    Title-screen clicks count only if their own press started on the title screen after the tap, and never within 600 ms of the tap. Keyboard clicks (detail 0) still work. */
 let tapAt=-1e9,titleDown=false;
-$("titleUi").addEventListener("pointerdown",()=>{if(performance.now()-tapAt>=600)titleDown=true},true);
-$("titleUi").addEventListener("click",e=>{const ghost=performance.now()-tapAt<600||(e.detail!==0&&!titleDown);if(ghost){e.stopPropagation();e.preventDefault()}},true);
+$("titleUi").addEventListener("pointerdown",()=>{titleDown=true},true);/* b54 (QA #3): any NEW pointerdown after the start tap is a real tap, even 0.1 s later (b52/b53 dropped every click for 600 ms, so Sound on ignored a quick tap) */
+$("titleUi").addEventListener("click",e=>{const ghost=!titleDown&&(performance.now()-tapAt<600||e.detail!==0);/* only the click left over from the start tap itself (no pointerdown of its own) is a ghost */if(ghost){e.stopPropagation();e.preventDefault()}},true);
 /* b46 (Jeremy: "Shark attack still had no music"): Chrome on Android does not count a finger-DOWN as permission to play sound, so the intro music
    started on pointerdown was blocked and never retried. Every finger-UP / click / key press now wakes the AudioContext and, on the title or pick screen,
    (re)starts the intro music if it was blocked. It never restarts music that is already playing or has finished, and respects the Sound/Songs switches. */

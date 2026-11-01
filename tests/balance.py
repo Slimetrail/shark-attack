@@ -2,8 +2,10 @@
 # Run: python3 tests/balance.py [rounds]   -> prints a table; exits 1 if a fairness rule is broken.
 import subprocess,sys,os,time,json
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=int(os.environ.get('SA_PORT3','8875'));N=int(sys.argv[1]) if len(sys.argv)>1 else 25
-srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(1)
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=int(os.environ.get('SA_PORT3','8875'));N=int(sys.argv[1]) if len(sys.argv)>1 and sys.argv[1].isdigit() else 25
+SELFTEST='--selftest' in sys.argv
+if SELFTEST: N=25
+srv=None if SELFTEST else subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(1)
 BOT=r'''(wig)=>{const S=__sa,s=S.shark,W=innerWidth,H=innerHeight;let mode="hunt",wt=0,t=0;const st={py:-1e9,pt:0,get mode(){return mode},amb:0,ambEaten:0,ambWarn:[],netT:[]};let ambSeen=false,ambT0=0;
  return {st,fn(dt){t+=dt;const T=S.touch;T.on=true;T.lastMove=performance.now()+9e9;
   
@@ -22,32 +24,44 @@ if(mode==="hunt"&&s.y<S.SURF+H*.8&&Math.random()<dt*.6)mode="dive";
   if(best){const mx=s.x+Math.cos(s.ang)*L*.48,my=s.y+Math.sin(s.ang)*L*.48,da=Math.atan2(best.y-my,best.x-mx),df=Math.abs(Math.atan2(Math.sin(da-s.ang),Math.cos(da-s.ang)));T.dir=(Math.hypot(best.x-s.x,best.y-s.y)<L*.6&&df>1.2)?s.ang:da;T.drive=.8}/* aim with the mouth; too close & behind -> swim on and loop back (no orbiting) */else{T.dir=Math.atan2(H*.35,W*.3);T.drive=.7}/* b53: nothing edible in view -> dive (bands empty from the top as the shark grows: HUD 5/7/9/10) */}}}'''
 res={}
 try:
- with sync_playwright() as p:
-  b=p.chromium.launch();cx=b.new_context(viewport={'width':915,'height':412},bypass_csp=True,service_workers='block');pg=cx.new_page()
-  pg.goto(f'http://127.0.0.1:{PORT}/');pg.wait_for_timeout(300)
-  for wig,label,pre in [(4,'wiggles',0),(0,'no-wiggle',0)]:
-   for t in ['white','hammer','tiger']:
-    rows=pg.evaluate('''([N,t,wig,BOT,pre])=>{const mk=eval(BOT),out=[];for(let i=0;i<N;i++){__sa.startAs(t);localStorage.setItem("sharkAttack_diverTip","1");const B=mk(wig);for(let k=0;k<pre;k++)__sa.surferCaught();let _ft=-1,_lt=-1,_tt=0;const _fn=dt=>{_tt+=dt;if(_ft<0&&__sa.surfersCaught>0)_ft=_tt;if(_lt<0&&__sa.shark.lvl>=6)_lt=_tt;B.fn(dt)};const el=__sa.sim(80,_fn);
-      out.push({ft:_ft,lt:_lt,score:__sa.score,lvl:__sa.shark.lvl,end:__sa.endReason,surf:__sa.surfersCaught,div:0,hits:0,amb:B.st.amb,t:el,eatenByAmb:false})}return out}''',[N,t,wig,BOT,pre])
-    res[(label,t)]=rows
-  b.close()
-finally: srv.terminate()
+ if SELFTEST:
+  # b54: fake rows where hammer survives 8/25 in no-wiggle (32%, the QA figure, score 70) but passes in wiggles (48%, score 90 vs 130 = within 1.6x); must NOT be reported OK
+  mk=lambda n_time,sc:[{'ft':-1,'lt':-1,'score':sc,'lvl':5,'end':'time' if i<n_time else 'eaten','surf':0,'div':0,'hits':0,'amb':0,'t':60 if i<n_time else 40,'eatenByAmb':False} for i in range(25)]
+  for lab in ['wiggles','no-wiggle']:
+   for ty,(nt,sc) in {'white':(18,130),'hammer':((8,70) if lab=='no-wiggle' else (12,90)),'tiger':(18,130)}.items(): res[(lab,ty)]=mk(nt,sc)
+ else:
+  with sync_playwright() as p:
+   b=p.chromium.launch();cx=b.new_context(viewport={'width':915,'height':412},bypass_csp=True,service_workers='block');pg=cx.new_page()
+   pg.goto(f'http://127.0.0.1:{PORT}/');pg.wait_for_timeout(300)
+   for wig,label,pre in [(4,'wiggles',0),(0,'no-wiggle',0)]:
+    for t in ['white','hammer','tiger']:
+     rows=pg.evaluate('''([N,t,wig,BOT,pre])=>{const mk=eval(BOT),out=[];for(let i=0;i<N;i++){__sa.startAs(t);localStorage.setItem("sharkAttack_diverTip","1");const B=mk(wig);for(let k=0;k<pre;k++)__sa.surferCaught();let _ft=-1,_lt=-1,_tt=0;const _fn=dt=>{_tt+=dt;if(_ft<0&&__sa.surfersCaught>0)_ft=_tt;if(_lt<0&&__sa.shark.lvl>=6)_lt=_tt;B.fn(dt)};const el=__sa.sim(80,_fn);
+       out.push({ft:_ft,lt:_lt,score:__sa.score,lvl:__sa.shark.lvl,end:__sa.endReason,surf:__sa.surfersCaught,div:0,hits:0,amb:B.st.amb,t:el,eatenByAmb:false})}return out}''',[N,t,wig,BOT,pre])
+     res[(label,t)]=rows
+   b.close()
+finally:
+ if srv: srv.terminate()
 def avg(a): return sum(a)/len(a) if a else 0
-bad=[]
-print(f"{'bot':10}{'type':8}{'score':>7}{'max':>5}{'lvl':>5}{'surf':>6}{'divers':>7}{'hits':>6}{'amb':>5}  ends(time/eaten/caught)  ambush-eaten  early(<15s)")
-for (label,t),r in res.items():
-  ends={k:sum(1 for x in r if x['end']==k) for k in ['time','eaten','caught']};early=sum(1 for x in r if x['end']!='time' and x['t']<15)
-  print(f"{label:10}{t:8}{avg([x['score'] for x in r]):7.1f}{max(x['score'] for x in r):5}{avg([x['lvl'] for x in r]):5.1f}{avg([x['surf'] for x in r]):6.1f}{avg([x['div'] for x in r]):7.1f}{avg([x['hits'] for x in r]):6.2f}{avg([x['amb'] for x in r]):5.2f}  {ends['time']:>3}/{ends['eaten']:>2}/{ends['caught']:>2}               {sum(x['eatenByAmb'] for x in r):>3}        {early}")
-  if label=='wiggles':
-    if ends['time']<len(r)*.4: bad.append(f'{t}: fewer than 40% of rounds survive to time-up')
-    if early>len(r)*.15: bad.append(f'{t}: too many early losses')
-    if sum(x['eatenByAmb'] for x in r)>0: bad.append(f'{t}: a wiggling player was eaten by an ambush')
-sc={t:avg([x['score'] for x in res[('wiggles',t)]]) for t in ['white','hammer','tiger']}
-if max(sc.values())>1.6*min(sc.values()): bad.append(f'shark types unbalanced {sc}')
+# b54 (QA): judge() is the ONE place that decides the result. b53 only judged the 'wiggles' rows, so a hammerhead failing in the
+# 'no-wiggle' rows (QA: 32%/40%/48% survive) still printed BALANCE OK. Every bot row is judged now; thresholds are unchanged.
+def judge(res):
+  bad=[];out=[]
+  for (label,t),r in res.items():
+    ends={k:sum(1 for x in r if x['end']==k) for k in ['time','eaten','caught']};early=sum(1 for x in r if x['end']!='time' and x['t']<15)
+    out.append(f"{label:10}{t:8}{avg([x['score'] for x in r]):7.1f}{max(x['score'] for x in r):5}{avg([x['lvl'] for x in r]):5.1f}{avg([x['surf'] for x in r]):6.1f}{avg([x['div'] for x in r]):7.1f}{avg([x['hits'] for x in r]):6.2f}{avg([x['amb'] for x in r]):5.2f}  {ends['time']:>3}/{ends['eaten']:>2}/{ends['caught']:>2}  survive {ends['time']/len(r):.0%}")
+    if ends['time']<len(r)*.4: bad.append(f'{label}/{t}: fewer than 40% of rounds survive to time-up ({ends["time"]}/{len(r)})')
+    if early>len(r)*.15: bad.append(f'{label}/{t}: too many early losses ({early}/{len(r)})')
+    if label=='wiggles' and sum(x['eatenByAmb'] for x in r)>0: bad.append(f'{t}: a wiggling player was eaten by an ambush')
+  for label in sorted({k[0] for k in res}):
+    sc={t:avg([x['score'] for x in res[(label,t)]]) for t in ['white','hammer','tiger'] if (label,t) in res}
+    if sc and max(sc.values())>1.6*min(sc.values()): bad.append(f'{label}: shark types unbalanced {sc}')
+  return bad,out
+bad,rows=judge(res)
+print(f"{'bot':10}{'type':8}{'score':>7}{'max':>5}{'lvl':>5}{'surf':>6}{'divers':>7}{'hits':>6}{'amb':>5}  ends(time/eaten/caught)")
+for l in rows: print(l)
 import statistics as _st
 for (label,t),r in res.items():
-  if "diver" in label: continue  # these rows start with surfers pre-caught to force divers
   ft=[x['ft'] for x in r if x['ft']>=0];lt=[x['lt'] for x in r if x['lt']>=0]
   print(f"first surfer {label:10}{t:8} caught in {len(ft)}/{len(r)} games, median {(_st.median(ft) if ft else -1):.1f} s; reached surfer size in {len(lt)}/{len(r)}, median {(_st.median(lt) if lt else -1):.1f} s")
-print('ISSUES' if bad else 'BALANCE OK',bad);json.dump({f'{k[0]}/{k[1]}':v for k,v in res.items()},open('/tmp/balance.json','w'))
+print(('BALANCE FAILED' if bad else 'BALANCE OK'),bad);json.dump({f'{k[0]}/{k[1]}':v for k,v in res.items()},open('/tmp/balance.json','w'))
 sys.exit(1 if bad else 0)

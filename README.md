@@ -14,6 +14,13 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
   - You're safe from fish only while you're in the air.
 - **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!" or "Gulp!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
 
+## Build 54 (QA fixes on build 53)
+- Version/build 54 (version.json, cache `sharkattack-v54`, `game.js?v=54`).
+- A quick "Sound on" tap right after "Tap to start" now works (the ghost-click guard only drops the click left over from the start tap itself).
+- `tests/balance.py` judges every bot row and prints `BALANCE FAILED` (exit 1) when any check fails; `--selftest` proves a failing run is never reported OK (`tests/test_balance_report.py`). Balance currently FAILS for the hammerhead; game balance is unchanged (Jeremy's decision).
+- Title shark redrawn toward a realistic great white (own art in code).
+- Loosened/changed tests since build 51 are explained in `tests/LOOSENED-TESTS-b54.md`.
+
 ## Build 52 (Jeremy, via Eve)
 - **No divers.** Divers, nets, the stun, the wiggle-free and the ambush shark are gone (Jeremy: "for shark no more divers"). A round ends only with "Time's up!" or "Gulp!". Older notes below that mention them are history.
 - **Size cap at 10.** The shark stops growing at HUD size 10 (`MAX_LEVEL` = 9 internally) and the HUD shows MAX SIZE. Each size needs 1.25x more food than the one before (need = 3 × 1.25^(size−1)). Surfers become prey from size 7, sail boats from 8, cargo ships from 9; the depth bands empty at sizes 5/7/9/10 and the deepest band always keeps fish. Top speed rises 4% per size up to the cap (`SPEED_LVL_CAP`).
