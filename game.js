@@ -1,5 +1,7 @@
 // Shark Attack v1 — side-view 2D ocean. Original art & code. 2D canvas, light on CPU.
 "use strict";
+/* b53 (B13): storage-safe settings. If localStorage is blocked or throws, the game still starts and keeps best score / settings / sound in memory for this visit. */
+const LS=(()=>{const m={};let s=null;try{s=window.localStorage;const k="__sa_t";s.setItem(k,"1");s.removeItem(k)}catch(e){s=null}return {mem:()=>!s,getItem:k=>{try{if(s)return s.getItem(k)}catch(e){}return Object.prototype.hasOwnProperty.call(m,k)?m[k]:null},setItem:(k,v)=>{m[k]=String(v);try{if(s)s.setItem(k,v)}catch(e){}}}})();window.__saLS=LS;
 // ======================= EASY-TO-CHANGE SETTINGS =======================
 // ROUND_SECONDS: round length. 60 s is the DEFAULT and is NOT YET CONFIRMED by Jeremy. Test override: ?round=N
 const ROUND_SECONDS=(()=>{const m=/[?&]round=(\d+(\.\d+)?)/.exec(location.search);return m?+m[1]:60})();
@@ -80,7 +82,7 @@ let FX=FX0,RSK=1;const adapt={t:0,n:0,sum:0,good:0,steps:0,log:[]};
 const C=document.getElementById("c"),X=C.getContext("2d",{alpha:false});
 const $=id=>document.getElementById(id);
 let W=0,H=0,DPR=1,state="tap",roundLen=ROUND_SECONDS,SURF=150,BED=800;
-let sType=TYPES[localStorage.getItem(TYPE_KEY)]?localStorage.getItem(TYPE_KEY):"white";
+let sType=TYPES[LS.getItem(TYPE_KEY)]?LS.getItem(TYPE_KEY):"white";
 const trait=k=>TYPES_MECHANICAL?TYPES[sType][k]:1;
 const P={ink:"#082a3d",foam:"rgba(220,248,255,.45)",red:"#e2463c",yel:"#ffcc33"};
 function mk(w,h){const c=document.createElement("canvas");c.width=Math.max(1,Math.ceil(w));c.height=Math.max(1,Math.ceil(h));return c}
@@ -411,15 +413,15 @@ function renderFrontShark(S,open){const k=S/400,c=mk(S*1.6,S*1.12),g=c.getContex
 // ---------- world ----------
 const shark={stun:0,safe:0,x:0,y:0,ang:0,spd:0,lvl:0,L:70,Lt:70,wag:0,chomp:0,meter:0,run:0,air:false,vx:0,vy:0,h:0,sq:0,cool:0,perfect:false,face:1};
 const fish=[],surf=[],parts=[],pops=[];
-let mode=MODES.includes(localStorage.getItem(MODE_KEY))?localStorage.getItem(MODE_KEY):"timed";
+let mode=MODES.includes(LS.getItem(MODE_KEY))?LS.getItem(MODE_KEY):"timed";
 let surfersCaught=0;
 for(let i=0;i<CREATURES.N;i++)fish.push({x:0,y:0,vx:0,vy:0,ph:Math.random()*6,tier:0,s:16,kind:"fish",pal:0,danger:false,bump:0,chase:0,rest:0,st:""});
 for(let i=0;i<N_SURF;i++)surf.push({x:0,vx:0,ph:Math.random()*6,k:i===0?1:0,zip:0});
 for(let i=0;i<MAX_PARTS;i++)parts.push({x:0,y:0,vx:0,vy:0,t:0});
 for(let i=0;i<6;i++)pops.push({x:0,y:0,t:0,txt:""});
 const waves=[];for(let i=0;i<10;i++)waves.push({x:Math.random(),y:Math.random(),w:20+Math.random()*30,sp:.006+Math.random()*.01});
-let score=0,timeLeft=ROUND_SECONDS,best=+(localStorage.getItem(BEST_KEY)||0),elapsed=0,endReason="",shake=0,hintT=0;
-let calm=localStorage.getItem(CALM_KEY)==="1"||matchMedia("(prefers-reduced-motion: reduce)").matches;
+let score=0,timeLeft=ROUND_SECONDS,best=+(LS.getItem(BEST_KEY)||0),elapsed=0,endReason="",shake=0,hintT=0;
+let calm=LS.getItem(CALM_KEY)==="1"||matchMedia("(prefers-reduced-motion: reduce)").matches;
 const touch={on:false,x:0,y:0,dx:0,dy:0,drive:0};
 let bg=null,sprC=null,sprO=null,sprB=null,sprF=null,fishSpr=[],surfSpr=[],title=null,tFront=null,tFrontC=null;
 const need=l=>GROW.NEED_BASE+GROW.NEED_PER_LVL*l;
@@ -581,7 +583,7 @@ function placeAll(){for(const T of tiles)T.tx=1e9;updTiles(true,true);for(const 
 // ---------- audio (one AudioContext, synthesized SFX, capped voices) ----------
 const FAST_SFX={AT:.7,COOL:1.5};// bubbles when speed rises past 70% of max (upward crossing only), at most once per 1.5 s
 const MAX_VOICES=8;
-let AC=null,soundOn=localStorage.getItem(SND_KEY)!=="0",songsOn=(k=>k===null?soundOn:k!=="0")(localStorage.getItem(SONGS_KEY)),fxOn=(k=>k===null?soundOn:k!=="0")(localStorage.getItem(SFX_KEY)),/* v10 item 13: separate saved switches; an old save with no switch keys copies the old Sound setting (old off = both off) */sfx=null,noiseBuf=null,voices=0,music={title:null,game:null,cur:null},chip={buf:null,src:null,bus:null,t0:0,failed:false,want:false},placeholder=null,phT0=0;
+let AC=null,soundOn=LS.getItem(SND_KEY)!=="0",songsOn=(k=>k===null?soundOn:k!=="0")(LS.getItem(SONGS_KEY)),fxOn=(k=>k===null?soundOn:k!=="0")(LS.getItem(SFX_KEY)),/* v10 item 13: separate saved switches; an old save with no switch keys copies the old Sound setting (old off = both off) */sfx=null,noiseBuf=null,voices=0,music={title:null,game:null,cur:null},chip={buf:null,src:null,bus:null,t0:0,failed:false,want:false},placeholder=null,phT0=0;
 const sfxCount={chomp:0,bubbles:0,gulp:0,played:0};// test hooks: requested count per sound; "played" = actually sounded (unmuted)
 function initAudio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();sfx=AC.createGain();sfx.gain.value=.3;/* v10 item 11: SFX bus .45 -> .3 so music sits above */sfx.connect(AC.destination);
   noiseBuf=AC.createBuffer(1,Math.floor(AC.sampleRate*.12),AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)}catch(e){AC=null}
@@ -623,7 +625,7 @@ function playMusic(which){const id=++fadeId,from=music.cur,to=which==="title"?mu
  let k=0;const step=()=>{if(id!==fadeId)return;k+=.1;if(from&&from!==to)from.volume=Math.max(0,from.volume-.1);if(to)to.volume=musOn()?Math.min(MUSIC_VOL.title,k*MUSIC_VOL.title):0;if(k<1)setTimeout(step,60);else if(from&&from!==to)from.pause()};step()}
 function musOn(){return soundOn&&songsOn}
 setTimeout(()=>{try{sndHint()}catch(e){}},0);setSound=(o=>function(v){o(v);try{sndHint()}catch(e){}})(setSound);/* b45: keep the "Sound is off" hint in step */
-function setSound(on){soundOn=on;localStorage.setItem(SND_KEY,on?"1":"0");$("snd").textContent=on?"🔊 Sound on":"🔈 Sound off";
+function setSound(on){soundOn=on;LS.setItem(SND_KEY,on?"1":"0");$("snd").textContent=on?"🔊 Sound on":"🔈 Sound off";
  if($("songs"))$("songs").textContent=musOn()?"🎵 Songs on":"🎵 Songs off";if($("fx"))$("fx").textContent=soundOn&&fxOn?"🔔 Effects on":"🔕 Effects off";
  const m=musOn();if(placeholder)placeholder.bus.gain.value=m?.1:0;if(chip.bus){chip.bus.gain.cancelScheduledValues(AC.currentTime);chip.bus.gain.value=m?MUSIC_VOL.game:0}
  for(const a of[music.title])if(a){if(m&&a===music.cur){a.volume=MUSIC_VOL.title;a.play().catch(()=>{})}else a.volume=0}}
@@ -702,7 +704,7 @@ let lastBub=-9,wasFast=false;
 function startGame(){hideAll();state="play";$("boost").classList.remove("hide");score=0;elapsed=0;endReason="";roundLen=window.__saRound||ROUND_SECONDS;timeLeft=roundLen;
  shark.lvl=0;shark.meter=0;shark.dead=false;dead.t=0;worldK=wK(0);shark.pop=0;buildShark();shark.Lt=shark.L;shark.x=W/2;shark.y=SURF+H*.45;camX=0;sizeK=Math.min(1.25,Math.max(.75,bite()/CREATURES.REF_BITE));camY=Math.max(0,shark.y-H*.5);shark.ang=0;shark.spd=sharkMax(0)*.25;shark.run=0;shark.air=false;shark.h=0;shark.cool=0;shark.sq=0;
  touch.on=false;touch.drive=0;boost.t=0;boost.cd=0;boost.n=0;shake=0;shark.stun=0;shark.safe=0;surfersCaught=0;surfEaten.fill(0);shark.yaw=shark.yawT=shark.yawTgt=0;shark.yawDir=1;wasFast=false;lastBub=-9;for(const p of parts)p.t=0;for(const p of pops)p.t=0;placeAll();playMusic("game");
- hintT=localStorage.getItem(HINT_KEY)?0:6;localStorage.setItem(HINT_KEY,"1")}
+ hintT=LS.getItem(HINT_KEY)?0:6;LS.setItem(HINT_KEY,"1")}
 function spark(x,y,big){for(const p of parts)if(p.t<=0){const a=Math.random()*6.28,v=rnd(40,140)*(big?1.4:1);p.x=x;p.y=y;p.vx=Math.cos(a)*v;p.vy=Math.sin(a)*v-(big?60:0);p.t=.5;return}}
 function addPop(x,y,txt,big){let o=pops[0];for(const p of pops)if(p.t<o.t)o=p;o.x=Math.max(camX+(big?110:50),Math.min(camX+W-(big?110:50),x));o.y=big?Math.max(y,camY+safeTop()+130):y;o.t=big?1.4:1;/* b52: big pop clear of the HUD */o.txt=txt;o.big=!!big}
 const boatTxt=()=>(surfEaten[2]?` · Sail boats: ${surfEaten[2]}`:"")+(surfEaten[3]?` · Cargo ships: ${surfEaten[3]}`:"");
@@ -740,7 +742,7 @@ function launch(){const p=power(),g0=LAUNCH.G*H,hm=LAUNCH.H_MAX*H*p*trait("leap"
  window.__saLastLaunch={power:p,height:shark.peak,air:T,base:2*vy0/g0,assisted};SFX.launch();for(let i=0;i<8;i++)spark(shark.x,SURF,1);addPop(shark.x,SURF-20,p>.7?"BIG AIR!":"WHOOSH!")}
 function fmtT(t){t=Math.floor(t);return Math.floor(t/60)+":"+String(t%60).padStart(2,"0")}
 function bestKey(){return mode==="endless"?BEST_KEY+"_endless":BEST_KEY}
-function setMode(m){mode=m;localStorage.setItem(MODE_KEY,m);for(const k of MODES){const b=$("mode_"+k);if(b){b.classList.toggle("sel",k===m);b.setAttribute("aria-pressed",k===m)}}}
+function setMode(m){mode=m;LS.setItem(MODE_KEY,m);for(const k of MODES){const b=$("mode_"+k);if(b){b.classList.toggle("sel",k===m);b.setAttribute("aria-pressed",k===m)}}}
 let godMode=false;// test hook only: never set by the game
 const DEATH_S=1.5,dead={t:0,puffs:[]};let puffSpr=null;
 function gameOver(why){if(godMode&&why==="eaten")return;endReason=why;if(why==="eaten"&&state==="play"){state="dead";shark.dead=true;shark.air=false;shark.stun=0;dead.t=0;dead.puffs=[];for(let i=0;i<6;i++)dead.puffs.push({a:rnd(0,6.28),d:rnd(.05,.3),k:rnd(.6,1.1),dl:i*.08});return}endRound()}
@@ -866,7 +868,7 @@ function drawHud(){X.setTransform(DPR,0,0,DPR,0,0);const top=safeTop()+8,mw=Math
   const m=Math.max(0,Math.round((shark.y-SURF)/H*60)),z=ZONES.filter(q=>q.d<=d+1e-9).pop();X.font="800 13px system-ui,sans-serif";X.textAlign="right";X.textBaseline="middle";X.lineWidth=4;const lab=(z?z.name:"")+" "+m+" m";X.strokeText(lab,mx2-24,my2);X.fillStyle="#fff";X.fillText(lab,mx2-24,my2)}
  X.textAlign="left"}
 function endRound(){state="over";shark.air=false;shake=0;C.style.transform="";const eaten=endReason==="eaten";$("reason").textContent=eaten?"Gulp!":"Time's up!";$("reason").className=eaten?"gulp":"";
- const bk=bestKey();best=+(localStorage.getItem(bk)||0);if(score>best){best=score;localStorage.setItem(bk,String(best))}$("final").textContent=score;$("bestTxt").textContent=(score>=best&&score>0?"🏆 New best! ":"Best: ")+best+(mode==="endless"?" (Endless)":" (Timed)");
+ const bk=bestKey();best=+(LS.getItem(bk)||0);if(score>best){best=score;LS.setItem(bk,String(best))}$("final").textContent=score;$("bestTxt").textContent=(score>=best&&score>0?"🏆 New best! ":"Best: ")+best+(mode==="endless"?" (Endless)":" (Timed)");
  $("stats").textContent=mode==="endless"?`Surfers eaten: ${surfersCaught}${boatTxt()} · Survived ${fmtT(elapsed)}`:`Surfers eaten: ${surfersCaught}${boatTxt()}`;
  $("roundNote").textContent=mode==="endless"?"Endless: ends only when you get eaten.":`Round length: ${roundLen} seconds.`;if(eaten)SFX.gulp();else SFX.end();phStop();chipStop();chip.want=false;show("overUi")}
 
@@ -930,7 +932,7 @@ document.addEventListener("keydown",e=>{if(state==="play"&&!e.repeat&&(e.key==="
 function buildPick(){const box=$("pickList");box.innerHTML="";for(const k of Object.keys(TYPES)){const t=TYPES[k],b=document.createElement("button");b.className="pick"+(k===sType?" sel":"");b.dataset.type=k;
   const cv=render3DShark(110*2,false,t);cv.style.width="110px";cv.className="pv";b.appendChild(cv);
   const info=document.createElement("div");info.className="pinfo";info.innerHTML=`<b>${t.name}</b><span class="pdesc">${t.desc}</span>`+Object.entries(t.bars).map(([n,v])=>`<span class="bar" data-stat="${n}" data-v="${v}"><i>${n}</i><em style="width:${v*20}%"></em></span>`).join("");b.appendChild(info);
-  b.onclick=()=>{sType=k;localStorage.setItem(TYPE_KEY,k);buildSprites();startGame()};box.appendChild(b)}}
+  b.onclick=()=>{sType=k;LS.setItem(TYPE_KEY,k);buildSprites();startGame()};box.appendChild(b)}}
 /* b45 ghost-click guard: on a phone the Tap-to-start finger-up "click" landed on Start (title UI appears under the finger on pointerdown) and skipped the intro.
    Title-screen clicks count only if their own press started on the title screen after the tap, and never within 600 ms of the tap. Keyboard clicks (detail 0) still work. */
 let tapAt=-1e9,titleDown=false;
@@ -958,11 +960,11 @@ for(const k of MODES)$("mode_"+k).onclick=()=>setMode(k);setMode(mode);
 $("pickBack").onclick=()=>{state="title";show("titleUi")};
 $("again").onclick=()=>startGame();
 $("home").onclick=()=>{buildSprites();startTitle();playMusic("title")};
-$("snd").onclick=()=>{if(!soundOn&&!songsOn&&!fxOn){songsOn=fxOn=true;localStorage.setItem(SONGS_KEY,"1");localStorage.setItem(SFX_KEY,"1")}setSound(!soundOn)};/* master switch: turning sound on with both sub-switches off turns both back on */
-function setSongs(v){songsOn=v;localStorage.setItem(SONGS_KEY,v?"1":"0");if(v&&!soundOn){soundOn=true;localStorage.setItem(SND_KEY,"1")}setSound(soundOn)}
-function setFx(v){fxOn=v;localStorage.setItem(SFX_KEY,v?"1":"0");if(v&&!soundOn){soundOn=true;localStorage.setItem(SND_KEY,"1")}setSound(soundOn)}
+$("snd").onclick=()=>{if(!soundOn&&!songsOn&&!fxOn){songsOn=fxOn=true;LS.setItem(SONGS_KEY,"1");LS.setItem(SFX_KEY,"1")}setSound(!soundOn)};/* master switch: turning sound on with both sub-switches off turns both back on */
+function setSongs(v){songsOn=v;LS.setItem(SONGS_KEY,v?"1":"0");if(v&&!soundOn){soundOn=true;LS.setItem(SND_KEY,"1")}setSound(soundOn)}
+function setFx(v){fxOn=v;LS.setItem(SFX_KEY,v?"1":"0");if(v&&!soundOn){soundOn=true;LS.setItem(SND_KEY,"1")}setSound(soundOn)}
 $("songs").onclick=()=>setSongs(!musOn());$("fx").onclick=()=>setFx(!(soundOn&&fxOn));
-function setCalm(v){calm=v;localStorage.setItem(CALM_KEY,v?"1":"0");$("calm").textContent=v?"🌙 Calm (no shake)":"🌊 Shake on"}setCalm(calm);$("calm").onclick=()=>setCalm(!calm);
+function setCalm(v){calm=v;LS.setItem(CALM_KEY,v?"1":"0");$("calm").textContent=v?"🌙 Calm (no shake)":"🌊 Shake on"}setCalm(calm);$("calm").onclick=()=>setCalm(!calm);
 $("cred").onclick=()=>{state="credits";show("credUi")};
 $("credBack").onclick=()=>{state="title";show("titleUi")};
 /* b50: a real tap on any title button releases the held shark pose (ghost clicks are already stopped by the b45 guard above). */
@@ -971,7 +973,7 @@ window.addEventListener("resize",()=>resize());
 setSound(soundOn);resize();show("tap");startLoop();
 // build id + "Updated!" note (shown once, 2 s, on the first launch of a new build). Update checks are done by the service worker.
 const BUILD=(document.querySelector('meta[name="build"]')||{}).content||"",BUILD_KEY="sharkAttack_build";
-{const prev=localStorage.getItem(BUILD_KEY);if(BUILD&&prev&&prev!==BUILD){$("upd").classList.remove("hide");setTimeout(()=>$("upd").classList.add("hide"),2000)}if(BUILD)localStorage.setItem(BUILD_KEY,BUILD)}
+{const prev=LS.getItem(BUILD_KEY);if(BUILD&&prev&&prev!==BUILD){$("upd").classList.remove("hide");setTimeout(()=>$("upd").classList.add("hide"),2000)}if(BUILD)LS.setItem(BUILD_KEY,BUILD)}
 if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("sw.js").then(()=>navigator.serviceWorker.ready).then(r=>{if(r.active){r.active.postMessage("status");if(navigator.onLine)r.active.postMessage("check")}}).catch(()=>{})}
 // v10 b42 UPDATE BUTTON (like Starstruck): title screen only. Normal: "Check for update". When a new build is fully downloaded and waiting: "Update ready - tap to update".
 // Tapping it asks the service worker to switch, then reloads. Never shown or used mid-play (the button lives in the title screen). Saves (localStorage) are untouched.
