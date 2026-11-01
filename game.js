@@ -364,11 +364,11 @@ function render3DTitle(w){const fs=Math.floor(w*.17),c=mk(w,fs*2.7),g=c.getConte
 // head-on shark for the intro: mouth WIDE open toward the viewer (open) or snapped shut (closed). Pre-rendered once.
 /* b51: head-on shark redrawn in the shaded style of the side-view shark: dark grey back fading to a white belly, conical snout, black eyes,
    uneven serrated teeth (no outlines), shaded throat, no gills. Our own drawing in code. Sprite box: x ±320k, y -215k..233k (k=S/400). */
-function renderFrontShark(S,open){const k=S/400,c=mk(S*1.6,S*1.12),g=c.getContext("2d");g.translate(c.width/2,215*k);g.lineJoin="round";g.lineCap="round";
+function renderFrontShark(S,open){const k=S/400,c=mk(S*1.6,S*1.12),g=c.getContext("2d");g.translate(c.width/2,215*k);g.transform(.95,.035,-.07,1,0,0);/* b53 t1365u: 3/4 foreshortened head (near side = viewer right) */g.lineJoin="round";g.lineCap="round";
  let sd=7;const rnd=()=>{sd=(sd*16807)%2147483647;return sd/2147483647};
- const head=()=>{g.beginPath();g.moveTo(0,-192*k);g.bezierCurveTo(70*k,-194*k,150*k,-172*k,196*k,-108*k);g.bezierCurveTo(232*k,-58*k,236*k,30*k,214*k,92*k);g.bezierCurveTo(182*k,164*k,100*k,206*k,0,206*k);g.bezierCurveTo(-100*k,206*k,-182*k,164*k,-214*k,92*k);g.bezierCurveTo(-236*k,30*k,-232*k,-58*k,-196*k,-108*k);g.bezierCurveTo(-150*k,-172*k,-70*k,-194*k,0,-192*k);g.closePath()};
+ const head=()=>{g.beginPath();g.moveTo(14*k,-212*k);g.bezierCurveTo(60*k,-206*k,150*k,-170*k,196*k,-108*k);g.bezierCurveTo(232*k,-58*k,236*k,30*k,214*k,92*k);g.bezierCurveTo(182*k,164*k,100*k,206*k,0,206*k);g.bezierCurveTo(-100*k,206*k,-182*k,164*k,-214*k,92*k);g.bezierCurveTo(-236*k,30*k,-232*k,-58*k,-196*k,-108*k);g.bezierCurveTo(-150*k,-166*k,-36*k,-210*k,14*k,-212*k);g.closePath()};/* b53: pointed (conical) snout, apex turned slightly toward the viewer's right for the 3/4 view */
  // pectoral fins behind the head
- for(const s of[-1,1]){const fg=g.createLinearGradient(s*150*k,90*k,s*318*k,232*k);fg.addColorStop(0,"#3c4954");fg.addColorStop(.7,"#28333d");fg.addColorStop(1,"#1b242c");g.fillStyle=fg;g.beginPath();g.moveTo(s*140*k,70*k);g.bezierCurveTo(s*230*k,110*k,s*292*k,170*k,s*318*k,230*k);g.bezierCurveTo(s*262*k,206*k,s*200*k,176*k,s*128*k,150*k);g.closePath();g.fill();
+ for(const s of[-1,1]){const fg=g.createLinearGradient(s*150*k,90*k,s*318*k,232*k);fg.addColorStop(0,"#3c4954");fg.addColorStop(.7,"#28333d");fg.addColorStop(1,"#1b242c");g.fillStyle=fg;g.beginPath();g.moveTo(s*140*k,70*k);g.bezierCurveTo(s*236*k,96*k,s*296*k,150*k,s*318*k,232*k);g.bezierCurveTo(s*270*k,196*k,s*206*k,160*k,s*130*k,128*k);/* b53: swept back */g.closePath();g.fill();
   g.fillStyle="rgba(230,238,242,.35)";g.beginPath();g.moveTo(s*150*k,140*k);g.bezierCurveTo(s*210*k,170*k,s*262*k,200*k,s*312*k,228*k);g.bezierCurveTo(s*250*k,214*k,s*196*k,190*k,s*130*k,156*k);g.closePath();g.fill()}
  // body: dark back, soft change to white belly
  head();let gr=g.createLinearGradient(0,-200*k,0,60*k);gr.addColorStop(0,"#27323c");gr.addColorStop(.5,"#3f4c58");gr.addColorStop(1,"#5c6873");g.fillStyle=gr;g.fill();
@@ -378,14 +378,15 @@ function renderFrontShark(S,open){const k=S/400,c=mk(S*1.6,S*1.12),g=c.getContex
  gr=g.createRadialGradient(0,-120*k,4*k,0,-120*k,120*k);gr.addColorStop(0,"rgba(190,210,225,.38)");gr.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=gr;g.beginPath();g.ellipse(0,-140*k,110*k,70*k,0,0,7);g.fill();// conical snout catches the light
  gr=g.createLinearGradient(0,-10*k,0,40*k);gr.addColorStop(0,"rgba(255,255,255,0)");gr.addColorStop(1,"rgba(255,255,255,.18)");g.fillStyle=gr;g.fillRect(-220*k,-10*k,440*k,60*k);
  g.restore();
+ g.save();head();g.clip();gr=g.createLinearGradient(-230*k,0,40*k,0);gr.addColorStop(0,"rgba(2,8,14,.42)");gr.addColorStop(1,"rgba(2,8,14,0)");g.fillStyle=gr;g.fillRect(-240*k,-220*k,280*k,440*k);g.restore();/* b53: far side darker */
  // b53 (Jeremy t1365u): specular on the snout + gill slits on the sides
  gr=g.createRadialGradient(-14*k,-166*k,1*k,-14*k,-166*k,34*k);gr.addColorStop(0,"rgba(245,250,255,.75)");gr.addColorStop(1,"rgba(245,250,255,0)");g.fillStyle=gr;g.beginPath();g.ellipse(-14*k,-166*k,40*k,18*k,-.15,0,7);g.fill();
- g.save();head();g.clip();for(const s of[-1,1])for(let i=0;i<5;i++){const gx=s*(150+i*14)*k,gy=(20+i*6)*k;g.strokeStyle="rgba(8,14,20,.6)";g.lineWidth=3.2*k;g.beginPath();g.moveTo(gx,gy);g.quadraticCurveTo(gx+s*10*k,gy+30*k,gx+s*4*k,gy+62*k);g.stroke();g.strokeStyle="rgba(210,220,228,.25)";g.lineWidth=1.4*k;g.beginPath();g.moveTo(gx+s*3*k,gy+2*k);g.quadraticCurveTo(gx+s*13*k,gy+32*k,gx+s*7*k,gy+62*k);g.stroke()}g.restore();
+ g.save();head();g.clip();for(const s of[-1,1])for(let i=0;i<5;i++){const a=s>0?1:.6,gx=s*(146+i*13)*k,gy=(14+i*5)*k;g.strokeStyle="rgba(150,166,178,"+(.55*a)+")";g.lineWidth=7*k;g.beginPath();g.moveTo(gx+s*2*k,gy);g.quadraticCurveTo(gx+s*12*k,gy+30*k,gx+s*6*k,gy+64*k);g.stroke();g.strokeStyle="rgba(4,8,12,"+(.85*a)+")";g.lineWidth=3.4*k;g.beginPath();g.moveTo(gx,gy);g.quadraticCurveTo(gx+s*10*k,gy+30*k,gx+s*4*k,gy+62*k);g.stroke();g.strokeStyle="rgba(225,234,240,.45)";g.lineWidth=1.4*k;g.beginPath();g.moveTo(gx+s*3*k,gy+2*k);g.quadraticCurveTo(gx+s*13*k,gy+32*k,gx+s*7*k,gy+62*k);g.stroke()}g.restore();
  // snout ridge + nostrils (soft, no outlines)
  for(const s of[-1,1]){g.fillStyle="rgba(10,16,22,.55)";g.beginPath();g.ellipse(s*62*k,-112*k,7*k,2.5*k,-s*.5,0,7);g.fill()}
  // eyes: black, set on the sides, with a soft socket and a small wet highlight
  for(const s of[-1,1]){const ex=s*176*k,ey=-46*k;gr=g.createRadialGradient(ex,ey,4*k,ex,ey,30*k);gr.addColorStop(0,"rgba(0,0,0,.45)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.beginPath();g.arc(ex,ey,30*k,0,7);g.fill();
-  gr=g.createRadialGradient(ex-s*3*k,ey-4*k,1*k,ex,ey,16*k);gr.addColorStop(0,"#1a2128");gr.addColorStop(1,"#000");g.fillStyle=gr;g.beginPath();g.ellipse(ex,ey,15*k,17*k,s*.4,0,7);g.fill();
+  gr=g.createRadialGradient(ex-s*3*k,ey-4*k,1*k,ex,ey,16*k);gr.addColorStop(0,"#1a2128");gr.addColorStop(1,"#000");g.fillStyle=gr;g.beginPath();g.ellipse(ex,ey,(s>0?16:11)*k,17*k,s*.4,0,7);g.fill();
   g.fillStyle="rgba(220,235,245,.7)";g.beginPath();g.ellipse(ex-s*5*k,ey-7*k,3.2*k,2.2*k,-.5,0,7);g.fill()}
  // tooth: tapered triangle with serrated edges, ivory with a shaded side, no outline
  const tooth=(x,y,len,w,ang,up,dim)=>{g.save();g.translate(x,y);g.rotate(ang);const d=up?-1:1,n=6;g.beginPath();g.moveTo(-w/2,0);
@@ -405,8 +406,8 @@ function renderFrontShark(S,open){const k=S/400,c=mk(S*1.6,S*1.12),g=c.getContex
    for(let i=0;i<9;i++){const x=-mw*.66+i/8*mw*1.32+(rnd()-.5)*6*k;tooth(x,botY(x)-26*k,(14+rnd()*10)*k,(11+rnd()*5)*k,(rnd()-.5)*.35,true,true)}
   g.restore();
   // front rows: big uneven upper teeth, narrower lower teeth
-  for(let i=0;i<12;i++){const u=i/11,x=-mw*.9+u*mw*1.8+(rnd()-.5)*5*k,mid=1-Math.abs(u-.5)*1.4,len=(26+mid*26+rnd()*10)*k,w=(18+mid*10+rnd()*5)*k;tooth(x,topY(x)+3*k,len,w,(u-.5)*.5+(rnd()-.5)*.22,false,false)}
-  for(let i=0;i<10;i++){const u=i/9,x=-mw*.78+u*mw*1.56+(rnd()-.5)*5*k,mid=1-Math.abs(u-.5)*1.3,len=(22+mid*18+rnd()*8)*k,w=(12+mid*6+rnd()*4)*k;tooth(x,botY(x)-3*k,len,w,-(u-.5)*.55+(rnd()-.5)*.22,true,false)}
+  for(let i=0;i<12;i++){if(i===3||i===8)continue;/* b53: gaps where teeth were shed */const u=i/11,x=-mw*.9+u*mw*1.8+(rnd()-.5)*9*k,mid=1-Math.abs(u-.5)*1.4,len=(22+mid*28+rnd()*18)*k,w=(18+mid*10+rnd()*5)*k;tooth(x,topY(x)+3*k,len,w,(u-.5)*.5+(rnd()-.5)*.22,false,false)}
+  for(let i=0;i<10;i++){if(i===5)continue;const u=i/9,x=-mw*.78+u*mw*1.56+(rnd()-.5)*8*k,mid=1-Math.abs(u-.5)*1.3,len=(22+mid*18+rnd()*8)*k,w=(12+mid*6+rnd()*4)*k;tooth(x,botY(x)-3*k,len,w,-(u-.5)*.55+(rnd()-.5)*.22,true,false)}
   // wet gum highlight
   g.strokeStyle="rgba(255,190,190,.18)";g.lineWidth=4*k;g.beginPath();g.moveTo(-mw*.7,mt+12*k);g.quadraticCurveTo(0,mt-2*k,mw*.7,mt+12*k);g.stroke()}
  else{const w=150*k;g.save();g.shadowColor="rgba(0,0,0,.5)";g.shadowBlur=8*k;g.strokeStyle="#2a1517";g.lineWidth=7*k;g.beginPath();g.moveTo(-w,34*k);g.bezierCurveTo(-w*.5,92*k,w*.5,92*k,w,34*k);g.stroke();g.restore();
