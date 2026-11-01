@@ -16,7 +16,7 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
 
 ## Build 52 (Jeremy, via Eve)
 - **No divers.** Divers, nets, the stun, the wiggle-free and the ambush shark are gone (Jeremy: "for shark no more divers"). A round ends only with "Time's up!" or "Gulp!". Older notes below that mention them are history.
-- **Infinite growth.** There is no size cap (`MAX_LEVEL` = Infinity). The shark stays the same size on screen and the world keeps shrinking. Top speed stops rising after size 11 (`SPEED_LVL_CAP`).
+- **Size cap at 10.** The shark stops growing at HUD size 10 (`MAX_LEVEL` = 9 internally) and the HUD shows MAX SIZE. Each size needs 1.25x more food than the one before (need = 3 × 1.25^(size−1)). Surfers become prey from size 7, sail boats from 8, cargo ships from 9; the depth bands empty at sizes 5/7/9/10 and the deepest band always keeps fish. Top speed rises 4% per size up to the cap (`SPEED_LVL_CAP`).
 - **Surface prey chain.** Surfers keep shrinking. From size 13 sail boats join them (`SURFACE.SAIL_LVL`), from size 18 cargo ships (`SURFACE.CARGO_LVL`). Boats can be caught in a leap or bitten from just under the surface. Boats and ships are drawn in code.
 - **Bonus points.** Kneeling surfer 15, standing surfer 20, sail boat 40, cargo ship 100 (fish give about 1-4). Each shows a big gold "+N" pop.
 - **Fish leave the shallows as you grow.** Depth bands 0-.3, .3-.62, .62-1.0 and 1.0-1.6 of the water empty out at sizes 10, 14, 18 and 23 (`VANISH`); fish there fade out. The water below 1.6 always has fish.

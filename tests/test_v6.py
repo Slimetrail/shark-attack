@@ -71,7 +71,7 @@ try:
     sz=ev('()=>{__sa.setLevel(__sa.GROW.SURF_LVL);for(const q of __sa.fish){q.y=-1e5;q.kind="fish"}const f={};const r=d=>{let m=0,n=0,k=0;for(let i=0;i<3000;i++){__sa.shark.y=__sa.SURF+(__sa.BED-__sa.SURF)*d;__sa.spawnFish(f,false);if(f.kind==="shark"){m+=f.s;n++}k+=f.kind==="shark"}return [n?m/n:0,k/3000]};const a=r(.05),c=r(.9);__sa.shark.y=__sa.SURF+innerHeight*.45;return [a,c]}')
     check(sz[1][0]>sz[0][0]*1.5 and sz[1][1]>sz[0][1]*2,f'{tag}: sharks bigger and more common deep down (shallow avg {sz[0][0]:.0f}px p={sz[0][1]:.2f}, deep avg {sz[1][0]:.0f}px p={sz[1][1]:.2f})')
     # flee / chase
-    r=ev('''()=>{__sa.clearFood();const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.5;s.x=innerWidth/2;s.spd=0;s.ang=0;__sa.touch.on=false;s.safe=0;
+    r=ev('''()=>{__sa.setLevel(3);/* b53: flee/chase checked at SIZE 4, before any depth band empties (cap rescale: bands empty at 5/7/9/10); at SIZE 7 the fish here fade out */__sa.clearFood();const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.5;s.x=innerWidth/2;s.spd=0;s.ang=0;__sa.touch.on=false;s.safe=0;
       const a=__sa.fish[0],c=__sa.fish[1];__sa.setCreature(a,__sa.bite()*.5,"fish");a.x=s.x+s.L*1.1;/* v9: gaps scale with the drawn shark (was 110px/190px at the fixed size) */a.y=s.y;a.vx=0;a.vy=0;
       __sa.setCreature(c,__sa.bite()*2.2,"shark");c.x=s.x-s.L*1.9;c.y=s.y;c.vx=0;c.vy=0;const ax=a.x,cx=c.x;__sa.sim(.6);return [a.x-ax,c.x-cx,a.st,c.st]}''')
     check(r[0]>10 and r[2]=='flee',f'{tag}: smaller fish runs away ({r[0]:.0f}px, {r[2]})')
@@ -81,8 +81,8 @@ try:
     cs=ev('''()=>{const s=__sa.shark,c=__sa.fish[1];__sa.setCreature(c,__sa.bite()*2.2,"shark");c.x=s.x-200;c.y=s.y;s.spd=0;let t=0,gave=false;for(;t<6&&__sa.state==="play";t+=.1){c.x=innerWidth*.3;c.y=s.y;s.x=c.x+170;__sa.sim(.1);if(c.rest>0){gave=true;break}}return [gave,t,__sa.state]}''')
     check(cs[0] and cs[1]<=__import__('math').ceil(3.5+.2),f'{tag}: chasers give up after ~{cs[1]:.1f}s')
     mx=ev('[__sa.CREATURES.CHASE_DEEP,__sa.CREATURES.CHASE_SHALLOW]');check(max(mx)<1,'chasers always slower than your top speed')
-    ev('()=>{__sa.shark.y=__sa.SURF+innerHeight*.45;__sa.clearFood()}')
-    check(ev('__sa.need(0)')==3 and ev('__sa.need(1)')==4,'v8 growth needs 3 + 1 per size (retuned in v8 E so Timed is winnable)')
+    ev('()=>{__sa.setLevel(__sa.GROW.SURF_LVL);__sa.shark.y=__sa.SURF+innerHeight*.45;__sa.clearFood()}')
+    check(ev('__sa.need(0)')==3 and abs(ev('__sa.need(1)')-3.75)<1e-9,'b53 growth curve needs 3 x 1.25^(size-1) (v8 was 3 + 1 per size; first step unchanged)')
     if w==915:
       ev('()=>{const s=__sa.shark;s.y=__sa.BED-60;for(const f of __sa.fish)__sa.spawnFish(f,false);let n=0;for(const f of __sa.fish){if(n<3){__sa.setCreature(f,__sa.bite()*2.4,"shark");f.x=100+n*320;f.y=s.y-90-n*20;n++}}}');pg.wait_for_timeout(500);pg.screenshot(path=f'{SHOTS}/v8-volcanic-big-sharks.png')
     mb=ev('()=>{__sa.setLevel(__sa.DEPTH_LIMIT.FREE_LVL);const s=__sa.shark;s.y=__sa.BED-60;let worst=0;for(let r=0;r<30;r++){for(const f of __sa.fish)__sa.spawnFish(f,false);const n=__sa.fish.filter(f=>f.kind==="shark"&&Math.abs(f.y-s.y)<innerHeight*.6).length;worst=Math.max(worst,n)}const g=__sa.fish.filter(f=>f.kind==="glow").length;s.y=__sa.SURF+innerHeight*.45;return [worst,g,__sa.CREATURES.MAX_BIG]}')
@@ -96,8 +96,9 @@ try:
   cx.close()
   # score + credits screens, perf
   cx=b.new_context(viewport={'width':915,'height':412},device_scale_factor=2,is_mobile=True,has_touch=True,bypass_csp=True,service_workers='block');pg=cx.new_page();pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000)
+  # b53: endless feeds 8 not 40 so the shark stays below HUD 5, where the top band still holds creatures (cap rescale empties it from HUD 5)
   for m,shot in [('timed','v6-score-timed'),('endless','v6-score-endless')]:
-    pg.evaluate(f'()=>{{__sa.startAs("tiger","{m}");__sa.feed(40);__sa.god=false}}');pg.wait_for_timeout(1200);pg.evaluate('__sa.timeLeft=0.01') if m=='timed' else pg.evaluate('()=>{const s=__sa.shark,c=__sa.fish[0];s.safe=0;__sa.setCreature(c,__sa.bite()*3,"shark");c.x=s.x+s.L*.2;c.y=s.y;c.vx=-50}')
+    pg.evaluate(f'()=>{{__sa.startAs("tiger","{m}");__sa.feed({40 if m=="timed" else 8});__sa.god=false}}');pg.wait_for_timeout(1200);pg.evaluate('__sa.timeLeft=0.01') if m=='timed' else pg.evaluate('()=>{const s=__sa.shark,c=__sa.fish[0];s.safe=0;__sa.setCreature(c,__sa.bite()*3,"shark");c.x=s.x+s.L*.2;c.y=s.y;c.vx=-50}')
     pg.wait_for_function('__sa.state==="over"',timeout=4000);pg.wait_for_timeout(600);bb=pg.locator('#overUi .card').bounding_box();check(bb['y']>=0 and bb['y']+bb['height']<=412,f'{m} score card fits landscape');pg.screenshot(path=f'{SHOTS}/{shot}.png')
   pg.goto(URL);pg.wait_for_timeout(300);pg.click('#tap');pg.wait_for_function('window.__saTitleDone===true',timeout=15000);pg.click('#cred');pg.wait_for_timeout(400)
   txt=pg.inner_text('#credUi');check(all(k in txt for k in ['CC0','VSCO-2','A Slimetrail production']) and 'SlimeTrail' not in txt and 'Game, music and sound effects' not in txt,'credits intact: one line A Slimetrail production (b45)');bb=pg.locator('#credBack').bounding_box();check(bb and bb['y']+bb['height']<=412,'credits Back button on screen');pg.screenshot(path=f'{SHOTS}/v8-credits.png')

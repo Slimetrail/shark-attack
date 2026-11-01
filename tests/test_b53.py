@@ -51,7 +51,7 @@ try:
    def place(L,where):
      return J(pg,f'''(()=>{{__sa.setLevel({L});const s=__sa.shark;s.air=false;s.ang=0;s.spd=0;let dep=.08;if("{where}"==="deep"){{const V=__sa.VANISH;dep=2.2;for(let i=0;i<V.EDGES.length;i++)if(s.lvl<V.LVL[i]){{dep=(i?V.EDGES[i-1]:0)+.12;break}}}}
        s.y=__sa.SURF+(__sa.BED-__sa.SURF)*dep;__sa.respawnAll();__sa.surf.forEach(q=>__sa.spawnSurf(q,false));__sa.sim(2);return dep}})()''')
-   for L in (18,24,49,79,199):
+   for L in (8,9):
      ns=[];mins=[];big=[]
      for k in range(6):
        place(L,'surf');r=J(pg,SAMPLE)
@@ -60,7 +60,7 @@ try:
      mean=sum(ns)/max(1,len(ns))
      check(mean>=2 and min(ns or [0])>=1,f'size {L+1} at the surface: on screen {ns} surface prey (target mean >= 2, never 0)')
      check(bool(big) and min(big)>=.5,f'size {L+1}: every sail boat / cargo ship drawn >= 0.5 x shark length (min {min(big or [0]):.2f} x, {min(mins or [0]):.0f} px)')
-   for L in (18,24,49,79,199):
+   for L in (8,9):
      ns=[];sz=[]
      for k in range(6):
        place(L,'deep');r=J(pg,SAMPLE)
@@ -77,7 +77,7 @@ try:
       const B=F.map(f=>{const w=fp(f)*.6;return [f.x-cx-w/2,f.y-cy-w/4,w,w/2]});const A=B.map(b=>rd(...b));F.forEach(f=>{f.off=true});await raf();await raf();
       const Z=B.map(b=>rd(...b)),bg=rd(200,120,440,200);const bgm=bg.reduce((s,v)=>s+v,0)/bg.length;
       const p90=B.map((b,i)=>{const d=A[i].map((v,j)=>Math.abs(v-Z[i][j])).sort((x,y)=>x-y);return d[Math.floor(d.length*.9)]||0});res({bgm,p90,n:B.length})})()})'''
-   for L in (18,24):
+   for L in (8,9):
     r=None
     for tries in range(5):
      place(L,'deep');pg.wait_for_timeout(100);r=J(pg,CON)
@@ -90,11 +90,11 @@ try:
   if not ONLY or 'gaps' in ONLY:
    cx,pg,errs=newpg(b);pg.touchscreen.tap(422,195);pg.wait_for_timeout(300);J(pg,'__sa.startAs("white","endless");__sa.god=true')
    P=J(pg,'__sa.SURFERS.map(s=>s.pts)');check(P==[15,20,40,100],f'points exactly surfer 15/20, sail boat 40, cargo ship 100 {P}')
-   r=J(pg,'''(()=>{__sa.setLevel(18);__sa.respawnAll(true);const s=__sa.shark;s.air=false;s.ang=0;s.spd=0;s.y=__sa.SURF+s.L*.12;__sa.surf.forEach(q=>q.zip=999);__sa.placeSurfer(0,s.x+s.L*.3,3);const sc=__sa.score;__sa.sim(.2);return __sa.score-sc})()''')
+   r=J(pg,'''(()=>{__sa.setLevel(9);__sa.respawnAll(true);const s=__sa.shark;s.air=false;s.ang=0;s.spd=0;s.y=__sa.SURF+s.L*.12;__sa.surf.forEach(q=>q.zip=999);__sa.placeSurfer(0,s.x+s.L*.3,3);const sc=__sa.score;__sa.sim(.2);return __sa.score-sc})()''')
    check(r==100,f'eating a cargo ship adds exactly +100 ({r})')
-   r=J(pg,'''(()=>{const o={};for(const L of [0,6,12,18,24]){__sa.setLevel(L);o[L+1]=__sa.surfDrawK({k:0})}return o})()''')
-   wk=J(pg,'(__sa.setLevel(18),__sa.worldK)')
-   check(bool(r) and r['13']<.55 and r['19']<r['13'] and r['25']<r['19'] and abs(r['19']-(wk or 0))<1e-9,f'surfers keep shrinking with the world, no 0.55 floor (draw scale by size {r})')
+   r=J(pg,'''(()=>{const o={};for(const L of [0,3,6,9]){__sa.setLevel(L);o[L+1]=__sa.surfDrawK({k:0})}return o})()''')
+   wk=J(pg,'(__sa.setLevel(9),__sa.worldK)')
+   check(bool(r) and r['4']<r['1'] and r['7']<r['4'] and r['10']<r['7'] and abs(r['10']-(wk or 0))<1e-9,f'surfers keep shrinking with the world up to the cap, no 0.55 floor (draw scale = worldK at SIZE 10) (draw scale by size {r})')
    src=rd('game.js')
    for w in ('drawDiver','spawnDiver','netHit','Divers!'):
      check(w not in src,f'game.js has no {w}')
@@ -110,6 +110,31 @@ try:
    check(all(out[d] and (out[d].get('slices') or 0)>=8 for d in out),f'mid-turn the body is drawn as >= 8 bending spine slices, not one squashed picture {[(d,(out[d] or {}).get("slices")) for d in out]}')
    check(bool(out[90]) and out[90]['head']>.5,f'head-on view at the head mid-turn ({out[90] and out[90]["head"]})')
    check(not errs,f'turn: no page errors {errs[:2]}');cx.close()
+  # ---- size-10 cap, growth curve, rescaled prey/bands, top speed, score pops (Jeremy t1365u/t1367u/t1368u; QA S52-1/5/7) ----
+  if not ONLY or 'cap' in ONLY:
+   cx,pg,errs=newpg(b);pg.touchscreen.tap(422,195);pg.wait_for_timeout(300);J(pg,'__sa.startAs("white","endless");__sa.god=true')
+   G=J(pg,'({ml:__sa.MAX_LEVEL,need:[0,1,2,3,4,5,6,7,8].map(l=>__sa.need(l))})')
+   nd=G['need'];bar=[1/x for x in nd]
+   check(G['ml']==9,f'cap: MAX_LEVEL 9 = HUD SIZE 10 ({G["ml"]})')
+   check(all(abs(nd[l]-3*1.25**l)<1e-9 for l in range(9)),f'growth curve: bar fill needed at HUD size n = 3 x 1.25^(n-1) {[round(x,2) for x in nd]}')
+   check(all(bar[i+1]<bar[i] for i in range(8)) and all(abs(bar[i]/bar[i+1]-1.25)<1e-9 for i in range(8)),f'bar move per 1-unit fish strictly falls by the same 1.25x each size {[round(x,3) for x in bar]}')
+   check(nd[0]<=3 and nd[0]+nd[1]+nd[2]<=12,f'early game not harder than b51 (b51 needs 3,4,5 = 12 to reach SIZE 4; b53 {nd[0]+nd[1]+nd[2]:.2f})')
+   r=J(pg,'(()=>{__sa.setLevel(0);for(let i=0;i<400;i++)__sa.feed(5);const a=__sa.shark.lvl;__sa.feed(1e6);return {a,b:__sa.shark.lvl,m:__sa.shark.meter,n:__sa.need(__sa.shark.lvl)}})()')
+   check(bool(r) and r['a']==9 and r['b']==9 and abs(r['m']-r['n'])<1e-9,f'cap holds: feeding far past the cap stays at SIZE 10 with a full bar {r}')
+   r=J(pg,'(()=>{const s=__sa.shark;s.air=false;s.ang=0;s.spd=0;s.y=__sa.SURF+s.L*.12;__sa.respawnAll(true);__sa.surf.forEach(q=>q.zip=999);__sa.placeSurfer(0,s.x+s.L*.3,2);const sc=__sa.score,l=s.lvl;__sa.sim(.2);return {d:__sa.score-sc,l0:l,l1:s.lvl}})()')
+   check(bool(r) and r['d']>0 and r['l0']==9 and r['l1']==9,f'eating at the cap still scores, size stays 10 {r}')
+   r=J(pg,'new Promise(res=>{const c=document.getElementById("c").getContext("2d"),f=c.fillText,seen=[];c.fillText=function(s,...a){seen.push(String(s));return f.call(this,s,...a)};requestAnimationFrame(()=>requestAnimationFrame(()=>{c.fillText=f;res(seen.filter(s=>/SIZE/.test(s)))}))})')
+   check(bool(r) and 'MAX SIZE' in r,f'HUD shows MAX SIZE at the cap {r}')
+   r=J(pg,'(()=>{const o=[];for(let l=0;l<=9;l++){__sa.setLevel(l);o.push(__sa.maxSpeed())}return o})()')
+   check(bool(r) and all(r[i+1]>r[i] for i in range(9)) and abs(r[9]/r[0]-1.36)<.01,f'top speed rises every size to the cap, SIZE 10 = 1.36x SIZE 1 (as b51) {[round(x) for x in (r or [])]}')
+   S=J(pg,'({s:__sa.SURFACE,v:__sa.VANISH,sl:__sa.GROW.SURF_LVL})')
+   check(S['sl']==6 and S['s']['SAIL_LVL']==7 and S['s']['CARGO_LVL']==8,f'prey order inside 1-10: surfers HUD 7, sail boats HUD 8, cargo ships HUD 9 ({S["sl"]+1},{S["s"]["SAIL_LVL"]+1},{S["s"]["CARGO_LVL"]+1})')
+   check(S['v']['LVL']==[4,6,8,9] and S['v']['EDGES'][-1]==1.6,f'depth bands empty at HUD 5/7/9/10, deepest (below 1.6) never empties {[x+1 for x in S["v"]["LVL"]]}')
+   r=J(pg,'(()=>{__sa.setLevel(9);const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*2.2;__sa.respawnAll();__sa.sim(2);return __sa.fish.filter(f=>!f.off&&!(f.fade>0)&&f.kind!=="plankton"&&Math.abs(f.y-s.y)<innerHeight*1.5).length})()')
+   check((r or 0)>=5,f'at the cap the deepest band still has fish ({r})')
+   r=J(pg,'(()=>{__sa.setLevel(3);for(const p of __sa.pops)p.t=0;const s=__sa.shark,x=s.x,y=s.y;__sa.addPop(x,y,"+100 CARGO SHIP!",true);__sa.sim(.1);__sa.addPop(x+10,y,"+40 SAIL BOAT!",true);__sa.addPop(x,y,"+3",false);__sa.addPop(x+5,y+3,"+2",false);__sa.addPop(x-8,y,"+4",false);const L=__sa.pops.filter(p=>p.t>0);let bad=0;for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++)if(__sa.popHit(L[i],L[j]))bad++;return {n:L.length,bad,big:L.filter(p=>p.big).length}})()')
+   check(bool(r) and r['bad']==0 and r['big']==1 and r['n']>=2,f'score pops never overlap, one bonus pop at a time {r}')
+   check(not errs,f'cap: no page errors {errs[:2]}');cx.close()
   b.close()
 finally:
   srv.terminate()

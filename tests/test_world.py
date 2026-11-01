@@ -23,7 +23,7 @@ try:
   # world tests only: no divers, so a long swim that happens to catch surfers can't end the Timed round by nets ("caught" ignores god mode)
   # endless: swim a long way in each direction (stage 9 = no depth limit)
   for name,ang,ax in [('left',3.14159,'x'),('right',0,'x'),('down',1.5708,'y')]:
-    r=ev(f'''()=>{{__sa.setLevel(9);const s=__sa.shark,W=innerWidth,H=innerHeight;s.x=W/2;s.y=__sa.SURF+H;__sa.camX=0;__sa.respawnAll();const x0=s.x,y0=s.y;let tl=new Set();
+    r=ev(f'''()=>{{__sa.setLevel(3);/* b53: size 4, before bands empty */const s=__sa.shark,W=innerWidth,H=innerHeight;s.x=W/2;s.y=__sa.SURF+H;__sa.camX=0;__sa.respawnAll();const x0=s.x,y0=s.y;let tl=new Set();
       __sa.sim(40,()=>{{Object.assign(__sa.touch,{{on:true,dir:{ang},drive:1,lastMove:performance.now()+9e9}});tl.add(__sa.tiles.length)}});
       {CHK}
       const live=__sa.fish.filter(f=>!f.off).length,cam={{x:__sa.camX+W/2-s.x,y:__sa.camY+H/2-s.y}};__sa.touch.on=false;return {{dx:s.x-x0,dy:s.y-y0,bad,tl:[...tl],live,cam,W,H,tc:__sa.tileC}}}}''')
@@ -40,11 +40,11 @@ try:
   want=sorted(f'{i},{j}' for i in (-1,0,1) for j in (-1,0,1))
   check(r==want,'tile pool: exactly the 3x3 tiles around the camera')
   # long random swim: 6 sim-minutes, all directions, stage 9; check zones every frame
-  r=ev('''()=>{__sa.VANISH.LVL.fill(1e9);/* b52: fish-leave-the-shallows off for this zone test (test_b52 covers it) */__sa.setLevel(9);const s=__sa.shark,H=innerHeight;s.x=0;s.y=__sa.SURF+H;__sa.respawnAll();const n0=__sa.spawnStats.n,w0=__sa.spawnStats.wrong;let dir=0,t=0,frames=0,badN=0,ex=[],maxD=0,kinds={};
+  r=ev('''()=>{__sa.setLevel(3);/* b53: vanishing stays ON; size 4 is below every band-empty size (5/7/9/10), so all zones keep their kinds */const s=__sa.shark,H=innerHeight;s.x=0;s.y=__sa.SURF+H;__sa.respawnAll();const n0=__sa.spawnStats.n,w0=__sa.spawnStats.wrong;let dir=0,t=0,frames=0,badN=0,ex=[],maxD=0,kinds={};
      __sa.sim(360,(dt)=>{t-=dt;if(t<=0){t=2+Math.random()*4;dir=Math.random()*6.283;if(s.y>__sa.BED+H)dir=-1.2;if(s.y<__sa.SURF+H*.3)dir=1.2}
       Object.assign(__sa.touch,{on:true,dir,drive:1,lastMove:performance.now()+9e9});frames++;if(frames%3)return;maxD=Math.max(maxD,s.y);
       for(const f of __sa.fish){if(f.off)continue;kinds[f.kind]=1;const L=__sa.layerOf(f.y);if(!__sa.ALLOWED[f.kind].includes(L)){badN++;if(ex.length<5)ex.push(f.kind+"@L"+L)}}});
-     __sa.touch.on=false;__sa.VANISH.LVL.splice(0,4,9,13,17,22);return {spawns:__sa.spawnStats.n-n0,wrong:__sa.spawnStats.wrong-w0,badN,ex,frames,kinds:Object.keys(kinds).sort(),reach:(maxD-__sa.SURF)/(__sa.BED-__sa.SURF),by:__sa.spawnStats.byKind}}''')
+     __sa.touch.on=false;return {spawns:__sa.spawnStats.n-n0,wrong:__sa.spawnStats.wrong-w0,badN,ex,frames,kinds:Object.keys(kinds).sort(),reach:(maxD-__sa.SURF)/(__sa.BED-__sa.SURF),by:__sa.spawnStats.byKind}}''')
   check(r['spawns']>300 and r['wrong']==0,f'long swim (6 min): {r["spawns"]} spawns, {r["wrong"]} wrong-zone spawns')
   check(r['badN']==0,f'long swim: no creature ever seen outside its zone ({r["badN"]} {r["ex"]})')
   check(set(['plankton','fish','glow','shark','octo','angler'])<=set(r['kinds']) and 'star' not in r['kinds'],f'long swim: all kinds met, no seabed starfish (b48 endless) {r["kinds"]} (reached {r["reach"]:.2f} of the way to the seabed)')

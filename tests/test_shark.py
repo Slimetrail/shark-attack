@@ -110,7 +110,7 @@ try:
   for i in range(20): ev(pg,'__sa.placeFishAtMouth(0)');pg.wait_for_timeout(60)
   check(ev(pg,'__sa.sfxCount.chomp')>=c0+6,'eating a fish triggers the chomp sound hook')
   pg.wait_for_timeout(1500);check(ev(pg,'__sa.shark.lvl')>=1 and ev(pg,'__sa.worldK')<L0 and abs(ev(pg,'__sa.shark.L')/D0-1)<.005 and ev(pg,'__sa.maxSpeed()')>v0,'eating small fish grows the shark (b48: drawn shark stays the same size, the world shrinks) and speeds it up')
-  ev(pg,'__sa.feed(9999)');check(ev(pg,'__sa.shark.lvl')>10 and ev(pg,'__sa.MAX_LEVEL===Infinity'),'b52: no size cap (MAX_LEVEL is Infinity)')
+  ev(pg,'__sa.feed(9999)');check(ev(pg,'__sa.shark.lvl')==9 and ev(pg,'__sa.MAX_LEVEL===9'),'b53: size cap at HUD SIZE 10 (MAX_LEVEL 9, Jeremy t1365u)')
   # bubbles on fast crossing with cooldown
   def go_fast():
     ev(pg,'()=>{const s=__sa.shark;s.spd=__sa.maxSpeed()*.4;s.y=__sa.SURF+innerHeight*.45;s.x=innerWidth/2;s.ang=0;Object.assign(__sa.touch,{on:true,dir:0,drive:1,lastMove:performance.now()+9e9})}')
@@ -194,8 +194,8 @@ try:
   pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000) if ev(pg,'!!navigator.serviceWorker.controller') else (pg.reload(),pg.wait_for_function('navigator.serviceWorker.controller!==null',timeout=8000))
   pg.wait_for_timeout(1000);cx.set_offline(True);pg.reload();pg.wait_for_timeout(500)
   check(ev(pg,'typeof __sa')=='object','offline reload works (service worker)');to_title(pg);play(pg,'white');check(ev(pg,'__sa.state')=='play','playable offline')
-  check('sharkattack-v52' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v52')
-  check('audio/play-swim-piano.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v52").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
+  check('sharkattack-v53' in ev(pg,'caches.keys()'),'versioned cache sharkattack-v53')
+  check('audio/play-swim-piano.ogg' in ' '.join(ev(pg,'caches.open("sharkattack-v53").then(c=>c.keys()).then(k=>k.map(r=>r.url))')),'chiptune is precached by the service worker')
   pg.wait_for_function('__sa.chip',timeout=8000);pg.wait_for_timeout(300)
   check(ev(pg,'__sa.chipPlaying') and not ev(pg,'__sa.placeholder'),'offline: real chiptune plays from cache (placeholder not used)')
   check(not real(errs),f'no console errors {real(errs)}');check(not outside,f'no outside requests {outside}');cx.close()

@@ -31,7 +31,7 @@ try:
   for l,name in [(0,'stage0'),(8,'stage8')]:
     ev(f'()=>{{__sa.setLevel({l});const s=__sa.shark;s.y=__sa.SURF+innerHeight*.5;s.x=__sa.camX+innerWidth/2;__sa.camY=s.y-innerHeight/2;__sa.respawnAll&&__sa.respawnAll()}}');pg.wait_for_timeout(900);pg.screenshot(path=f'{SHOTS}/size-{name}.png')
   # endless down: swim far below the old floor, camera follows, no floor drawn, deep creatures still spawn
-  ev('__sa.setLevel(9)')
+  ev('__sa.setLevel(3)')# b53: size 4, before any depth band empties (cap rescale)
   for fr,name in [(.98,'old-floor-depth'),(2.5,'below-old-floor'),(6,'far-below')]:
     d=ev(f'''()=>{{const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*{fr};s.x=__sa.camX+innerWidth/2;s.spd=0;__sa.touch.on=false;__sa.camY=s.y-innerHeight/2;for(const f of __sa.fish)__sa.spawnFish(f,false);return 1}}''')
     pg.wait_for_timeout(1200)
@@ -42,9 +42,10 @@ try:
   # swim straight down with the finger for 6 s from below the old floor: depth keeps increasing (no wall)
   y0=ev('__sa.shark.y');ev('()=>{Object.assign(__sa.touch,{on:true,dir:Math.PI/2,drive:1,lastMove:performance.now()+9e9})}');pg.wait_for_timeout(6000);y1=ev('__sa.shark.y');ev('__sa.touch.on=false')
   check(y1>y0+100,f'swimming down below the old floor keeps going ({y0:.0f} -> {y1:.0f})')
-  # no floor band drawn: rows at and below the old floor are plain dark water (low spread of colour across the row)
+  # no floor band drawn: rows at and below the old floor are plain dark water (low spread of colour across the row).
+  # b53: spread is p90-p10, not max-min: a single bubble ring or snow speck on the sampled row gave 58-75 (seen in a dumped frame), a rock band covers most of the row
   sp=ev('''()=>{const c=document.getElementById("c"),g=c.getContext("2d");__sa.camY=__sa.BED-innerHeight*.5;__sa.drawWater(1);const im=g.getImageData(0,0,c.width,c.height).data,res=[];
-    for(const fy of [.55,.7,.85]){const y=Math.floor(c.height*fy);let mn=1e9,mx=-1;for(let x=0;x<c.width;x+=8){const i=(y*c.width+x)*4,l=.3*im[i]+.59*im[i+1]+.11*im[i+2];mn=Math.min(mn,l);mx=Math.max(mx,l)}res.push(mx-mn)}return res}''')
+    for(const fy of [.55,.7,.85]){const y=Math.floor(c.height*fy);const ls=[];for(let x=0;x<c.width;x+=8){const i=(y*c.width+x)*4;ls.push(.3*im[i]+.59*im[i+1]+.11*im[i+2])}ls.sort((a,b)=>a-b);res.push(ls[Math.floor(ls.length*.9)]-ls[Math.floor(ls.length*.1)])}return res}''')
   check(max(sp)<60,f'no rocky floor drawn where the seabed was (row brightness spread {[round(x) for x in sp]})')
   ft=ev('()=>new Promise(r=>{const a=[];let l=performance.now();const f=n=>{a.push(n-l);l=n;if(a.length<90)requestAnimationFrame(f);else r(a)};requestAnimationFrame(f)})');ft.sort()
   check(ft[int(len(ft)*.9)]<40,f'deep play frames p90 {ft[int(len(ft)*.9)]:.1f} ms (<40)')

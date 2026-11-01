@@ -1,4 +1,5 @@
 # b52 tests (Jeremy t1339u + t1343u, via Eve): infinite growth, surfers -> sail boats -> cargo ships, depth bands empty of fish as you grow,
+# b53: infinite growth replaced by the HUD SIZE 10 cap (Jeremy t1365u); prey and band sizes rescaled to HUD 7/8/9 and 5/7/9/10.
 # a boost that really is fast, a 3D-looking turn (no instant mirror), no divers, bonus points for surface prey.
 # Run: /workspace/.pwvenv/bin/python tests/test_b52.py (port 8905, override with SA_PORT52). Pretend phone (Chromium touch emulation), never a real phone.
 import os,sys,subprocess,time,json,re
@@ -44,32 +45,29 @@ try:
   check(J(pg,'!("divers" in __sa)&&!("spawnDiver" in __sa)&&!("DIV" in __sa)&&!("netHit" in __sa)'),'no diver / net hooks exist in the game')
   r=J(pg,'(()=>{for(let i=0;i<12;i++)__sa.surferCaught();__sa.sim(20);return {st:__sa.state,why:__sa.endReason}})()')
   check(r['st']=='play','12 surfers caught, 20 s later still playing, never "Caught!" '+str(r))
-  # 1 infinite growth
-  check(J(pg,'__sa.MAX_LEVEL')==None or J(pg,'__sa.MAX_LEVEL===Infinity'),'MAX_LEVEL is Infinity (no size cap)')
-  r=J(pg,'(()=>{__sa.setLevel(30);const l0=__sa.shark.lvl;for(let i=0;i<200;i++)__sa.feed(50);return {l0,l1:__sa.shark.lvl}})()')
-  check(r['l1']>r['l0'],f'feeding past old cap keeps growing (size {r["l0"]+1} -> {r["l1"]+1})')
-  for L in (100,1000,5000):
-    r=J(pg,f'''(()=>{{__sa.setLevel({L});__sa.respawnAll(true);__sa.sim(3);const s=__sa.shark,ok=v=>Number.isFinite(v);return {{k:__sa.worldK,fin:ok(s.x)&&ok(s.y)&&ok(s.spd)&&ok(s.L)&&__sa.fish.every(f=>ok(f.s)&&ok(f.x)&&ok(f.y)),st:__sa.state}}}})()''')
-    check(r['fin'] and r['k']>0 and r['k']<1e-3 and r['st']=='play',f'size {L+1}: no NaN/Infinity, world scale {r["k"]:.3g} > 0, still playing')
+  # 1 growth: b53 replaces infinite growth with the HUD SIZE 10 cap (Jeremy t1365u); full cap tests in test_b53
+  check(J(pg,'__sa.MAX_LEVEL===9'),'b53: MAX_LEVEL 9 = HUD SIZE 10 cap')
+  r=J(pg,'(()=>{__sa.setLevel(5);const l0=__sa.shark.lvl;for(let i=0;i<200;i++)__sa.feed(50);__sa.sim(3);const s=__sa.shark,ok=v=>Number.isFinite(v);return {l0,l1:s.lvl,fin:ok(s.x)&&ok(s.y)&&ok(s.spd)&&ok(s.L)&&__sa.fish.every(f=>ok(f.s)&&ok(f.x)&&ok(f.y)),st:__sa.state}})()')
+  check(r['l1']==9 and r['fin'] and r['st']=='play',f'feeding past the cap stops at SIZE 10, stable, still playing (size {r["l0"]+1} -> {r["l1"]+1})')
   pg.wait_for_timeout(200)
   # 2+7 prey chain and points
-  r=J(pg,'''(()=>{const out={};for(const L of [6,12,17]){__sa.setLevel(L);const ks=new Set();for(let i=0;i<300;i++){const s=__sa.surf[0];__sa.spawnSurf(s,true);ks.add(s.k)}out[L]=[...ks].sort()}return out})()''')
-  check(r['6']==[0,1],f'size 7: surfers only {r["6"]}')
-  check(2 in r['12'] and 3 not in r['12'],f'size 13: sail boats appear, no cargo yet {r["12"]}')
-  check(3 in r['17'] and 2 in r['17'],f'size 18: cargo ships appear (with sail boats) {r["17"]}')
+  r=J(pg,'''(()=>{const out={};for(const L of [5,7,8]){__sa.setLevel(L);const ks=new Set();for(let i=0;i<300;i++){const s=__sa.surf[0];__sa.spawnSurf(s,true);ks.add(s.k)}out[L]=[...ks].sort()}return out})()''')
+  check(r['5']==[0,1],f'size 6: surfers only {r["5"]}')
+  check(2 in r['7'] and 3 not in r['7'],f'size 8: sail boats appear, no cargo yet {r["7"]}')
+  check(3 in r['8'] and 2 in r['8'],f'size 9: cargo ships appear (with sail boats) {r["8"]}')
   P=(list(J(pg,'__sa.SURFERS.map(s=>s.pts)') or [])+[0,0,0,0])[:4] if len(J(pg,'__sa.SURFERS'))>=4 else [0,0,0,0];fishMax=J(pg,'(()=>{const f={kind:"fish",s:__sa.bite()*1.0};return __sa.ptsOf(f)})()')
   check(P[3]>P[2]>max(P[0],P[1]) and min(P[0],P[1])>=3*fishMax,f'points cargo {P[3]} > sail {P[2]} > surfer {P[0]}/{P[1]} >= 3x a bite-size fish ({fishMax})')
   # physical surface bite on a cargo ship
-  r=J(pg,'''(()=>{__sa.setLevel(18);__sa.respawnAll(true);const s=__sa.shark;s.air=false;s.ang=0;s.spd=0;s.y=__sa.SURF+s.L*.12;__sa.surf.forEach(q=>q.zip=999);__sa.placeSurfer(0,s.x+s.L*.3,3);const sc=__sa.score,n=__sa.surfEaten[3];__sa.sim(.2);const p=__sa.pops.find(p=>p.t>0&&p.big);return {d:__sa.surfEaten[3]-n,ds:__sa.score-sc,pop:p?p.txt:null}})()''')
+  r=J(pg,'''(()=>{__sa.setLevel(9);__sa.respawnAll(true);const s=__sa.shark;s.air=false;s.ang=0;s.spd=0;s.y=__sa.SURF+s.L*.12;__sa.surf.forEach(q=>q.zip=999);__sa.placeSurfer(0,s.x+s.L*.3,3);const sc=__sa.score,n=__sa.surfEaten[3];__sa.sim(.2);const p=__sa.pops.find(p=>p.t>0&&p.big);return {d:__sa.surfEaten[3]-n,ds:__sa.score-sc,pop:p?p.txt:null}})()''')
   check(r['d']==1 and r['ds']>=P[3],f'cargo ship bitten at the surface: eaten, score +{r["ds"]}, big pop {r["pop"]!r}')
   # 3 depth bands
   def band(L,dep):
     return J(pg,f'''(()=>{{__sa.setLevel({L});const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*{dep};s.spd=0;__sa.respawnAll(true);__sa.sim(3);const live=__sa.fish.filter(f=>!f.off&&!(f.fade>0));return {{min:Math.min(...live.map(f=>__sa.depthRaw(f.y))),n:live.length,near:live.filter(f=>Math.abs(f.y-s.y)<innerHeight*1.5&&Math.abs(f.x-s.x)<innerWidth*1.5).length}}}})()''')
   r=band(0,.15);check(r['min']<.3 and r['near']>0,f'size 1: shallow water has fish (min depth {r["min"]:.2f}, {r["near"]} near)')
-  for L,edge in ((9,.3),(13,.62),(17,1.0),(22,1.6)):
+  for L,edge in ((4,.3),(6,.62),(8,1.0),(9,1.6)):
     r=band(L,edge+.25);check(r['min']>=edge-1e-6,f'size {L+1}: no live fish above depth {edge} (shallowest {r["min"]:.2f})')
     check(r['near']>0,f'size {L+1}: shark just below that depth still finds fish ({r["near"]} near) - no soft lock')
-  r=band(400,2.2);check(r['near']>0,f'size 401: deepest band still has fish ({r["near"]} near)')
+  r=band(9,2.2);check(r['near']>0,f'size 10 (cap): deepest band still has fish ({r["near"]} near)')
   # 4 boost
   r=J(pg,'''(()=>{__sa.setLevel(3);const s=__sa.shark;s.air=false;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*.5;s.ang=0;Object.assign(__sa.touch,{on:true,dir:0,drive:1,lastMove:performance.now()+9e9});__sa.boost.t=0;__sa.boost.cd=0;__sa.sim(3);const m=__sa.maxSpeed(),v0=s.spd/m;__sa.doBoost();__sa.sim(.6);const v1=s.spd/m;__sa.sim(1.6);const v2=s.spd/m;return {v0,v1,v2,cd:__sa.boost.cd,fl:__sa.CREATURES.FLEE_CAP}})()''')
   check(r['v1']>=2*r['v0'] and r['v1']>=1.9,f'boost: {r["v0"]:.2f} -> {r["v1"]:.2f} of top speed (>= 2x)')
