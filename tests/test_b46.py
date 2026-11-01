@@ -2,7 +2,7 @@
 # Run: python3 tests/test_b46.py  (ports 8897/8898). Pass 1: service worker blocked. Pass 2: served copy with the service worker in control.
 import os,sys,subprocess,time,shutil,tempfile
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=8897;PORT2=8898;passes=0;fails=[]
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PORT=int(os.environ.get('SA_PORT46','8897'));PORT2=int(os.environ.get('SA_PORT46B','8898'));passes=0;fails=[]
 def check(c,m):
   global passes
   if c: passes+=1;print('PASS',m)

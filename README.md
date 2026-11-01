@@ -18,7 +18,9 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
 - Version/build 54 (version.json, cache `sharkattack-v54`, `game.js?v=54`).
 - A quick "Sound on" tap right after "Tap to start" now works (the ghost-click guard only drops the click left over from the start tap itself).
 - `tests/balance.py` judges every bot row and prints `BALANCE FAILED` (exit 1) when any check fails; `--selftest` proves a failing run is never reported OK (`tests/test_balance_report.py`). Balance currently FAILS for the hammerhead; game balance is unchanged (Jeremy's decision).
-- Title shark redrawn toward a realistic great white (own art in code).
+- Look (own art, drawn in code, pre-rendered once): title head-on shark with a smaller crescent mouth, uneven teeth with gaps, matte mottled skin with scars, ragged countershading, triangular dorsal fin with a curved trailing edge. The closed mouth (also used for the head-on frame of the turn) is a small down-turned line with a few tooth tips: no smile. Caustics (light web) baked into the sun-ray sprite under the surface. Surfers get wet-suit sheen, a shadow side, hair strands and foam where the board sits.
+- New tests: `tests/test_gaps_b54.py` (perf fix, title head, boat size floor; see `tests/MUTATIONS-b54.md`).
+- Tools: `tools/pace.py` (growth pace: time and fish to HUD 4/5/7/10, stretch times; usage in its header) and `tools/perf_sbs.py` (same-script frame rate of several builds side by side).
 - Loosened/changed tests since build 51 are explained in `tests/LOOSENED-TESTS-b54.md`.
 
 ## Build 52 (Jeremy, via Eve)
