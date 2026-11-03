@@ -17,7 +17,7 @@ const boost={t:0,cd:0,n:0};// v10 ANALOG: drive = distance of the finger from it
 // Launch: heading up through the surface. power = LAUNCH.K * (speed/max) * (run-up distance at speed / screen height), capped at 1.
 const LAUNCH={K:2.2,MIN_POWER:.22,MIN_SPEED:.45,UP:-.35,H_MAX:.32,G:1.6,COOL:.3};// H_MAX: max height as fraction of screen height, G: gravity in screen-heights/s^2
 const SURFERS=[{kind:"kneel",pts:15,hy:16,grow:2,label:"SPLASH!"},{kind:"stand",pts:20,hy:46,grow:2,label:"SPLASH!"},{kind:"sail",pts:40,hy:8,hw:100,grow:5,label:"SAIL BOAT!"},{kind:"cargo",pts:100,hy:16,hw:320,grow:10,label:"CARGO SHIP!"}];/* b52 (Jeremy t1343u "extra points for eating surfers, sailboats and cargo ships"): fish give about 1-4 */
-const SURFACE={SAIL_LVL:7,CARGO_LVL:8,MINK:.0005};/* b53 (size-10 cap): surfers are prey from HUD SIZE 7 (GROW.SURF_LVL 6, unchanged b51 rule), sail boats join from HUD SIZE 8, cargo ships from HUD SIZE 9 (world px: sail 200 long, cargo 640) */// hy: how high above the water the surfer's catch point is
+const SURFACE={SAIL_LVL:6,CARGO_LVL:8,MINK:.0005};/* b55 (Jeremy): surfers HUD 5 (GROW.SURF_LVL 4), sail boats HUD 7, cargo ships HUD 9 *//* b53 (size-10 cap): surfers are prey from HUD SIZE 7 (GROW.SURF_LVL 6, unchanged b51 rule), sail boats join from HUD SIZE 8, cargo ships from HUD SIZE 9 (world px: sail 200 long, cargo 640) */// hy: how high above the water the surfer's catch point is
 const BEAT={PLACEHOLDER_BPM:100,CHIPTUNE_BPM:120/*v10: eighth-note pulse of "Open Water" v2 (6/8, eighth = 0.5 s)*/,ASSIST_MS:80,PERFECT_MS:45,PERFECT_BONUS:1,on:true};
 const SAFE_SPAWN_S=1.5;
 // ---- v6: LANDSCAPE WORLD + DEPTH ----
@@ -29,7 +29,7 @@ const ZONES=[{d:0,name:"Sunlit",col:"#3fc4f0"},{d:.3,name:"Twilight",col:"#1a5f9
 // GROWTH: b53 (Jeremy t1367u/t1368u, one smooth curve measured as size-bar movement per fish): growth needed to fill the bar at internal level l (HUD size l+1) = NEED_BASE × NEED_RATIO^l, so a fish worth g moves the bar g / (3 × 1.25^l) of its width (1.25x less every size; no tiers); a creature gives size/GROW_DIV growth; a surfer gives SURFER.
 // v8 growth: the shark starts as a minnow (START x full size) and gets STEP x bigger per level. Surfers need level SURF_LVL.
 // The shark is DRAWN the same size all game; instead the world shrinks around it (worldK = 1/true size), eased so nothing pops.
-const GROW={NEED_BASE:3,NEED_RATIO:1.25,REL:3,SURFER:2,START:.4,STEP:1.175,SURF_LVL:6,EASE:3,NUM_L:2000};
+const GROW={NEED_BASE:3,NEED_RATIO:1.25,REL:3,SURFER:2,START:.4,STEP:1.175,SURF_LVL:4,FOOD_LVL:6,EASE:3,NUM_L:2000};
 const trueGrow=l=>GROW.START*Math.pow(GROW.STEP,Math.min(l,GROW.NUM_L));/* b52: exponent clamped only so the number stays finite (1.175^2000 ~ 1e140); the world keeps shrinking far past any reachable size */
 // v10 b42 DIVE: swimming DOWN takes longer the smaller the shark is. Down speed x diveK = true size / true size at SURF_LVL (clamped MIN..1).
 // The world (zones, floor, spawn bands) stays the same; only the downward part of the shark's swim is slowed, so depth in body lengths grows as the shark shrinks.
@@ -48,7 +48,7 @@ const DODGE={ON:true,TIRED:true,R:2.5,R_TIRED:1.2,WIG:.15,GAIN:7,ANG_SHALLOW:60,
 const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.60,FLEE_MAX:.72,FLEE_SHALLOW:[.62,.66],FLEE_DEEP:[.66,.69],FLEE_LVL:.008,FLEE_CAP:.72,FLEE_NEAR_R:.7,FLEE_NEAR_K:.9,FLEE_BURST_S:1.8,FLEE_TIRED:.65,FLEE_TIRED_S:.8,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
 // GAME MODES. "timed" = 60 s round. "endless" = no timer, ends only when eaten (Gulp!). b52 (Jeremy t1343u "no more divers"): no divers, nets or ambush.
 // v8b world: endless left/right/down (only the surface is a boundary). Depth layers (fractions of SURF..BED, BED = start of the dark cap):
-const LAYERS={TOP:.3,MID:.62};const VANISH={EDGES:[.3,.62,1,1.6],LVL:[4,6,8,9],FADE:.8};/* b52 (Jeremy): LVL is the internal level (HUD size - 1): b53 rescale for the size-10 cap (Jeremy t1365u): the fish in each depth band are gone from HUD SIZE 5 / 7 / 9 / 10 (lvl>=4/6/8/9); the band below depth 1.6 always has fish. b53: all sizes in comments, tests and reports are HUD sizes. */// top < .3 <= mid < .62 <= deep (deep continues forever below)
+const LAYERS={TOP:.3,MID:.62};const VANISH={EDGES:[.3,.62,1,1.6],LVL:[4,6,8,9],FADE:.8,TINY:.3};/* b55 (Jeremy t1627u): an outgrown band is NOT emptied any more: its fish stay and swim, but are too small to eat (f.tiny: size TINY x bite, harmless, not food) *//* b52 (Jeremy): LVL is the internal level (HUD size - 1): b53 rescale for the size-10 cap (Jeremy t1365u): the fish in each depth band are gone from HUD SIZE 5 / 7 / 9 / 10 (lvl>=4/6/8/9); the band below depth 1.6 always has fish. b53: all sizes in comments, tests and reports are HUD sizes. */// top < .3 <= mid < .62 <= deep (deep continues forever below)
 // v9: no depth lock. Every stage may dive anywhere; the danger (big creatures that eat you) is the limit.
 const DEPTH_LIMIT={FREE_LVL:0};const allowedD=l=>Infinity;
 // depth-locked spawn tables (weights per layer). Fish = small fish on top, mid fish in the middle; deep = glow fish, anglerfish, octopus, starfish (seabed strip)
@@ -588,7 +588,7 @@ function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;f.f
  else if(kind==="angler")sz=rnd(55,90)*sizeK*worldK;
  else{const mn=L===0?C.SIZE_MIN:L===1?24:30,mx=L===0?C.SIZE_SHALLOW:L===1?62:C.SIZE_DEEP;sz=(mn+(mx-mn)*Math.pow(Math.random(),1.5))*sizeK;if(kind==="shark")sz=Math.max(sz,22+30*d)*rnd(1,1.25);sz*=worldK}
  // food share: keep enough edible prey; capped prey stays inside its own layer's table
- if(P0&&kind!=="plankton"&&kind!=="star"&&kind!=="angler"&&!(kind==="shark"&&d>.3&&shark.lvl>=GROW.SURF_LVL)&&Math.random()<C.FOOD_SHARE+Math.max(0,GROW.SURF_LVL-shark.lvl)*.03){sz=Math.min(sz,bite()*rnd(.4,.84));if(kind==="shark"&&(sz<20*worldK||d>.3))kind=L===2?"glow":"fish"}
+ if(P0&&kind!=="plankton"&&kind!=="star"&&kind!=="angler"&&!(kind==="shark"&&d>.3&&shark.lvl>=GROW.FOOD_LVL)&&Math.random()<C.FOOD_SHARE+Math.max(0,GROW.FOOD_LVL-shark.lvl)*.03){sz=Math.min(sz,bite()*rnd(.4,.84));if(kind==="shark"&&(sz<20*worldK||d>.3))kind=L===2?"glow":"fish"}
  if(kind==="shark"&&P0){let n=0;for(const q of fish)if(q!==f&&!q.off&&q.kind==="shark"&&Math.abs(q.y-f.y)<H*.8&&Math.abs(q.x-f.x)<W*1.6)n++;if(n<C.MAX_BIG&&Math.abs(f.y-shark.y)<H*.8){n=0;for(const q of fish)if(q!==f&&!q.off&&q.kind==="shark"&&Math.abs(q.y-shark.y)<H*.8)n++}if(n>=C.MAX_BIG)kind=L===2?"glow":"fish"}// cap near the spawn AND near you
  if(kind==="glow"&&P0)sz=Math.min(sz,bite()*C.GLOW_MAX);
  if(P0&&L===2&&kind!=="glow"&&kind!=="star"&&kind!=="plankton"){const g=Math.min(1,Math.max(0,(d-LAYERS.MID)/DEEP.RAMP));if(sz>bite()*.9)sz*=1+DEEP.GROW*g*Math.max(0,1-shark.lvl/DEEP.FADE_LVL);{const ln=kind==="shark"?2.5:1.6;sz=Math.min(sz,W*DEEP.MAX_W/ln);/* v9c: deep width caps stay on true size (deep > mid in the same proportion); giants keep their old drawn size */if(sz*ln>W*DEEP.BIG_W&&fish.filter(q=>q!==f&&!q.off&&!q.giant&&q.s*(q.kind==="shark"?2.5:1.6)>W*DEEP.BIG_W).length>=DEEP.BIG_N)sz=W*DEEP.BIG_W/ln}/* at most BIG_N very big ones around (perf, and so giants stay special) *//* deeper = bigger for a small player (fades out as you grow: perf + you are the big one by then) *//* deeper = bigger (not the prey share) */
@@ -599,7 +599,8 @@ function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;f.f
  else if(kind==="glow"&&Math.random()<.6){const lst=SP_Z[3].filter(i=>SPECIES[i].n!=="Pelican eel"||(sz>bite()*.7&&Math.random()<.3));f.sp=lst[Math.floor(Math.random()*lst.length)]}
  f.L=L;f.band=kind==="star"?[BED-14,BED]:bandOf(L);
  spawnStats.n++;spawnStats.byKind[kind]=(spawnStats.byKind[kind]||0)+1;if(!ALLOWED[kind].includes(layerOf(f.y)))spawnStats.wrong++;
- const dir=Math.random()<.5?1:-1,sp=kind==="star"?rnd(3,7):kind==="plankton"?rnd(8,16):kind==="octo"?rnd(15,25):rnd(25,45);f.vx=dir*sp*(f.s>40?.7:1);f.vy=0;if(P0&&goneAt(f.y)){f.off=true;f.retry=rnd(.5,1.1);spawnStats.gone=(spawnStats.gone||0)+1}}
+ const dir=Math.random()<.5?1:-1,sp=kind==="star"?rnd(3,7):kind==="plankton"?rnd(8,16):kind==="octo"?rnd(15,25):rnd(25,45);f.vx=dir*sp*(f.s>40?.7:1);f.vy=0;f.tiny=false;if(P0&&goneAt(f.y))makeTiny(f)}
+function makeTiny(f){f.tiny=true;f.fade=0;f.danger=false;f.chase=0;f.giant=false;f.s=Math.min(f.s,bite()*VANISH.TINY);spawnStats.tiny=(spawnStats.tiny||0)+1}
 function pickSurfK(){const l=shark.lvl,r=Math.random(),sf=()=>l>=SURFACE.SAIL_LVL&&surfK()*60<LATE.SURF_GONE_PX?2:Math.random()<.35?1:0;return l>=SURFACE.CARGO_LVL?(r<.5?3:r<.85?2:sf()):l>=SURFACE.SAIL_LVL?(r<.6?2:sf()):sf()}
 function rollSurf(s){s.k=pickSurfK();s.vx=(Math.random()<.5?-1:1)*(s.k===3?rnd(12,20):s.k===2?rnd(20,34):rnd(25,45))}
 function spawnSurf(s,edge){s.zip=0;rollSurf(s);const m=50+(SURFERS[s.k].hw||0)*surfDrawK(s);s.x=camX+(edge?(Math.random()<.5?-m:W+m):rnd(50,W-50))}
@@ -803,9 +804,9 @@ function updPlay(dt){elapsed+=dt;if(mode==="timed")timeLeft-=dt;if(hintT>0)hintT
  const [mx,my]=mouth(),er=L*.2;
  const CR=CREATURES,smax=max,sense=Math.max(H*CR.SENSE,L*CR.SENSE_L);/* v9: notice range also scales with the drawn shark */
  {const c=Math.cos(shark.ang);if(Math.abs(c)>TURN3D.DEAD)shark.yawTgt=c<0?Math.PI:0;const d=(shark.yawTgt||0)-(shark.yaw||0),st=Math.PI/TURN3D.SEC*dt;if(Math.abs(d)>1e-4)shark.yawDir=d>0?1:-1;shark.yaw=(shark.yaw||0)+Math.max(-st,Math.min(st,d));shark.yawT=(shark.yawT||0)+(shark.yaw-(shark.yawT||0))*Math.min(1,dt*TURN3D.TAIL);const H_=window.__saYawHold;if(H_){shark.yaw=H_[0];shark.yawT=H_[1]}}
- for(const f of fish){if(f.off){if(f.retry>0&&(f.retry-=dt)<=0)spawnFish(f,true,f.tile);continue}if(f.fade>0){f.fade-=dt;f.danger=false;if(f.fade<=0){f.off=true;f.retry=rnd(.5,1.1)}continue}if(goneAt(f.y)){f.fade=VANISH.FADE;continue}/* b52: band emptied, fade out */f.ph+=dt*3;const dx=f.x-shark.x,dy=f.y-shark.y,d2=dx*dx+dy*dy,r=rel(f),dist=Math.sqrt(d2)||1;const eater=f.kind!=="plankton"&&f.kind!=="star"&&f.s/bite()>=EAT.RATIO;f.danger=eater;if(f.rest>0)f.rest-=dt;
+ for(const f of fish){if(f.off){if(f.retry>0&&(f.retry-=dt)<=0)spawnFish(f,true,f.tile);continue}if(f.fade>0){f.fade-=dt;f.danger=false;if(f.fade<=0){f.off=true;f.retry=rnd(.5,1.1)}continue}if(!f.tiny&&goneAt(f.y))makeTiny(f);/* b55: outgrown band -> fish stay, too small to eat */f.ph+=dt*3;const dx=f.x-shark.x,dy=f.y-shark.y,d2=dx*dx+dy*dy,r=rel(f),dist=Math.sqrt(d2)||1;const eater=!f.tiny&&f.kind!=="plankton"&&f.kind!=="star"&&f.s/bite()>=EAT.RATIO;f.danger=eater;if(f.rest>0)f.rest-=dt;
   let tvx=f.vx>=0?Math.max(20,Math.abs(f.vx)):-Math.max(20,Math.abs(f.vx)),tvy=0;f.st="";
-  const food=r<0;// v9b (Jeremy): a Size 1 shark eats any fish clearly smaller than its bite (before: plankton only, which left tiny fish next to it uneatable)
+  const food=r<0&&!f.tiny;// v9b (Jeremy): a Size 1 shark eats any fish clearly smaller than its bite (before: plankton only, which left tiny fish next to it uneatable)
   if(!shark.air&&dist<sense){if(food&&f.kind!=="star"){if(f.chase===0)f.dn=0;f.chase+=dt;if(f.chase>CR.FLEE_BURST_S+CR.FLEE_TIRED_S)f.chase=0;const sprint=f.chase<CR.FLEE_BURST_S,v=smax*(f.kind==="plankton"?.15:sprint?fleeK(f):CR.FLEE_TIRED);/* sprint, then tire briefly */tvx=dx/dist*v;tvy=dy/dist*v;f.st="flee";
     if(f.kind!=="plankton")dodge(f,dt,sprint,dist,L,tvx,tvy,v);if(f.dg===2){const a=Math.atan2(tvy,tvx)+f.da;tvx=Math.cos(a)*v;tvy=Math.sin(a)*v}}
    else if(eater&&f.rest<=0&&depthOf(f.y)>=CR.CHASE_MIN_D){const dd=depthOf(f.y),v=smax*(CR.CHASE_SHALLOW+(CR.CHASE_DEEP-CR.CHASE_SHALLOW)*dd);tvx=-dx/dist*v;tvy=-dy/dist*v;f.st="chase";f.chase+=dt;if(f.chase>=CR.GIVEUP_S){f.chase=0;f.rest=CR.REST_S}}}
@@ -813,7 +814,7 @@ function updPlay(dt){elapsed+=dt;if(mode==="timed")timeLeft-=dt;if(hintT>0)hintT
   if(f.dcd>0)f.dcd-=dt;if(f.st!=="flee"&&f.dg){f.dg=0}if(f.st){const k=Math.min(1,dt*(f.dg===2?DODGE.GAIN:2.2));f.vx+=(tvx-f.vx)*k;f.vy+=(tvy-f.vy)*k}else{f.vy*=.97;if(Math.abs(f.vx)<20)f.vx=(f.vx<0?-1:1)*30}
   f.x+=f.vx*dt;f.y+=(f.vy+(f.kind==="star"?0:Math.sin(f.ph)*8))*dt;{const b0=Math.max(SURF+f.s*.6,f.band[0]),b1=f.band[1];if(f.y<b0){f.y=b0;f.vy=Math.abs(f.vy)}else if(f.y>b1){f.y=b1;f.vy=-Math.abs(f.vy)}}// layer-locked
   if(!inWindow(f.x,f.y)){spawnFish(f,true,f.tile);continue}if(f.bump>0)f.bump-=dt;
-  if(shark.air)continue;
+  if(shark.air||f.tiny)continue;/* b55: tiny fish are harmless and cannot be eaten */
   if(food){const ex=f.x-mx,ey=f.y-my,rr=er+fpx(f)*.4;if(ex*ex+ey*ey<rr*rr||onBody(f)){const pts=ptsOf(f);addScore(pts);feed(growOf(f));SFX.chomp();shark.chomp=.2;addPop(f.x,f.y,"+"+pts);if(RINGS)for(let i=0;i<4;i++)spark(f.x,f.y,0);/* v9c: no bubble circles around the shark */spawnFish(f,true,f.tile)}}
   else{const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);/* v9c: danger/bump contact stays on true size (drawn 1.25x bigger would mean unfair early deaths) */if(d2<rr*rr){if(eater&&!godMode&&elapsed>EAT.GRACE){gameOver("eaten");return}/* v9: bigger creatures eat you on contact */
     f.vy+=dy/dist*80;shark.x-=dx/dist*6;shark.y-=dy/dist*6;if(f.bump<=0){SFX.bump();f.bump=.4}}}}
