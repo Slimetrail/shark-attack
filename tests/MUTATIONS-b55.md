@@ -13,3 +13,5 @@ Each mutant = one edit to the b55 game.js, test_b55 run, game.js restored. Also:
 | sail boats HUD 8 | `SAIL_LVL:6` -> 7 | FAIL (2 checks) |
 | cargo HUD 10 | `CARGO_LVL:8` -> 9 | FAIL (2 checks) |
 | (none, real b55) | | 17 passed, 0 failed |
+
+b55 (7): the tiny-contact check now holds the tiny fish on the shark each step (was ~50% flaky on the mutant); mutant fails 5/5, real passes 3/3.

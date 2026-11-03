@@ -24,7 +24,7 @@ try:
     const sc0=__sa.score;let gone=0,fade=0;
     for(let k=0;k<90;k++){__sa.sim(1/30);for(const f of F)if(f.off&&Math.abs(f.y-(S+D*.12))<D*.2&&Math.abs(f.x-s.x)<innerWidth*.3)gone++;for(const f of F)if(f.fade>0)fade++}
     const alive=F.filter(f=>!f.off).length,tiny=F.filter(f=>f.tiny).length,food=F.filter(f=>!f.off&&!f.tiny&&__sa.rel(f)<0).length;
-    /* touch test: put the shark's mouth on a tiny fish */const f=F.find(q=>!q.off&&q.tiny);let eaten=null;if(f){s.y=f.y;s.x=f.x-s.L*.45;s.ang=0;const sc=__sa.score;f.bump=0;let fl=0,bu=0;for(let k=0;k<12;k++){__sa.sim(1/60);if(f.st==='flee')fl++;if(f.bump>0)bu++}eaten=__sa.score>sc||f.off;var flee=fl,bump=bu}
+    /* touch test: put the shark's mouth on a tiny fish */const f=F.find(q=>!q.off&&q.tiny);let eaten=null;if(f){s.y=f.y;s.x=f.x-s.L*.45;s.ang=0;const sc=__sa.score;f.bump=0;let fl=0,bu=0;for(let k=0;k<12;k++){f.x=s.x+s.L*.1;f.y=s.y;f.vx=0;f.vy=0;__sa.sim(1/60);if(f.st==='flee')fl++;if(f.bump>0)bu++}eaten=__sa.score>sc||f.off;var flee=fl,bump=bu}
     return {alive,tiny,food,gone,fade,eaten,flee:typeof flee==='undefined'?-1:flee,bump:typeof bump==='undefined'?-1:bump,gA:__sa.goneAt(S+D*.12)}})()''')
   check(r['alive']==6 and r['gone']==0 and r['fade']==0,f'HUD 6 shark, 6 fish in the outgrown top band: all still swimming after 3 s (none faded or despawned on screen) {r}')
   check(r['tiny']==6 and r['food']==0,f'those fish are marked too small to eat (tiny), not food {r["tiny"]}/6')
