@@ -62,10 +62,11 @@ try:
   check(r['d']==1 and r['ds']>=P[3],f'cargo ship bitten at the surface: eaten, score +{r["ds"]}, big pop {r["pop"]!r}')
   # 3 depth bands
   def band(L,dep):
-    return J(pg,f'''(()=>{{__sa.setLevel({L});const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*{dep};s.spd=0;__sa.respawnAll(true);__sa.sim(3);const live=__sa.fish.filter(f=>!f.off&&!(f.fade>0));return {{min:Math.min(...live.map(f=>__sa.depthRaw(f.y))),n:live.length,near:live.filter(f=>Math.abs(f.y-s.y)<innerHeight*1.5&&Math.abs(f.x-s.x)<innerWidth*1.5).length}}}})()''')
+    return J(pg,f'''(()=>{{__sa.setLevel({L});const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*{dep};s.spd=0;__sa.respawnAll(true);__sa.sim(3);const all=__sa.fish.filter(f=>!f.off&&!(f.fade>0)),live=all.filter(f=>!f.tiny);const up=all.filter(f=>__sa.goneAt(f.y));return {{min:Math.min(...live.map(f=>__sa.depthRaw(f.y))),up:up.length,upTiny:up.filter(f=>f.tiny).length,n:live.length,near:live.filter(f=>Math.abs(f.y-s.y)<innerHeight*1.5&&Math.abs(f.x-s.x)<innerWidth*1.5).length}}}})()''')
   r=band(0,.15);check(r['min']<.3 and r['near']>0,f'size 1: shallow water has fish (min depth {r["min"]:.2f}, {r["near"]} near)')
   for L,edge in ((4,.3),(6,.62),(8,1.0),(9,1.6)):
-    r=band(L,edge+.25);check(r['min']>=edge-1e-6,f'size {L+1}: no live fish above depth {edge} (shallowest {r["min"]:.2f})')
+    r=band(L,edge+.25);check(r['min']>=edge-1e-6,f'size {L+1}: no EDIBLE fish above depth {edge} (b55: fish there stay, too small to eat; shallowest edible {r["min"]:.2f})')
+    check(r['up']==r['upTiny'],f'size {L+1}: every fish above depth {edge} is tiny (too small to eat) ({r["upTiny"]}/{r["up"]})')
     check(r['near']>0,f'size {L+1}: shark just below that depth still finds fish ({r["near"]} near) - no soft lock')
   r=band(9,2.2);check(r['near']>0,f'size 10 (cap): deepest band still has fish ({r["near"]} near)')
   # 4 boost

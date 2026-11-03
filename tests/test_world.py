@@ -50,10 +50,10 @@ try:
   check(set(['plankton','fish','glow','shark','octo','angler'])<=set(r['kinds']) and 'star' not in r['kinds'],f'long swim: all kinds met, no seabed starfish (b48 endless) {r["kinds"]} (reached {r["reach"]:.2f} of the way to the seabed)')
   check(r['by'].get('angler',0)<r['by'].get('glow',0)/3,f'angler is rare (angler {r["by"].get("angler",0)} vs glow {r["by"].get("glow",0)})')
   # deeper = bigger prey (true size at a fixed stage)
-  r=ev('''()=>{__sa.setLevel(9);const H=innerHeight,s=__sa.shark,out=[];for(const fr of [.15,.5,.85]){const y=__sa.SURF+fr*(__sa.BED-__sa.SURF);let a=0,n=0;for(let i=0;i<300;i++){const f=__sa.fish[i%__sa.fish.length];__sa.spawnFish(f,false,{tx:0,ty:Math.floor(y/H)});if(f.kind!=="shark"&&f.kind!=="star"&&f.kind!=="plankton"&&Math.abs(__sa.layerOf(f.y)-__sa.layerOf(y))===0){a+=f.s;n++}}out.push(n?a/n:0)}__sa.respawnAll();return out}''')
+  r=ev('''()=>{__sa.setLevel(3);/* b55: at SIZE 10 every band here is outgrown (its fish are tiny), so the spawn table is checked at SIZE 4, before any band is outgrown */const H=innerHeight,s=__sa.shark,out=[];for(const fr of [.15,.5,.85]){const y=__sa.SURF+fr*(__sa.BED-__sa.SURF);let a=0,n=0;for(let i=0;i<300;i++){const f=__sa.fish[i%__sa.fish.length];__sa.spawnFish(f,false,{tx:0,ty:Math.floor(y/H)});if(!f.tiny&&f.kind!=="shark"&&f.kind!=="star"&&f.kind!=="plankton"&&Math.abs(__sa.layerOf(f.y)-__sa.layerOf(y))===0){a+=f.s;n++}}out.push(n?a/n:0)}__sa.respawnAll();return out}''')
   check(r[0]<r[1]<r[2],f'deeper means bigger prey (avg size top/mid/deep {r[0]:.1f}/{r[1]:.1f}/{r[2]:.1f})')
   # surfers need stage 6 (checked with real leaps in test_v8) -> constant here
-  check(ev('__sa.GROW.SURF_LVL')==6,'surfers need stage 6')
+  check(ev('__sa.GROW.SURF_LVL')==4,'surfers need stage 4 (HUD size 5, b55)')
   # v9 (Jeremy): NO depth lock. Replaces the old "allowed depth grows with stage / minnow stays shallow / hint" checks:
   # a minnow swimming straight down reaches the deep layer and never sees "Too small to go deeper".
   r=ev('''()=>{__sa.setLevel(0);const s=__sa.shark,H=innerHeight;s.air=false;s.cool=1;s.x=__sa.camX+innerWidth/2;s.y=__sa.SURF+40;s.spd=0;let mx=0,hint=false;
