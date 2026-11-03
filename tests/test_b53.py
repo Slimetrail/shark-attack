@@ -45,7 +45,7 @@ try:
   if not ONLY or 'late' in ONLY:
    cx,pg,errs=newpg(b);pg.touchscreen.tap(422,195);pg.wait_for_timeout(300);J(pg,'__sa.startAs("white","endless");__sa.god=true')
    SAMPLE='''(()=>{const s=__sa.shark,W=innerWidth,H=innerHeight,cx=__sa.camX,cy=__sa.camY,L=s.L;
-     const fish=__sa.fish.filter(f=>!f.off&&!(f.fade>0)&&f.kind!=="plankton"&&__sa.rel(f)<0&&Math.abs(f.x-s.x)<W*.75&&Math.abs(f.y-s.y)<H*.75)/* reachable: within 0.75 screen of the shark */.map(f=>(__sa.fpx?__sa.fpx(f):f.s*1.25)*(f.kind==="shark"?2.5:1));/* drawn length; small sharks draw 2.5x */
+     const fish=__sa.fish.filter(f=>!f.off&&!f.tiny&&!(f.fade>0)&&f.kind!=="plankton"&&__sa.rel(f)<0&&Math.abs(f.x-s.x)<W*.75&&Math.abs(f.y-s.y)<H*.75)/* reachable: within 0.75 screen of the shark */.map(f=>(__sa.fpx?__sa.fpx(f):f.s*1.25)*(f.kind==="shark"?2.5:1));/* drawn length; small sharks draw 2.5x */
      const sk=q=>__sa.surfDrawK?__sa.surfDrawK(q):Math.max(__sa.SURFACE.MINK,Math.min(1.8,__sa.worldK));
      const surf=__sa.surf.filter(q=>!(q.zip>0)&&q.x>cx-20&&q.x<cx+W+20&&__sa.SURF>cy&&__sa.SURF<cy+H).map(q=>({k:q.k,len:2*(__sa.SURFERS[q.k].hw||18)*sk(q)}));return {L,fish,surf}})()'''
    def place(L,where):
@@ -128,9 +128,9 @@ try:
    r=J(pg,'(()=>{const o=[];for(let l=0;l<=9;l++){__sa.setLevel(l);o.push(__sa.maxSpeed())}return o})()')
    check(bool(r) and all(r[i+1]>r[i] for i in range(9)) and abs(r[9]/r[0]-1.36)<.01,f'top speed rises every size to the cap, SIZE 10 = 1.36x SIZE 1 (as b51) {[round(x) for x in (r or [])]}')
    S=J(pg,'({s:__sa.SURFACE,v:__sa.VANISH,sl:__sa.GROW.SURF_LVL})')
-   check(S['sl']==6 and S['s']['SAIL_LVL']==7 and S['s']['CARGO_LVL']==8,f'prey order inside 1-10: surfers HUD 7, sail boats HUD 8, cargo ships HUD 9 ({S["sl"]+1},{S["s"]["SAIL_LVL"]+1},{S["s"]["CARGO_LVL"]+1})')
-   check(S['v']['LVL']==[4,6,8,9] and S['v']['EDGES'][-1]==1.6,f'depth bands empty at HUD 5/7/9/10, deepest (below 1.6) never empties {[x+1 for x in S["v"]["LVL"]]}')
-   r=J(pg,'(()=>{__sa.setLevel(9);const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*2.2;__sa.respawnAll();__sa.sim(2);return __sa.fish.filter(f=>!f.off&&!(f.fade>0)&&f.kind!=="plankton"&&Math.abs(f.y-s.y)<innerHeight*1.5).length})()')
+   check(S['sl']==4 and S['s']['SAIL_LVL']==6 and S['s']['CARGO_LVL']==8,f'prey order inside 1-10 (b55): surfers HUD 5, sail boats HUD 7, cargo ships HUD 9 ({S["sl"]+1},{S["s"]["SAIL_LVL"]+1},{S["s"]["CARGO_LVL"]+1})')
+   check(S['v']['LVL']==[4,6,8,9] and S['v']['EDGES'][-1]==1.6,f'depth bands outgrown (fish too small to eat, b55) at HUD 5/7/9/10, deepest (below 1.6) never outgrown {[x+1 for x in S["v"]["LVL"]]}')
+   r=J(pg,'(()=>{__sa.setLevel(9);const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*2.2;__sa.respawnAll();__sa.sim(2);return __sa.fish.filter(f=>!f.off&&!f.tiny&&!(f.fade>0)&&f.kind!=="plankton"&&Math.abs(f.y-s.y)<innerHeight*1.5).length})()')
    check((r or 0)>=5,f'at the cap the deepest band still has fish ({r})')
    r=J(pg,'(()=>{__sa.setLevel(3);for(const p of __sa.pops)p.t=0;const s=__sa.shark,x=s.x,y=s.y;__sa.addPop(x,y,"+100 CARGO SHIP!",true);__sa.sim(.1);__sa.addPop(x+10,y,"+40 SAIL BOAT!",true);__sa.addPop(x,y,"+3",false);__sa.addPop(x+5,y+3,"+2",false);__sa.addPop(x-8,y,"+4",false);const L=__sa.pops.filter(p=>p.t>0);let bad=0;for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++)if(__sa.popHit(L[i],L[j]))bad++;return {n:L.length,bad,big:L.filter(p=>p.big).length}})()')
    check(bool(r) and r['bad']==0 and r['big']==1 and r['n']>=2,f'score pops never overlap, one bonus pop at a time {r}')
