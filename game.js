@@ -755,11 +755,12 @@ function beatNow(){if(chip.src)return (AC.currentTime-chip.t0)%chip.buf.duration
 const BODY={HEAD:.48,TAIL:.55,R:.12,FR:.3};
 function onBody(f){const c=Math.cos(shark.ang),sn=Math.sin(shark.ang),L=shark.L,dx=f.x-shark.x,dy=f.y-shark.y;let u=dx*c+dy*sn;const v=-dx*sn+dy*c;
  u=Math.max(-L*BODY.TAIL,Math.min(L*BODY.HEAD,u));const px=dx-u*c,py=dy-u*sn,r=L*BODY.R+fpx(f)*BODY.FR;return px*px+py*py<r*r}
-/* b56 (Jeremy t1637u "only the mouth of a larger fish can kill you"): the kill zone is a small circle at the front of the eater's head
-   (it faces the way it swims: f.vx sign, as drawn). Center MOUTH.*[0] x f.s ahead of its center, radius MOUTH.*[1] x f.s (true size, like bumps).
-   It kills when it touches your body (spine capsule, radius MOUTH.YOU x your length). Anywhere else on its body = bump. */
-const MOUTH={SHARK:[.75,.35],OTHER:[.35,.2],YOU:.14};
-function mouthPt(f){const m=f.kind==="shark"?MOUTH.SHARK:MOUTH.OTHER,dir=f.vx<0?-1:1;return [f.x+dir*f.s*m[0],f.y,f.s*m[1]]}
+/* b56 (Jeremy t1637u "only the mouth of a larger fish can kill you"): the kill zone is a small circle on the eater's DRAWN mouth
+   (it faces the way it swims: f.vx sign, as drawn). Measured on the drawn sprite: a shark is drawn 2.5 x fpx(f) long, its jaw sits
+   MOUTH.SHARK[0] of that length ahead of its centre and [1] below, radius [2]; other creatures are drawn fpx(f) long ([0],[1],[2] of that).
+   It kills when it touches your body (spine capsule, radius MOUTH.YOU x your length). Anywhere else on its body = bump (shove). */
+const MOUTH={SHARK:[.44,.06,.06],OTHER:[.52,.03,.15],YOU:.14};
+function mouthPt(f){const sh=f.kind==="shark",m=sh?MOUTH.SHARK:MOUTH.OTHER,len=fpx(f)*(sh?2.5:1),dir=f.vx<0?-1:1;return [f.x+dir*len*m[0],f.y+len*m[1],len*m[2]]}
 function mouthHit(f){const [px,py,r]=mouthPt(f),c=Math.cos(shark.ang),sn=Math.sin(shark.ang),L=shark.L,dx=px-shark.x,dy=py-shark.y;let u=dx*c+dy*sn;u=Math.max(-L*BODY.TAIL,Math.min(L*BODY.HEAD,u));const qx=dx-u*c,qy=dy-u*sn,R=r+L*MOUTH.YOU;return qx*qx+qy*qy<R*R}
 function mouth(){const k=shark.L*.48;return [shark.x+Math.cos(shark.ang)*k,shark.y+Math.sin(shark.ang)*k]}
 // v10 item 6: per-fish dodge state machine. f.dg 0 none / 1 wiggle / 2 sideways snap; f.da = turn from the flee line (rad); f.dcd cooldown; f.dn dodges this chase

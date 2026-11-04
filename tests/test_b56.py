@@ -16,7 +16,7 @@ check(json.loads(rd('version.json'))['build']=="56" and 'content="56"' in rd('in
 SCENE='''([pos,lvl])=>{const S=__sa;S.startAs("white","endless");S.god=false;S.setLevel(lvl);S.sim(2.2);/* past EAT.GRACE */S.clearFood();const s=S.shark,D=S.BED-S.SURF;s.y=S.SURF+D*1.2;s.x=S.camX+innerWidth/2;s.ang=0;s.spd=0;S.touch.on=false;S.touch.drive=0;for(let k=0;k<90;k++){s.spd=0;S.sim(1/60)}/* camera settles on you */S.clearFood();s.x=S.camX+innerWidth/2;
   const L=s.L,B=S.bite(),f=S.fish[0];S.setCreature(f,B*2,"shark");f.off=false;f.tiny=false;f.fade=0;f.rest=0;
   const fs=f.s;let X,Y,VX;
-  if(pos==="mouth"){VX=-60;X=s.x+fs*S.MOUTH.SHARK[0];Y=s.y}          /* its mouth right on you */
+  if(pos==="mouth"){VX=-60;f.x=0;f.y=0;f.vx=-60;const mp=S.mouthPt(f);X=s.x-mp[0];Y=s.y-mp[1]}          /* its mouth right on you */
   else if(pos==="top"){VX=60;X=s.x;Y=s.y-(L*.32+fs*.9)*.85}          /* you touch the top of its body */
   else if(pos==="tail"){VX=60;X=s.x+(L*.32+fs*.9)*.8;Y=s.y}          /* you bump its tail end (it faces away) */
   else if(pos==="side"){VX=-60;X=s.x;Y=s.y+(L*.32+fs*.9)*.85}        /* under you, facing left: belly contact */
