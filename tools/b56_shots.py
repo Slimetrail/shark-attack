@@ -8,7 +8,7 @@ srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.
 SET='''([pos])=>{const S=__sa;S.startAs("white","endless");S.god=false;S.setLevel(2);S.sim(2.2);S.clearFood();const s=S.shark,D=S.BED-S.SURF;s.y=S.SURF+D*1.0;s.x=S.camX+innerWidth/2;s.ang=0;s.spd=0;S.touch.on=false;
  for(let k=0;k<90;k++){s.spd=0;S.sim(1/60)}S.clearFood();s.x=S.camX+innerWidth/2;const f=S.fish[0];S.setCreature(f,S.bite()*2,"shark");f.off=false;f.tiny=false;f.fade=0;
  const L=s.L,fs=f.s,_m=(f.x=0,f.y=0,f.vx=-60,S.mouthPt(f)),X=pos==="mouth"?s.x-_m[0]:s.x+L*.1,Y=pos==="mouth"?s.y-_m[1]:s.y+(L*.32+fs*.9)*.8,VX=pos==="mouth"?-60:-60,x0=s.x,y0=s.y;
- window.__hold=setInterval(()=>{if(S.state!=="play")return;f.x=X;f.y=Y;f.vx=VX;f.vy=0;f.rest=0;if(pos!=="mouth"){s.x=x0;s.y=y0;s.spd=0;s.ang=0}},4);return {fs,L}}'''
+ const sz=f.s;window.__hold=setInterval(()=>{if(S.state!=="play")return;if(f.kind!=="shark"||f.off||f.tiny||f.s!==sz){S.setCreature(f,sz,"shark");f.off=false;f.tiny=false;f.fade=0}f.x=X;f.y=Y;f.vx=VX;f.vy=0;f.rest=0;if(pos!=="mouth"){s.x=x0;s.y=y0;s.spd=0;s.ang=0}},4);return {fs,L}}'''
 try:
  with sync_playwright() as p:
   b=p.chromium.launch()
