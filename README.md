@@ -14,6 +14,13 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
   - You're safe from fish only while you're in the air.
 - **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!" or "Gulp!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
 
+## Build 56 (Jeremy t1637u, via Eve)
+- Version/build 56 (version.json, cache `sharkattack-v56`, `game.js?v=56`).
+- **Only the mouth kills.** A bigger creature eats you only when its drawn jaw (`MOUTH`, a small circle at the front of its head, on the side it swims toward) touches your body. Touching its top, belly, side or tail is a harmless bump (a small shove). Your own mouth and body still eat prey the same way.
+- **Fewer larger sharks.** Chaser cap (`CHASE`) is 1 from HUD 9 (and at max size 10 / endless), 2 at HUD 5-8 as in b55. Fewer deep sharks overall (`SHARK_P_DEEP` .45 to .38, `MAX_BIG` 3 to 2).
+- Eating thresholds unchanged: surfers HUD 5, sail boats HUD 7, cargo ships HUD 9.
+- Tests: `tests/test_b56.py`; mutation checks `tools/mut_b56.py`; pace `tools/pace_b56.py`; shots `tools/b56_shots.py`.
+
 ## Build 54 (QA fixes on build 53)
 - Version/build 54 (version.json, cache `sharkattack-v54`, `game.js?v=54`).
 - A quick "Sound on" tap right after "Tap to start" now works (the ghost-click guard only drops the click left over from the start tap itself).
@@ -108,7 +115,7 @@ Jeremy asked for "a continue game that does not end until you are eaten and dive
 
 - **Performance**: the tall world backdrop (water, sky, light rays, scenery, volcanic floor) is painted once into an offscreen canvas and blitted each frame; the deep-dark overlay is one drawImage; creatures off-screen are culled; particles, embers and surface waves are reduced while the screen is busy (divers, ambusher, or >14 creatures visible). Orientation is tracked with a media-query listener instead of every frame.
 - **Title**: the face-on shark is sized so its whole head stays on screen (`TITLE_TOP_PAD`), jaws still open around the words.
-- **Volcanic floor**: at most `MAX_BIG` (3) sharks near you, spawns spread out (`SPREAD_PX`), glowing fish are always food-sized (`GLOW_MAX` .84 of your bite). Chasing starts in the Twilight zone (`CHASE_MIN_D` .3) and deep chasers are a bit slower (`CHASE_DEEP` .7).
+- **Volcanic floor**: at most `MAX_BIG` (2 since b56) sharks near you, spawns spread out (`SPREAD_PX`), glowing fish are always food-sized (`GLOW_MAX` .84 of your bite). Chasing starts in the Twilight zone (`CHASE_MIN_D` .3) and deep chasers are a bit slower (`CHASE_DEEP` .7).
 - Cache `sharkattack-v7`, `game.js?v=7`.
 - Tests: the diver perf check now asserts it is measuring real play (it used to time the game-over screen, which is capped at 30 fps); beat-assist landing tolerance allows 2 frames of measurement slack (`LAND_FRAME_SLACK`); balance_endless runs 30 games per type.
 
@@ -125,7 +132,7 @@ Jeremy asked for "a continue game that does not end until you are eaten and dive
 ## Grow and get eaten (v9)
 - **No depth lock.** Every stage can swim anywhere (endless world, depth-locked spawn tables and creature zones are kept). Danger is the limit.
 - **Your shark visibly grows**: drawn length ×1.15 per stage (`DRAW.STEP`), capped at ×1.52 (`DRAW.CAP`, reached at stage 4; was 1.75 but the 3× bigger drawn world failed the deep busy-screen perf test), eased in over ~0.4 s with a squash-pulse, a ring and sparks (the "BIGGER!" pop is your own growth, not a size hint about others). The world now shrinks only by the rest of the true growth (`wK = drawK/trueGrow`), so food/danger ratios are unchanged. No camera zoom was needed: at the cap the shark is ~0.3× screen height. Hitboxes use the drawn `shark.L`. Creature notice range also scales with the drawn shark (`SENSE_L`).
-- **Bigger creatures eat you.** Any creature (not plankton or starfish) with size ≥ 1.3× your bite (`EAT.RATIO`) eats you on body contact (red puff, "eaten"). 0.87–1.3× = same size: a silent push. Smaller: food as before (minnow: plankton only). Every eater inside the notice range below 30% depth chases at 0.6–0.7× your top speed and gives up after a while (flee/chase speed rules unchanged).
+- **Bigger creatures eat you.** Any creature (not plankton or starfish) with size ≥ 1.3× your bite (`EAT.RATIO`) eats you when its MOUTH touches you (b56; before b56: on body contact) (red puff, "eaten"). 0.87–1.3× = same size: a silent push. Smaller: food as before (minnow: plankton only). Every eater inside the notice range below 30% depth chases at 0.6–0.7× your top speed and gives up after a while (flee/chase speed rules unchanged).
 - **Deeper = bigger.** In the deep layer, non-prey creatures grow up to ×2.2 with depth for small sharks (`DEEP.GROW`, fades out by stage 6; capped at half the screen height). Rare **giants** (sharks/octopus, ~3–10% of deep spawns for a minnow, fading out by stage 6, one at a time; other very big ones max 2 around) are 3.8–5.5× your drawn length, up to 0.6× screen width: about half the screen for a minnow.
 - **Removed size/danger indicators** (Jeremy: "the player judges size by eye"): the red "!" over bigger fish/chasers; the red "!" on the incoming ambush shark; red off-screen arrows pointing at chasers; the "Too small!" pop when bumping a same-size/bigger fish; the "Too small!" pop when a too-small shark leaps into a surfer; the "Too small to go deeper" hint (with the depth lock). There never was a diving score bonus; none added. Kept: red death puff, normal score, the control tip "Swim down to build speed…", the orange diver arrows/"Divers!" banner (not size-related), the "boing" surfer bump.
 - **Balance**: bots judge size from data (`f.s / bite()`), see `tests/balance_v9.py` (early-diver vs shallow bot) and `tests/balance_results.md`.
