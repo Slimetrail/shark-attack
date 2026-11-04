@@ -19,6 +19,7 @@ SCENE='''([pos,lvl])=>{const S=__sa;S.startAs("white","endless");S.god=false;S.s
   if(pos==="mouth"){VX=-60;f.x=0;f.y=0;f.vx=-60;const mp=S.mouthPt(f);X=s.x-mp[0];Y=s.y-mp[1]}          /* its mouth right on you */
   else if(pos==="top"){VX=60;X=s.x;Y=s.y-(L*.32+fs*.9)*.85}          /* you touch the top of its body */
   else if(pos==="tail"){VX=60;X=s.x+(L*.32+fs*.9)*.8;Y=s.y}          /* you bump its tail end (it faces away) */
+  else if(pos==="reach"){VX=-60;X=s.x+(L*.32+fs*.9)*1.04;Y=s.y}     /* facing you, just outside body contact */
   else if(pos==="side"){VX=-60;X=s.x;Y=s.y+(L*.32+fs*.9)*.85}        /* under you, facing left: belly contact */
   const x0=s.x,y0=s.y;let bumps=0,frames=0,minD=1e9;
   let shove=0;for(let k=0;k<60&&S.state==="play";k++){s.x=x0;s.y=y0;s.spd=0;s.ang=0;f.x=X;f.y=Y;f.vx=VX;f.vy=0;f.rest=0;f.bump=0;S.sim(1/60);frames++;if(f.s!==fs||f.off)break;/* slot reused: stop */if(f.bump>0)bumps++;shove=Math.max(shove,Math.hypot(s.x-x0,s.y-y0))}
@@ -34,6 +35,7 @@ try:
    for pos in ['top','tail','side']:
     r=J(SCENE,[pos,lvl]);check(r['state']=='play' and r['end']!='eaten' and r['frames']==60 and r['eater'],f'HUD {lvl+1}: touching its {pos} for 1 s does NOT kill you {r}')
     check(r['bumps']>=50 and r['moved']>0,f'HUD {lvl+1}: {pos} contact is a bump: you get shoved (max shove per frame {r["moved"]} px, bump frames {r["bumps"]})')
+   r=J(SCENE,['reach',lvl]);check(r['state']=='play' and r['end']!='eaten' and r['frames']==60 and r['eater'],f'HUD {lvl+1}: its mouth never reaches further than the b55 body contact (facing you, just out of contact: alive) {r}')
   # it still chases and eats you when it swims mouth-first at you (real AI, no holding)
   r=J('''(()=>{const S=__sa;S.startAs("white","endless");S.god=false;S.setLevel(2);S.sim(2.2);S.clearFood();const s=S.shark,D=S.BED-S.SURF;s.y=S.SURF+D*.5;s.x=S.camX+innerWidth/2;s.ang=0;s.spd=0;S.touch.on=false;
     const f=S.fish[0];S.setCreature(f,S.bite()*2,"shark");f.off=false;f.tiny=false;f.fade=0;f.rest=0;f.x=s.x+s.L*2.2;f.y=s.y;f.vx=-60;f.vy=0;let t=0;for(;t<8&&S.state==="play";t+=1/60){s.spd=0;S.sim(1/60)}return {end:S.endReason,t:+t.toFixed(2)}})()''')

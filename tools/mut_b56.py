@@ -3,6 +3,7 @@
 import os,sys,shutil,subprocess,tempfile
 HERE=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));PY=sys.executable
 M=[('body kills again (b55 rule)','game.js','&&mouthHit(f)){gameOver','&&d2<(L*.32+f.s*(f.kind==="shark"?.9:.4))**2){gameOver'),
+   ('mouth kills without body contact','game.js','else{const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);','else{if(eater&&!godMode&&elapsed>EAT.GRACE&&mouthHit(f)){gameOver("eaten");return}const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);'),
    ('mouth never kills','game.js','function mouthHit(f){','function mouthHit(f){return false;'),
    ('mouth on the wrong end (tail)','game.js','dir=f.vx<0?-1:1;return','dir=f.vx<0?1:-1;return'),
    ('no late cap (CAP 2 at max size)','game.js','chaseCap=()=>shark.lvl>=CHASE.MAX_FROM?CHASE.CAP_MAX:CHASE.CAP','chaseCap=()=>CHASE.CAP'),
