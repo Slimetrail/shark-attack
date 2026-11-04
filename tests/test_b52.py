@@ -12,8 +12,8 @@ def check(c,m):
   else: fails.append(m);print('FAIL',m)
 def rd(p):return open(os.path.join(ROOT,p),encoding='utf8').read()
 # --- static checks ---
-check(json.load(open(os.path.join(ROOT,'version.json'))).get('build')=="55",'version.json build 55 (was 52)')
-ih=rd('index.html');check('game.js?v=55' in ih and re.search(r'content="55"',ih) is not None,'index.html meta build 55 and game.js?v=55')
+check(json.load(open(os.path.join(ROOT,'version.json'))).get("build")=="56",'version.json build 56 (was 52)')
+ih=rd('index.html');check('game.js?v=56' in ih and re.search(r'content="56"',ih) is not None,'index.html meta build 56 and game.js?v=56')
 check('sharkattack-v' in rd('sw.js'),'sw.js cache prefix kept (sharkattack-v + build)')
 gj=rd('game.js');check(all('b52' in l for l in gj.split('\n') if re.search(r'diver',l,re.I)),'game.js: "diver" only in the b52 removal note')
 for f in ('index.html','README.md'): check(re.search(r'divers?\b',rd(f),re.I) is None or f=='README.md' and 'No divers' in rd(f),f'{f}: no divers (README only says they were removed)')

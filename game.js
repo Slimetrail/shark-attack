@@ -45,7 +45,7 @@ const DIVE={REF_LVL:6,MIN:.4};const diveK=l=>Math.max(DIVE.MIN,Math.min(1,trueGr
 // then flees again. Same flee speed (fish stay slower than the shark). Never turns into the surface or the floor.
 const DODGE={ON:true,TIRED:true,R:2.5,R_TIRED:1.2,WIG:.15,GAIN:7,ANG_SHALLOW:60,ANG_DEEP:80,CD_SHALLOW:1.4,CD_DEEP:.8,ZIG_P:.25,ZIG_AT:.25,DUR:.45,
  SMALL_Q:.35,SMALL:{ang:85,dur:.35,cd:.8},MID:{ang:55,dur:.55,cd:1.2},NEAR_Q:.7,NEAR:{ang:40,dur:.45,cdS:2.5},CD_LVL:.03,CD_MIN:.6};
-const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.45,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.60,FLEE_MAX:.72,FLEE_SHALLOW:[.62,.66],FLEE_DEEP:[.66,.69],FLEE_LVL:.008,FLEE_CAP:.72,FLEE_NEAR_R:.7,FLEE_NEAR_K:.9,FLEE_BURST_S:1.8,FLEE_TIRED:.65,FLEE_TIRED_S:.8,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,CHASE_MIN_D:.3,MAX_BIG:3,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
+const CREATURES={N:45,SIZE_MIN:6,SIZE_SHALLOW:34,SIZE_DEEP:95,SHARK_P_SHALLOW:.04,SHARK_P_DEEP:.38,FOOD_SHARE:.55,SENSE:.55,SENSE_L:2.4,FLEE_MIN:.60,FLEE_MAX:.72,FLEE_SHALLOW:[.62,.66],FLEE_DEEP:[.66,.69],FLEE_LVL:.008,FLEE_CAP:.72,FLEE_NEAR_R:.7,FLEE_NEAR_K:.9,FLEE_BURST_S:1.8,FLEE_TIRED:.65,FLEE_TIRED_S:.8,CHASE_SHALLOW:.6,CHASE_DEEP:.7,GIVEUP_S:3.5,REST_S:3,GLOW_DEPTH:.8,CHASE_MIN_D:.3,MAX_BIG:2,SPREAD_PX:110,GLOW_MAX:.84,REF_BITE:34};
 // GAME MODES. "timed" = 60 s round. "endless" = no timer, ends only when eaten (Gulp!). b52 (Jeremy t1343u "no more divers"): no divers, nets or ambush.
 // v8b world: endless left/right/down (only the surface is a boundary). Depth layers (fractions of SURF..BED, BED = start of the dark cap):
 const LAYERS={TOP:.3,MID:.62};const VANISH={EDGES:[.3,.62,1,1.6],LVL:[4,6,8,9],FADE:.8,TINY:.3};/* b55 (Jeremy t1627u): an outgrown band is NOT emptied any more: its fish stay and swim, but are too small to eat (f.tiny: size TINY x bite, harmless, not food) *//* b52 (Jeremy): LVL is the internal level (HUD size - 1): b53 rescale for the size-10 cap (Jeremy t1365u): the fish in each depth band are gone from HUD SIZE 5 / 7 / 9 / 10 (lvl>=4/6/8/9); the band below depth 1.6 always has fish. b53: all sizes in comments, tests and reports are HUD sizes. */// top < .3 <= mid < .62 <= deep (deep continues forever below)
@@ -603,8 +603,10 @@ function spawnFish(f,edge,T){const P0=state==="play",C=CREATURES;f.off=false;f.f
  const dir=Math.random()<.5?1:-1,sp=kind==="star"?rnd(3,7):kind==="plankton"?rnd(8,16):kind==="octo"?rnd(15,25):rnd(25,45);f.vx=dir*sp*(f.s>40?.7:1);f.vy=0;f.tiny=false;if(P0&&goneAt(f.y))makeTiny(f)}
 /* b55 (Jeremy t1627u: "way too many larger things that chase ... getting passed level 5 impossible"): from the size where the top band is outgrown
    (VANISH.LVL[0], HUD 5) a new creature that could eat you is turned into food when CHASE.CAP eaters already swim within CHASE.NEAR screens of you. */
-const CHASE={CAP:2,NEAR:.7};
-function chaseCapped(f,kind,sz){if(state!=="play"||shark.lvl<VANISH.LVL[0]||kind==="plankton"||kind==="star"||sz/bite()<EAT.RATIO)return false;let n=0;for(const q of fish)if(q!==f&&!q.off&&!q.tiny&&q.kind!=="plankton"&&q.kind!=="star"&&q.s/bite()>=EAT.RATIO&&Math.abs(q.x-shark.x)<W*CHASE.NEAR&&Math.abs(q.y-shark.y)<H*CHASE.NEAR)n++;return n>=CHASE.CAP}
+/* b56 (Jeremy t1637u "reduce the number of larger sharks a little more, and the same when maxed out"): CAP 2 -> 1 from HUD MAX_FROM+1 (HUD 9-10 / endless max),
+   and fewer deep sharks overall (CREATURES.SHARK_P_DEEP .45 -> .38, MAX_BIG 3 -> 2). */
+const CHASE={CAP:2,NEAR:.7,CAP_MAX:1,MAX_FROM:8};const chaseCap=()=>shark.lvl>=CHASE.MAX_FROM?CHASE.CAP_MAX:CHASE.CAP;
+function chaseCapped(f,kind,sz){if(state!=="play"||shark.lvl<VANISH.LVL[0]||kind==="plankton"||kind==="star"||sz/bite()<EAT.RATIO)return false;let n=0;for(const q of fish)if(q!==f&&!q.off&&!q.tiny&&q.kind!=="plankton"&&q.kind!=="star"&&q.s/bite()>=EAT.RATIO&&Math.abs(q.x-shark.x)<W*CHASE.NEAR&&Math.abs(q.y-shark.y)<H*CHASE.NEAR)n++;return n>=chaseCap()}
 function makeTiny(f){f.tiny=true;f.fade=0;f.danger=false;f.chase=0;f.giant=false;f.s=Math.min(f.s,bite()*VANISH.TINY);spawnStats.tiny=(spawnStats.tiny||0)+1}
 function pickSurfK(){const l=shark.lvl,r=Math.random(),sf=()=>l>=SURFACE.SAIL_LVL&&surfK()*60<LATE.SURF_GONE_PX?2:Math.random()<.35?1:0;return l>=SURFACE.CARGO_LVL?(r<.5?3:r<.85?2:sf()):l>=SURFACE.SAIL_LVL?(r<.6?2:sf()):sf()}
 function rollSurf(s){s.k=pickSurfK();s.vx=(Math.random()<.5?-1:1)*(s.k===3?rnd(12,20):s.k===2?rnd(20,34):rnd(25,45))}
@@ -753,6 +755,12 @@ function beatNow(){if(chip.src)return (AC.currentTime-chip.t0)%chip.buf.duration
 const BODY={HEAD:.48,TAIL:.55,R:.12,FR:.3};
 function onBody(f){const c=Math.cos(shark.ang),sn=Math.sin(shark.ang),L=shark.L,dx=f.x-shark.x,dy=f.y-shark.y;let u=dx*c+dy*sn;const v=-dx*sn+dy*c;
  u=Math.max(-L*BODY.TAIL,Math.min(L*BODY.HEAD,u));const px=dx-u*c,py=dy-u*sn,r=L*BODY.R+fpx(f)*BODY.FR;return px*px+py*py<r*r}
+/* b56 (Jeremy t1637u "only the mouth of a larger fish can kill you"): the kill zone is a small circle at the front of the eater's head
+   (it faces the way it swims: f.vx sign, as drawn). Center MOUTH.*[0] x f.s ahead of its center, radius MOUTH.*[1] x f.s (true size, like bumps).
+   It kills when it touches your body (spine capsule, radius MOUTH.YOU x your length). Anywhere else on its body = bump. */
+const MOUTH={SHARK:[.75,.35],OTHER:[.35,.2],YOU:.14};
+function mouthPt(f){const m=f.kind==="shark"?MOUTH.SHARK:MOUTH.OTHER,dir=f.vx<0?-1:1;return [f.x+dir*f.s*m[0],f.y,f.s*m[1]]}
+function mouthHit(f){const [px,py,r]=mouthPt(f),c=Math.cos(shark.ang),sn=Math.sin(shark.ang),L=shark.L,dx=px-shark.x,dy=py-shark.y;let u=dx*c+dy*sn;u=Math.max(-L*BODY.TAIL,Math.min(L*BODY.HEAD,u));const qx=dx-u*c,qy=dy-u*sn,R=r+L*MOUTH.YOU;return qx*qx+qy*qy<R*R}
 function mouth(){const k=shark.L*.48;return [shark.x+Math.cos(shark.ang)*k,shark.y+Math.sin(shark.ang)*k]}
 // v10 item 6: per-fish dodge state machine. f.dg 0 none / 1 wiggle / 2 sideways snap; f.da = turn from the flee line (rad); f.dcd cooldown; f.dn dodges this chase
 function dodge(f,dt,sprint,dist,L,tvx,tvy,v){const D=DODGE;if(!D.ON||(!sprint&&!D.TIRED)){f.dg=0;return}
@@ -821,7 +829,7 @@ function updPlay(dt){elapsed+=dt;if(mode==="timed")timeLeft-=dt;if(hintT>0)hintT
   if(!inWindow(f.x,f.y)){spawnFish(f,true,f.tile);continue}if(f.bump>0)f.bump-=dt;
   if(shark.air||f.tiny)continue;/* b55: tiny fish are harmless and cannot be eaten */
   if(food){const ex=f.x-mx,ey=f.y-my,rr=er+fpx(f)*.4;if(ex*ex+ey*ey<rr*rr||onBody(f)){const pts=ptsOf(f);addScore(pts);feed(growOf(f));SFX.chomp();shark.chomp=.2;addPop(f.x,f.y,"+"+pts);if(RINGS)for(let i=0;i<4;i++)spark(f.x,f.y,0);/* v9c: no bubble circles around the shark */spawnFish(f,true,f.tile)}}
-  else{const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);/* v9c: danger/bump contact stays on true size (drawn 1.25x bigger would mean unfair early deaths) */if(d2<rr*rr){if(eater&&!godMode&&elapsed>EAT.GRACE){gameOver("eaten");return}/* v9: bigger creatures eat you on contact */
+  else{if(eater&&!godMode&&elapsed>EAT.GRACE&&mouthHit(f)){gameOver("eaten");return}/* b56 (Jeremy t1637u): only the MOUTH of a bigger creature eats you */const rr=L*.32+f.s*(f.kind==="shark"?.9:.4);/* v9c: bump contact stays on true size */if(d2<rr*rr){/* b56: touching its body or top is a harmless bump (shove), not a death */
     f.vy+=dy/dist*80;shark.x-=dx/dist*6;shark.y-=dy/dist*6;if(f.bump<=0){SFX.bump();f.bump=.4}}}}
  for(const s of surf){s.ph+=dt*2;if(shark.lvl<SURFACE.SAIL_LVL&&surf.indexOf(s)>=LATE.N_EARLY){s.zip=Math.max(s.zip,.4);continue}if(s.zip>0){s.zip-=dt;if(s.zip<=0)spawnSurf(s,true);continue}
   s.x+=s.vx*dt;const sk=surfDrawK(s),SD=SURFERS[s.k],hw=(SD.hw||18)*sk,mg=60+hw;if(s.x<camX-mg){s.x+=W+2*mg;rollSurf(s)}else if(s.x>camX+W+mg){s.x-=W+2*mg;rollSurf(s)}/* b52: re-rolled off screen, so boats replace surfers as you grow */const boat=s.k>=2,hy=SURFERS[s.k].hy*sk,cx=s.x,cy=SURF-hy;
@@ -1045,7 +1053,7 @@ window.__sa={get state(){return state},get busy(){return busy},boost,BOOST,doBoo
  clearFood(){for(const f of fish){f.off=true;f.x=-1e6;f.vx=0;f.vy=0}for(const s of surf)s.zip=999},
  placeFishAtMouth(ti,kind){const f=fish[0];kind=kind||(shark.lvl===0?"plankton":"fish");setCreature(f,kind==="plankton"?bite()*.4:TIERS[ti||0].s,kind);f.band=[SURF+6,Infinity];f.vy=0;const [mx,my]=mouth();f.x=mx;f.y=my;f.vx=0;return fish.indexOf(f)},
  placeFishAt(ti,x,y,vx){const f=fish.find(q=>!q.used)||fish[0];setCreature(f,TIERS[ti].s,"fish");f.band=[SURF+6,Infinity];f.x=x;f.y=y;f.vx=vx||0;f.vy=0;return fish.indexOf(f)},
- placeSurfer(i,x,k){const s=surf[i];s.zip=0;s.x=x;s.vx=0;if(k!=null){s.k=k;s.ate=0}},get surfersCaught(){return surfersCaught},surfEaten,SURFACE,VANISH,CHASE,chaseCapped,LATE,lateK,surfDrawK,fpx,TURN3D,pops,addPop,popHit,goneAt,lookMin,eatSurf,spawnSurf,get sprites(){return {sprB,sprF}},
+ placeSurfer(i,x,k){const s=surf[i];s.zip=0;s.x=x;s.vx=0;if(k!=null){s.k=k;s.ate=0}},get surfersCaught(){return surfersCaught},surfEaten,SURFACE,VANISH,CHASE,chaseCapped,chaseCap,MOUTH,mouthPt,mouthHit,LATE,lateK,surfDrawK,fpx,TURN3D,pops,addPop,popHit,goneAt,lookMin,eatSurf,spawnSurf,get sprites(){return {sprB,sprF}},
  render3DShark,sim(sec,bot,step){step=step||1/60;const n=Math.round(sec/step);let i=0;for(;i<n&&state==="play";i++){if(bot)bot(step);updPlay(step)}return i*step},startAs(t,m){sType=t;if(m)setMode(m);startGame()},setMode,get mode(){return mode},get elapsed(){return elapsed},MODE:{MODES},surferCaught,
  setLevel(l){shark.lvl=Math.min(l,MAX_LEVEL);shark.meter=0;buildShark();shark.Lt=shark.L;setWorldK(wK(l))},drawK,wK,DRAW,DEEP,EAT,get worldK(){return worldK},trueGrow,get dead(){return dead},get camX(){return camX},set camX(v){camX=v},set camY(v){camY=v},get tiles(){return tiles},get tileC(){return tileC},updTiles,spawnStats,LAYERS,SPAWN,ALLOWED,ANGLER_D,allowedD,layerOf,depthRaw,DEPTH_LIMIT,CAP_COL,get bandOf(){return bandOf},inWindow,respawnAll(){updTiles(true,true);for(const f of fish)spawnFish(f,false)},drawWater,get FX(){return FX},set FX(v){FX=v},get DPR(){return DPR},get RSK(){return RSK},adapt,ADAPT,ADAPT_ON,DPR_CAP,RS0,SPECIES,PLANK_SP,get specSpr(){return specSpr},spSprite,drawSpecies,render3DShark,TYPES,sharkMax,get pops(){return pops},get depthHintT(){return depthHintT},BODY,onBody,mouth,LOOK,RINGS,lk};
 
