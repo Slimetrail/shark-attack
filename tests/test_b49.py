@@ -8,8 +8,8 @@ def check(c,m):
   if c: passes+=1;print('PASS',m)
   else: fails.append(m);print('FAIL',m)
 rd=lambda f:open(os.path.join(ROOT,f)).read()
-check(json.loads(rd('version.json'))['build']=="56",'version.json says build 56')
-check('<meta name="build" content="56">' in rd('index.html') and 'game.js?v=56' in rd('index.html') and 'game.js?v=56' in rd('sw.js'),'index.html and sw.js name build 56 (cache name follows version.json)')
+check(json.loads(rd('version.json'))['build']=="57",'version.json says build 57')
+check('<meta name="build" content="57">' in rd('index.html') and 'game.js?v=57' in rd('index.html') and 'game.js?v=57' in rd('sw.js'),'index.html and sw.js name build 57 (cache name follows version.json)')
 check('v=50' not in rd('index.html')+rd('sw.js'),'no leftover build 50 file names in index.html or sw.js')
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(.8)
 try:

@@ -14,6 +14,38 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
   - You're safe from fish only while you're in the air.
 - **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!" or "Gulp!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
 
+## Build 57 (Jeremy via Eve, Nov 5)
+- Version/build 57 (version.json, cache `sharkattack-v57`, `game.js?v=57`). Built on b56 (mouth-only kill, fewer chasers). Not deployed.
+- **Slower sail boats and cargo ships.** Same growth curve as before: the bar at internal level `l` needs `3 × 1.25^l`. A surfer is growth 2, about one good fish (food fish are `3 × size/bite`, roughly 1.2–2.5). At the surfer unlock (level 4) that 2 fills 27% of the bar.
+  - Sail boat: points 40 → **25**, growth 5 → **3**. At its unlock (level 6, need 11.44) growth 5 filled 44% of the bar; growth 3 fills 26%, the same fraction a surfer is at its own unlock.
+  - Cargo ship: points 100 → **40**, growth 10 → **4**. At its unlock (level 8, need 17.88) growth 10 filled 56% of the bar; growth 4 fills 22% (two surfers of growth, not five). One size takes about 5 cargo ships instead of 2.
+- **Depth zones are edibility zones.** `depthRaw` 0 is the surface, 1 is the old bed, and there is still no floor (`allowedD` is Infinity).
+  - **Light blue, above depth 1.6:** surfers are edible.
+  - **At depth 1.6:** a sailboat's drawn length has shrunk to a surfer's length (`SAIL_SHRINK`). Surfers stop being edible. Tiny sailboats stay edible (that cutoff does not apply to them). Oil tankers start spawning here, with their own points 55 and growth 5.
+  - **At depth 4.0:** the water is black and cargo ships can no longer be eaten. Deeper than that is the same black, and you can keep swimming.
+  - Sail size, the surfer cutoff, tanker spawns and the cargo cutoff follow the deepest depth reached this round, so the rules are still on when you come back up to bite. The picture follows where you are right now.
+- **Oil tanker.** Own code-drawn side view (round tanks, a pipe, a small bridge), one baked sprite in the existing surface slots. No new creature cap.
+- **Deeper sharks keep growing.** Below the mid layer, sharks (and other deep creatures already bigger than you) scale by `1 + DEPTH_K × (depthRaw − 0.62)` with `DEPTH_K` 0.85. This does not fade out with level and does not stop at depth 1. Edible fish grow at most 1.5× and stay under 0.84× your bite. The old screen-width cap is not a depth ceiling. HUD size still stops at 10 (`MAX_LEVEL` 9, from b53): by then every band above depth 1.6 is too small to eat, so the last size is fed by the deeper, larger fish, and cargo stops once the black depth has been reached. The meter does not keep going past size 10.
+- **Light travels further before it goes dark.** Old and new thresholds (depthRaw):
+
+  | what | old | new |
+  |---|---|---|
+  | vignette starts | 0.34 | 1.6 (surfer / sail edge) |
+  | vignette full | 0.86 | 4.0 (cargo / black edge) |
+  | gradient reaches black | ~1.08 (old bed + a bit) | 4.0, then the same black continues |
+  | `#2eaedb` surface | 0 | 0 |
+  | `#1b8dc4` | ~0.065 | 1.28 |
+  | `#12649f` | ~0.22 | 2.2 |
+  | `#0f4479` | ~0.41 | 2.8 |
+  | `#0a2652` | ~0.63 | 3.4 |
+  | `#06122e` | ~0.86 | 3.8 |
+  | `#03070f` black | ~1.08 | 4.0 |
+  | depth-meter bands | 0 / 0.30 / 0.62 / 0.86 of the old bed | 0 / 1.6 / 2.8 / 3.8, meter full at depth 4 |
+  | fog alphas | .14, .30 at ~0.32, .47 at ~0.76, .60 at ~1.08 | .12 at 0, .20 at 1.6, .34 at 2.8, .50 at 4.0 |
+
+  The stops step down in brightness (about 150, 140, 120, 105, 87, 61, 35, 18, 7 luma) with no jump bigger than the old mid-water steps. The late-game water lift is unchanged, so size 9–10 stays readable. Rock spires are not drawn in the light-blue zone (they used to be near-black from depth 0.62, which put a dark hole in water that is still bright). From depth 1.6 they fade in softly toward the black edge. Zone edges stayed 1.6 and 4.0.
+- Tests: `tests/test_b57.py`. b56 mouth-only kill is still checked in `tests/test_b56.py`.
+
 ## Build 56 (Jeremy t1637u, via Eve)
 - Version/build 56 (version.json, cache `sharkattack-v56`, `game.js?v=56`).
 - **Only the mouth kills.** A bigger creature eats you only when its drawn jaw (`MOUTH`, a small circle at the front of its head, on the side it swims toward) touches your body. Touching its top, belly, side or tail is a harmless bump (a small shove). Your own mouth and body still eat prey the same way.

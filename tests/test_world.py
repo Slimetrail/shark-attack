@@ -90,12 +90,12 @@ try:
   # harness: a rare death in these placed-fish setups (seen ~1 in 4 runs, cause not found; god mode is on) would end the round and
   # break the later tests, so restart the round here if needed. Not a gameplay change.
   ev('()=>{if(__sa.state!=="play"){__sa.startAs("white");__sa.god=true;__sa.timeLeft=1e6}}');pg.wait_for_timeout(300)
-  # colour-shift: one baked gradient, sampled at surface/mid/deep/below seabed
-  r=ev('''()=>{__sa.clearFood();const c=document.getElementById("c"),g=c.getContext("2d"),d=devicePixelRatio,H=innerHeight,out=[];
-     for(const fr of [.05,.45,.85,1.6]){__sa.camY=__sa.SURF+fr*(__sa.BED-__sa.SURF)-H/2;__sa.drawWater(1);const im=g.getImageData(0,0,c.width,c.height).data,ls=[];
+  # colour-shift: one baked gradient. b57 samples the edibility zones (surface, surfer zone, sail zone, black cargo edge), not the old bed.
+  r=ev('''()=>{__sa.clearFood();const c=document.getElementById("c"),g=c.getContext("2d"),H=innerHeight,Z=__sa.ZONE,out=[];
+     for(const fr of [.05,Z.SURF*.5,(Z.SURF+Z.CARGO)/2,Z.CARGO]){__sa.camY=__sa.SURF+fr*(__sa.BED-__sa.SURF)-H/2;__sa.drawWater(1);const im=g.getImageData(0,0,c.width,c.height).data,ls=[];
       for(let k=0;k<200;k++){const x=Math.floor(Math.random()*c.width),y=Math.floor(c.height*(.45+Math.random()*.1));const i=(y*c.width+x)*4;ls.push(.3*im[i]+.59*im[i+1]+.11*im[i+2])}ls.sort((a,b)=>a-b);out.push(ls[100])}__sa.respawnAll();return out}''')
-  check(r[0]>r[1]>r[2]>=r[3]-2,f'water darkens with depth (median luma surface/mid/deep/cap {[round(x) for x in r]})')
-  check(r[0]-r[2]>60 and r[3]<20,'surface clearly lighter, deep cap near black')
+  check(r[0]>r[1]>r[2]>r[3],f'b57: water darkens across surfer zone, sail zone, black edge (median luma {[round(x) for x in r]})')
+  check(r[0]-r[3]>60 and r[3]<20 and r[1]>40,f'b57: surface clearly lighter than the black cargo edge; mid surfer-zone is still bright (not the old bed-black) {[round(x) for x in r]}')
   # D) prey flee speeds + bounded minnow chase bot: a small fish flees at 0.60-0.85x YOUR top speed (v10: by depth + level, cap .85; tires to .40), a bigger shark chases slower than
   # your top speed, and a bot steering straight at a fleeing minnow-sized fish catches it within 12 s of game time.
   # v9: the start gap is s.L*1.25 (was H*.25 = 1.25 x the old fixed drawn length) because the drawn shark now grows per stage.
