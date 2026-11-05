@@ -5,7 +5,7 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
 ## How to play
 - **Steer:** slide your finger and the shark swims in the direction you slide (it faces that way). The farther you keep sliding, the faster it goes, building up gradually. If you lift your finger it drifts and slows down.
 - **Leap:** *Swim down to build speed, then swim up fast to leap!* Leap height depends on speed × run-up distance at speed, up to a cap. Too little just bumps the surface. The power gauge shows your launch power.
-- **Surfers** can only be caught in the air. Kneeling surfers are worth 15 and standing surfers 20 (build 52).
+- **Surfers** can only be caught in the air, and only through HUD size 8. From size 9 they are too small to eat. Kneeling surfers are worth 15 and standing surfers 20 (build 52).
 - **Landing on the beat:** if a landing comes within ±80 ms of the music beat, it gets nudged onto the beat for a +1 perfect bonus. The beat follows the gameplay track's eighth-note pulse, `BEAT.CHIPTUNE_BPM` = 80, so a beat every 0.75 s. `PLACEHOLDER_BPM` (100) is only used by the fallback loop.
 - **Fish:**
   - Eat smaller fish to fill the growth meter. The shark keeps growing (no size cap). Top speed stops rising at HUD size 10.
@@ -13,6 +13,11 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
   - Fish the same size as you just bump you.
   - You're safe from fish only while you're in the air.
 - **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!" or "Gulp!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
+
+## Build 59 (owner, Nov 5)
+- Version/build 59 (`version.json`, cache `sharkattack-v59`, `game.js?v=59`). A small fix on b58.
+- **Surfers stop at HUD 9.** b57 stopped surfers when the tiny-sail depth was reached. b58 made them food at every depth, with no size cutoff. From HUD 9 (the same size cargo ships become food, `SURF_OFF`) a surfer is too small: drawn at the tiny-band fraction, not food, and no bump. HUD 8 and below they are still food. Sail, cargo, tanker, and deep-fish stages are unchanged.
+- Tests: `tests/test_b59.py`. `tests/test_b58.py` only changes the surfer expectation.
 
 ## Build 58 (owner, Nov 5)
 - Version/build 58 (`version.json`, cache `sharkattack-v58`, `game.js?v=58`). Built on b57. Not deployed.

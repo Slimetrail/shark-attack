@@ -14,7 +14,7 @@ def check(c,m):
   print(('PASS ' if c else 'FAIL ')+m);ok+=bool(c);bad+=not c
 rd=lambda n:open(os.path.join(ROOT,n)).read()
 src=rd('game.js');html=rd('index.html');sw=rd('sw.js')
-check(json.loads(rd('version.json'))['build']=='58' and 'content="58"' in html and 'game.js?v=58' in html and 'game.js?v=58' in sw and 'PREFIX="sharkattack-v"' in sw,'[read] build 58 in version.json, index.html, sw.js (cache sharkattack-v58)')
+check(json.loads(rd('version.json'))['build']=='59' and 'content="59"' in html and 'game.js?v=59' in html and 'game.js?v=59' in sw and 'PREFIX="sharkattack-v"' in sw,'[read] build 59 in version.json, index.html, sw.js (cache sharkattack-v59)')
 check('MAX SIZE' not in src and 'MAX_LEVEL' not in src,'[read] game.js has no MAX SIZE label and no MAX_LEVEL cap')
 check('doubleclick' not in html.lower() and 'googlesyndication' not in html.lower() and 'adsbygoogle' not in html.lower(),'[read] no ad tags in index.html')
 try:
@@ -50,7 +50,7 @@ try:
     const marks={shallow:0,black:__sa.ZONE.CARGO+1},kinds=[0,2,3,4],huds=[6,7,8,9,10,11,12,13],out={};
     for(const h of huds){out[h]={};for(const name in marks){out[h][name]={};for(const k of kinds)out[h][name][k]=eat(k,h,marks[name])}}
     return out}''')
-  want={6:{0:True,2:False,3:False,4:False},7:{0:True,2:True,3:False,4:False},8:{0:True,2:True,3:False,4:False},9:{0:True,2:True,3:True,4:False},10:{0:True,2:False,3:True,4:True},11:{0:True,2:False,3:True,4:True},12:{0:True,2:False,3:True,4:True},13:{0:True,2:False,3:False,4:False}}
+  want={6:{0:True,2:False,3:False,4:False},7:{0:True,2:True,3:False,4:False},8:{0:True,2:True,3:False,4:False},9:{0:False,2:True,3:True,4:False},10:{0:False,2:False,3:True,4:True},11:{0:False,2:False,3:True,4:True},12:{0:False,2:False,3:True,4:True},13:{0:False,2:False,3:False,4:False}}
   names={0:'surfer',2:'sail',3:'cargo',4:'tanker'}
   bad_cells=[]
   for h,row in want.items():

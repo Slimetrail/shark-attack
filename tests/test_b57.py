@@ -14,7 +14,7 @@ def check(c,m):
   global ok,bad
   print(('PASS ' if c else 'FAIL ')+m);ok+=bool(c);bad+=not c
 rd=lambda n:open(os.path.join(ROOT,n)).read()
-check(json.loads(rd('version.json'))['build']=='58' and 'content="58"' in rd('index.html') and 'game.js?v=58' in rd('index.html') and 'game.js?v=58' in rd('sw.js') and 'PREFIX="sharkattack-v"' in rd('sw.js'),'[read] build 58 in version.json, index.html, sw.js (cache name is sharkattack-v + build)')
+check(json.loads(rd('version.json'))['build']=='59' and 'content="59"' in rd('index.html') and 'game.js?v=59' in rd('index.html') and 'game.js?v=59' in rd('sw.js') and 'PREFIX="sharkattack-v"' in rd('sw.js'),'[read] build 59 in version.json, index.html, sw.js (cache name is sharkattack-v + build)')
 try:
  with sync_playwright() as p:
   b=p.chromium.launch()
@@ -50,8 +50,8 @@ try:
     const sc=__sa.score,can=__sa.canEatSurf({k:k});for(let i=0;i<8;i++){__sa.sim(1/60,()=>{s.air=!!air;s.vx=0;s.vy=0;s.g=0;s.spd=0;s.ang=0;s.y=__sa.SURF+(air?-16:s.L*.1);const q=__sa.surf[0];q.zip=0;q.k=k;q.vx=0;q.x=__sa.mouth()[0]},1/60)}
     return {sc:__sa.score-sc,can,mark:__sa.depthMark}};
     const z=__sa.ZONE;return {surfShallow:eat(0,0,true),surfDeep:eat(0,z.SURF,true),sailDeep:eat(2,z.SURF,false),sailBlack:eat(2,z.CARGO+1,false),cargoMid:eat(3,z.SURF,false),cargoBlack:eat(3,z.CARGO,false),tank:eat(4,z.SURF,false),tankEarly:eat(4,0,false)}}''')
-  check(r['surfShallow']['sc']>0 and r['surfShallow']['can'] is True,f'[tested] at HUD 9 a surfer is edible at the surface {r["surfShallow"]}')
-  check(r['surfDeep']['sc']>0 and r['surfDeep']['can'] is True,f'[tested] b58: a surfer is still edible after the old depth transition (size decides, this shark is HUD 9) {r["surfDeep"]}')
+  check(r['surfShallow']['sc']==0 and r['surfShallow']['can'] is False,f'[tested] b59: at HUD 9 a surfer is too small, even at the surface {r["surfShallow"]}')
+  check(r['surfDeep']['sc']==0 and r['surfDeep']['can'] is False,f'[tested] b59: at HUD 9 a surfer is too small after a deep dive too (size, not depth) {r["surfDeep"]}')
   check(r['sailDeep']['sc']>0 and r['sailDeep']['can'] is True and r['sailBlack']['sc']>0,f'[tested] a sailboat is edible at the transition and in the black zone at HUD 9 {r["sailDeep"]} {r["sailBlack"]}')
   check(r['cargoMid']['sc']>0 and r['cargoBlack']['sc']>0 and r['cargoBlack']['can'] is True,f'[tested] b58: cargo stays edible in the black zone at HUD 9 (size retires it later, not depth) {r["cargoMid"]} {r["cargoBlack"]}')
   check(r['tank']['sc']==0 and r['tank']['can'] is False and r['tankEarly']['sc']==0,f'[tested] b58: an oil tanker is not food yet at HUD 9, deep or shallow (food from HUD 10) {r["tank"]} {r["tankEarly"]}')
@@ -67,7 +67,7 @@ try:
       ordered:stops.every((s,i)=>i===0||s[0]>stops[i-1][0])&&stops[0][0]===0}}''')
   check(L['surfStop'] and L['cargoStop'] and L['fogSurf'] and L['fogEnd'] and L['ordered'] and L['meter']==L['meterAt'],f'[read] colour stops, fog and the depth meter use the edibility edges (light until {L["meter"]}, black at cargo) {L}')
   pix=J('''()=>new Promise(res=>{const c=document.getElementById("c"),g=c.getContext("2d"),k=c.width/innerWidth;
-    const lum=()=>{const x=Math.round(innerWidth*.12*k),y=Math.round(innerHeight*.55*k),d=g.getImageData(x,y,1,1).data;return .2126*d[0]+.7152*d[1]+.0722*d[2]};
+    const lum=()=>{const x=Math.max(0,Math.round(innerWidth*.12*k)-6),y=Math.max(0,Math.round(innerHeight*.55*k)-6),d=g.getImageData(x,y,12,12).data,a=[];for(let i=0;i<d.length;i+=4)a.push(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]);a.sort((p,q)=>p-q);return a[a.length>>1]};
     __sa.startAs("white","endless");__sa.god=true;__sa.setLevel(2);__sa.clearFood();__sa.depthMark=0;__sa.lightProbe=true;for(const f of __sa.fish){f.off=true;f.retry=0}for(const s of __sa.surf)s.zip=999;
     const depths=[.25,.9,1.5,2.2,2.8,3.4,4,4.8],out=[];
     const step=i=>{if(i>=depths.length){__sa.lightProbe=false;res(out);return}const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*depths[i];s.spd=0;s.air=false;__sa.camY=Math.max(0,s.y-innerHeight*.55);for(const f of __sa.fish){f.off=true;f.retry=0}
@@ -85,7 +85,7 @@ try:
   check(sz['e']>sz['c']>sz['a']*1.15 and sz['k']>0,f'[tested] shark spawn size grows past depth 1 (depth .9 / 2.5 / 5 averages {sz["a"]:.0f} / {sz["c"]:.0f} / {sz["e"]:.0f}, DEPTH_K {sz["k"]})')
   check(sz['tinyAbove'] is True and sz['liveBelow'] is True,f'[tested] at HUD 10, fish above 1.6 are too small to eat and fish below 1.6 are not {sz}')
   # endless: swimming past the black water does not hit a floor
-  r=J('''()=>{__sa.startAs("white","endless");__sa.god=true;__sa.setLevel(3);const s=__sa.shark,black=__sa.SURF+__sa.ZONE.CARGO*(__sa.BED-__sa.SURF);s.air=false;s.y=black+innerHeight;s.spd=0;s.ang=1.2;let y0=s.y;__sa.sim(1.2,()=>{s.ang=1.2;Object.assign(__sa.touch,{on:true,dir:1.4,drive:1,lastMove:performance.now()+9e9})});return {y0,y1:s.y,st:__sa.state,deeper:s.y>y0+40}}''')
+  r=J('''()=>{__sa.startAs("white","endless");__sa.god=true;__sa.setLevel(3);__sa.clearFood();const s=__sa.shark,black=__sa.SURF+__sa.ZONE.CARGO*(__sa.BED-__sa.SURF);s.air=false;s.y=black+innerHeight;s.spd=0;s.ang=1.2;let y0=s.y;__sa.sim(1.2,()=>{s.ang=1.2;Object.assign(__sa.touch,{on:true,dir:1.4,drive:1,lastMove:performance.now()+9e9})});return {y0,y1:s.y,st:__sa.state,deeper:s.y>y0+40}}''')
   check(r['st']=='play' and r['deeper'] and r['y1']>r['y0'],f'[tested] past the black water the shark keeps swimming (no floor) {r}')
   # b56 mouth-only kill still holds
   r=J('''()=>{const scene=(mouth)=>{__sa.startAs("white","endless");__sa.god=false;__sa.setLevel(4);__sa.sim(2.2);__sa.clearFood();const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*1.2;s.x=__sa.camX+innerWidth/2;s.ang=0;s.spd=0;__sa.touch.on=false;for(let k=0;k<40;k++){s.spd=0;__sa.sim(1/60)}__sa.clearFood();s.x=__sa.camX+innerWidth/2;

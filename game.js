@@ -23,13 +23,13 @@ const SURFERS=[{kind:"kneel",pts:15,hy:16,grow:2,label:"SPLASH!"},{kind:"stand",
    New sail grow 3 fills 26% at lvl 6 (same fraction a surfer is at its own unlock, 1.5 fish). New cargo grow 4 fills 22% at lvl 8 (two surfers, not five).
    Points follow: sail 40→25, cargo 100→40. Tanker is the next surface prey (55 pts, grow 5 = 28% of the bar at lvl 8), still a step, not a skip.
    Fish stay about 1-4 points. */
-const SURFACE={SAIL_LVL:6,SAIL_OFF:9,CARGO_LVL:8,CARGO_OFF:12,TANK_LVL:9,TANK_OFF:12,DEEP_LVL:11,MINK:.0005};/* b55: surfers HUD 5 (GROW.SURF_LVL 4), sail boats HUD 7, cargo ships HUD 9 */
+const SURFACE={SAIL_LVL:6,SAIL_OFF:9,CARGO_LVL:8,CARGO_OFF:12,TANK_LVL:9,TANK_OFF:12,DEEP_LVL:11,SURF_OFF:8,MINK:.0005};/* b55: surfers HUD 5 (GROW.SURF_LVL 4), sail boats HUD 7, cargo ships HUD 9 */
 /* b58 (owner: t1365u reversed): prey stage is HUD size (internal level + 1), never dive depth.
    Sail boats are food at HUD 7-9 (lvl >= SAIL_LVL and < SAIL_OFF). HUD 10+ they are too small: not food, harmless.
    Cargo ships are food at HUD 9-12 (lvl >= CARGO_LVL and < CARGO_OFF). HUD 13+ they are too small: not food, harmless.
    Oil tankers are food from HUD 10 until that same cargo retirement (HUD 13). Before HUD 10 they are not food.
    HUD 12 overlaps on purpose: cargo is still food, and DEEP_LVL turns on black-zone food fish.
-   Surfers stay food from HUD 5 at any depth. Depth still chooses colours and where craft spawn. */
+   b59: surfers are food from HUD 5 until cargo starts (SURF_OFF, HUD 9). From then they are too small: drawn tiny, not food, no bump. Depth still chooses colours and where craft spawn. */
 const DEEP_FOOD={LO:.4,HI:.84,P:.8};/* b58: from HUD 12, this share of black-zone spawns are edible deep-dark fish, this fraction of bite */
 /* b57 zones, in depthRaw (0 = surface, 1 = old BED). No depth ceiling: allowedD stays Infinity and nothing stops the shark.
    SURF is where a sailboat's drawn length has shrunk to a surfer's length. Water stays light blue above it; oil tankers start spawning here.
@@ -518,7 +518,7 @@ function pastSurf(){return diveD()>=ZONE.SURF-1e-6}
 function pastCargo(){return diveD()>=ZONE.CARGO-1e-6}
 function depthFrac(dRaw){const d=Math.max(0,+dRaw||0);return ZONE.CARGO>0?Math.max(0,Math.min(1,d/ZONE.CARGO)):0}/* b57: coloured track is full at the black edge */
 function depthMetres(){return Math.max(0,Math.round((shark.y-SURF)/Math.max(1,H)*60))}/* b58: no floor. The number keeps climbing past the black edge and at any size */
-function surfDrawK(s){const k=surfK();if(s.k<2)return k;const SD=SURFERS[s.k],floor=(s.k===4?LATE.TANK_L:s.k===3?LATE.CARGO_L:LATE.SAIL_L)*shark.L/(2*(SD.hw||1));let draw=Math.max(k,floor);if(s.k===2)draw*=sailDepthK();return Math.max(SURFACE.MINK,draw)}/* sail floor is the surface size; depth shrinks it with no new floor */
+function surfDrawK(s){const k=surfK();if(s.k<2)return shark.lvl>=SURFACE.SURF_OFF?Math.max(SURFACE.MINK,k*VANISH.TINY):k;/* b59: from HUD 9 a surfer draws at the tiny-band fraction, so it reads as too small */const SD=SURFERS[s.k],floor=(s.k===4?LATE.TANK_L:s.k===3?LATE.CARGO_L:LATE.SAIL_L)*shark.L/(2*(SD.hw||1));let draw=Math.max(k,floor);if(s.k===2)draw*=sailDepthK();return Math.max(SURFACE.MINK,draw)}/* sail floor is the surface size; depth shrinks it with no new floor */
 function fpx(f){const v=f.s*lk(f);if(f.kind==="plankton"||lateK()<=0)return v;if(f.kind==="shark")return rel(f)<0?Math.max(v,LATE.FISH_PX*.4*lateK()):v;/* small food sharks are drawn 2.5x their size: floor 0.4 x 18 -> 18 px long */return Math.max(v,LATE.FISH_PX*lateK())}/* b52: surfers keep shrinking with the world. b57 deep growth scales this same sprite (a blit); chase cap and MAX_BIG still limit how many big ones exist */
 // v9c (Jeremy: "the shark the same size but everything else bigger"): every creature except plankton is DRAWN (and touches) LOOK.K x its
 // true size f.s; eat/bump/danger is still judged from f.s vs bite() (rel, EAT.RATIO unchanged), so relative sizes keep the same proportions.
@@ -855,7 +855,7 @@ function updDead(dt){dead.t+=dt;shark.y+=dt*22;camX+=(shark.x-W/2-camX)*Math.min
 function surferCaught(){surfersCaught++}
 const surfEaten=[0,0,0,0,0];
 /* b58: too-small craft are not food and do not bump (the b55 tiny-band rule, by size). Depth is not part of this. */
-function surfRetired(s){const k=s.k|0;if(k===2)return shark.lvl>=SURFACE.SAIL_OFF;if(k===3)return shark.lvl>=SURFACE.CARGO_OFF;if(k===4)return shark.lvl>=SURFACE.TANK_OFF;return false}
+function surfRetired(s){const k=s.k|0;if(k<2)return shark.lvl>=SURFACE.SURF_OFF;if(k===2)return shark.lvl>=SURFACE.SAIL_OFF;if(k===3)return shark.lvl>=SURFACE.CARGO_OFF;if(k===4)return shark.lvl>=SURFACE.TANK_OFF;return false}
 function canEatSurf(s){const k=s.k|0;if(surfRetired(s))return false;if(k<2)return shark.lvl>=GROW.SURF_LVL;if(k===2)return shark.lvl>=SURFACE.SAIL_LVL;if(k===3)return shark.lvl>=SURFACE.CARGO_LVL;if(k===4)return shark.lvl>=SURFACE.TANK_LVL;return false}
 function eatSurf(s,cx,cy){const SD=SURFERS[s.k],pts=SD.pts;addScore(pts);if(s.k<2)feedSurfer();else feed(SD.grow);SFX.pop();if(s.k>=2)SFX.chomp();shark.chomp=.25;addPop(cx,cy-20-(s.k>=2?30:0),"+"+pts+" "+SD.label,true);const n=s.k===4?22:s.k===3?18:s.k===2?12:8;for(let i=0;i<n;i++)spark(cx+(s.k>=2?rnd(-1,1)*(SD.hw||0)*surfDrawK(s)*.6:0),SURF,1);surfEaten[s.k]++;s.zip=s.k>=2?2.4:1.6;if(s.k<2)surferCaught();window.__saLastSurfEat={k:s.k,pts,t:elapsed}}
 function updPlay(dt){elapsed+=dt;noteDepth();if(mode==="timed")timeLeft-=dt;if(hintT>0)hintT-=dt;if(mode==="timed"&&timeLeft<=0){timeLeft=0;gameOver("time");return}
@@ -903,7 +903,7 @@ function updPlay(dt){elapsed+=dt;noteDepth();if(mode==="timed")timeLeft-=dt;if(h
   if(shark.air){const ex=cx-mx,ey=cy-my,rr=(L*.22+(boat?hw*.8:18*sk))*trait("catchR");
     if(ex*ex+ey*ey<rr*rr){if(surfRetired(s)){}else if(canEatSurf(s))eatSurf(s,cx,cy);else if(!(s.bump>0)){s.bump=.8;SFX.bump()}}}
   else if(boat&&Math.abs(cx-mx)<hw+L*.2&&my<SURF+L*.35){if(surfRetired(s)){}else if(canEatSurf(s))eatSurf(s,cx,cy);else if(!(s.bump>0)){s.bump=.8;SFX.bump()}}/* b52: boats can also be bitten from below at the surface. b58: retired (too-small) craft are harmless */
-  else if(!boat&&Math.abs(cx-mx)<L*.4&&my<SURF+L*.3&&!(s.bump>0)){s.bump=.6;s.vx=(cx>shark.x?1:-1)*60;SFX.bump();addPop(cx,cy-20,"boing")}
+  else if(!boat&&!surfRetired(s)&&Math.abs(cx-mx)<L*.4&&my<SURF+L*.3&&!(s.bump>0)){s.bump=.6;s.vx=(cx>shark.x?1:-1)*60;SFX.bump();addPop(cx,cy-20,"boing")}/* b59: a too-small surfer gives no bump */
   if(s.bump>0)s.bump-=dt}
  for(const p of parts)if(p.t>0){p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.94;p.vy=p.vy*.94+140*dt}}
 // MIP LEVELS: sprites are baked large; drawing them shrunk 4-10x is costly (the filter samples the big source every frame).
@@ -1004,13 +1004,13 @@ function drawWater(t){darkSetup();X.setTransform(1,0,0,1,0,0);const top=camY,bot
  X.setTransform(1,0,0,1,0,0);if(FX>=1&&!busy&&fogSpr&&bot>SURF){X.imageSmoothingEnabled=false;const w0=Math.max(SURF,top),k=512/(BLACK-SURF),h0=Math.max(.01,Math.min(512,(Math.min(bot,BLACK)-w0)*k));if(h0>.01)X.drawImage(fogSpr,0,Math.min(511,(w0-SURF)*k),1,h0,0,Math.floor((w0-top)*DPR),C.width,Math.ceil(h0/k*DPR)+1);X.imageSmoothingEnabled=true}// v10 gfx step 2 (skipped on a busy screen to stay in the perf budget): depth fog. b57: stretched to the cargo edge, not the old bed
  {const lk2=lateK();if(lk2>0&&bot>SURF){const top=camY,cw=C.width,y0=Math.max(SURF,top);X.globalCompositeOperation="lighter";X.globalAlpha=lk2;X.fillStyle=LATE.LIFT;X.fillRect(0,Math.floor((y0-top)*DPR),cw,Math.ceil((bot-y0)*DPR)+1);X.globalAlpha=1;X.globalCompositeOperation="source-over"}}/* b53: late-game deep-water lift *//* drawn after the depth fog so the whole deep screen is lifted evenly */
  /* b48: no seabed strip, vents or lava sparks: the water just keeps getting darker, down forever. */
- // floating particles (screen space, parallax)
- X.setTransform(DPR,0,0,DPR,0,0);const d0=Math.max(0,depthRaw(camY+H/2)),lit=d0<ZONE.SURF,n=FX===0?0:busy||FX===1?14:lit?46:80;{const m=FX===0?0:busy||FX===1?16:murk.length;for(let L=0;L<2;L++){X.fillStyle=L?"rgba(42,69,88,.4)":"rgba(42,69,88,.25)";const k=L?.8:.35;for(let i=L;i<m;i+=2){const p=murk[i],x=(((p.x*W-camX*k+Math.sin(t*.3+i)*6)%W)+W)%W,y=(((p.y*H-t*p.sp*.4-camY*k)%H)+H)%H,r=p.r*(1+L);if(y+top<SURF)continue;X.fillRect(x-r,y-r,r*2,r*2)}}}X.fillStyle=lit?"rgba(200,225,240,.3)":"rgba(110,130,150,.3)";/* b57: bright specks through the surfer zone (was murky from depthOf .3) */
+ // floating particles (screen space, parallax). The brightness probe skips them: one drifting speck on the sample pixel made that check flaky.
+ X.setTransform(DPR,0,0,DPR,0,0);if(!lightProbe){const d0=Math.max(0,depthRaw(camY+H/2)),lit=d0<ZONE.SURF,n=FX===0?0:busy||FX===1?14:lit?46:80;{const m=FX===0?0:busy||FX===1?16:murk.length;for(let L=0;L<2;L++){X.fillStyle=L?"rgba(42,69,88,.4)":"rgba(42,69,88,.25)";const k=L?.8:.35;for(let i=L;i<m;i+=2){const p=murk[i],x=(((p.x*W-camX*k+Math.sin(t*.3+i)*6)%W)+W)%W,y=(((p.y*H-t*p.sp*.4-camY*k)%H)+H)%H,r=p.r*(1+L);if(y+top<SURF)continue;X.fillRect(x-r,y-r,r*2,r*2)}}}X.fillStyle=lit?"rgba(200,225,240,.3)":"rgba(110,130,150,.3)";/* b57: bright specks through the surfer zone (was murky from depthOf .3) */
  for(let i=0;i<n;i++){const p=snow[i],x=(((p.x*W-camX*.5)%W)+W)%W,y=(((p.y*H-t*p.sp*(lit?-1:1)-camY*.5)%H)+H)%H,r=p.r*(lit?1.6:1);if(y+top<SURF)continue;X.fillRect(x-r,y-r,r*2,r*2)}
- if(n&&!busy&&FX>=2){/* v10 gfx step 4: a few rising bubbles */X.strokeStyle="rgba(200,230,255,.35)";X.lineWidth=1;X.beginPath();for(let i=0;i<n;i+=7){const p=snow[i],x=(((p.x*W*1.3-camX*.7+Math.sin(t*2+i)*3)%W)+W)%W,y=(((p.y*H-t*(20+p.sp*2)-camY*.7)%H)+H)%H,r=1+p.r*1.4;if(y+top<SURF+6)continue;X.moveTo(x+r,y);X.arc(x,y,r,0,6.3)}X.stroke()}
+ if(n&&!busy&&FX>=2){/* v10 gfx step 4: a few rising bubbles */X.strokeStyle="rgba(200,230,255,.35)";X.lineWidth=1;X.beginPath();for(let i=0;i<n;i+=7){const p=snow[i],x=(((p.x*W*1.3-camX*.7+Math.sin(t*2+i)*3)%W)+W)%W,y=(((p.y*H-t*(20+p.sp*2)-camY*.7)%H)+H)%H,r=1+p.r*1.4;if(y+top<SURF+6)continue;X.moveTo(x+r,y);X.arc(x,y,r,0,6.3)}X.stroke()}}
  const sy=SURF-top;if(sy>-10&&sy<H+10){X.lineCap="round";/* v10 gfx step 2: white swoosh marks dropped */
   X.strokeStyle="#e8fbff";X.lineWidth=4;X.beginPath();const st=busy?46:24,x0=-(((camX%st)+st)%st);for(let x=x0;x<=W+st;x+=st){const y=sy+Math.sin(t*2+(x+camX)*.05)*2.5;x===x0?X.moveTo(x,y):X.lineTo(x,y)}X.stroke()}}
-function drawFx(dt,screen){X.setTransform(DPR,0,0,DPR,screen?0:-camX*DPR,screen?0:-camY*DPR);X.fillStyle="#e8fbff";X.strokeStyle=P.ink;X.lineWidth=1.5;for(const p of parts)if(p.t>0){const r=3+p.t*8;X.beginPath();X.arc(p.x,p.y,r,0,7);X.fill();X.stroke()}
+function drawFx(dt,screen){if(lightProbe)return;/* brightness probe reads water only; a spark on the sample pixel is not the water */X.setTransform(DPR,0,0,DPR,screen?0:-camX*DPR,screen?0:-camY*DPR);X.fillStyle="#e8fbff";X.strokeStyle=P.ink;X.lineWidth=1.5;for(const p of parts)if(p.t>0){const r=3+p.t*8;X.beginPath();X.arc(p.x,p.y,r,0,7);X.fill();X.stroke()}
  X.textAlign="center";X.textBaseline="middle";X.lineJoin="round";for(const p of pops)if(p.t>0){p.t-=dt*1.1;p.y-=dt*40;X.globalAlpha=Math.min(1,p.t*2);if(p.big){/* b52: bonus prey pop, bigger and gold */X.font="900 34px system-ui,sans-serif";X.lineWidth=8;X.strokeStyle="#3a2600";X.strokeText(p.txt,p.x,p.y);const gg=X.createLinearGradient(0,p.y-17,0,p.y+17);gg.addColorStop(0,"#fff3b0");gg.addColorStop(.5,"#ffc61a");gg.addColorStop(1,"#c98a00");X.fillStyle=gg;X.fillText(p.txt,p.x,p.y)}else{X.font="900 24px system-ui,sans-serif";X.lineWidth=6;X.strokeStyle=P.ink;X.strokeText(p.txt,p.x,p.y);X.fillStyle=P.yel;X.fillText(p.txt,p.x,p.y)}}X.globalAlpha=1;X.textAlign="left"}
 
 // ---------- loop ----------
