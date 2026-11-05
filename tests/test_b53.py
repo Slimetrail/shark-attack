@@ -11,8 +11,8 @@ def check(c,m):
   if c: passes+=1;print('PASS',m)
   else: fails.append(m);print('FAIL',m)
 def rd(p):return open(os.path.join(ROOT,p),encoding='utf8').read()
-check(json.load(open(os.path.join(ROOT,'version.json'))).get("build")=="56",'version.json build 56')
-ih=rd('index.html');check('game.js?v=56' in ih and 'content="56"' in ih and 'game.js?v=56' in rd('sw.js'),'index.html meta 53, game.js?v=56, sw.js shell game.js?v=56 (cache sharkattack-v54)')
+check(json.load(open(os.path.join(ROOT,'version.json'))).get("build")=="57",'version.json build 57')
+ih=rd('index.html');check('game.js?v=57' in ih and 'content="57"' in ih and 'game.js?v=57' in rd('sw.js'),'index.html meta 53, game.js?v=57, sw.js shell game.js?v=57 (cache sharkattack-v54)')
 check('A Slimetrail production' in ih and 'No ads, no tracking, works offline.' in ih,'credit line and "No ads, no tracking, works offline." kept')
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(.8)
 def J(pg,e):
@@ -89,9 +89,9 @@ try:
   # ---- test gaps: points, surfer shrink (no floor), no divers ----
   if not ONLY or 'gaps' in ONLY:
    cx,pg,errs=newpg(b);pg.touchscreen.tap(422,195);pg.wait_for_timeout(300);J(pg,'__sa.startAs("white","endless");__sa.god=true')
-   P=J(pg,'__sa.SURFERS.map(s=>s.pts)');check(P==[15,20,40,100],f'points exactly surfer 15/20, sail boat 40, cargo ship 100 {P}')
+   P=J(pg,'__sa.SURFERS.map(s=>s.pts)');check(P==[15,20,25,40,55],f'points exactly surfer 15/20, sail boat 25, cargo ship 40, oil tanker 55 (b57; was 40/100) {P}')
    r=J(pg,'''(()=>{__sa.setLevel(9);__sa.respawnAll(true);const s=__sa.shark;s.air=false;s.ang=0;s.spd=0;s.y=__sa.SURF+s.L*.12;__sa.surf.forEach(q=>q.zip=999);__sa.placeSurfer(0,s.x+s.L*.3,3);const sc=__sa.score;__sa.sim(.2);return __sa.score-sc})()''')
-   check(r==100,f'eating a cargo ship adds exactly +100 ({r})')
+   check(r==40,f'eating a cargo ship adds exactly +40 (b57; was +100) ({r})')
    r=J(pg,'''(()=>{const o={};for(const L of [0,3,6,9]){__sa.setLevel(L);o[L+1]=__sa.surfDrawK({k:0})}return o})()''')
    wk=J(pg,'(__sa.setLevel(9),__sa.worldK)')
    check(bool(r) and r['4']<r['1'] and r['7']<r['4'] and r['10']<r['7'] and abs(r['10']-(wk or 0))<1e-9,f'surfers keep shrinking with the world up to the cap, no 0.55 floor (draw scale = worldK at SIZE 10) (draw scale by size {r})')

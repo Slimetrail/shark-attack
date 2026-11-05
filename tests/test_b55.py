@@ -11,7 +11,7 @@ def check(c,m):
   global ok,bad
   print(('PASS ' if c else 'FAIL ')+m);ok+=bool(c);bad+=not c
 rd=lambda n:open(os.path.join(ROOT,n)).read()
-check(json.loads(rd('version.json'))['build']=="56" and 'content="56"' in rd('index.html') and 'game.js?v=56' in rd('index.html') and 'game.js?v=56' in rd('sw.js'),'build 56 in version.json, index.html and sw.js')
+check(json.loads(rd('version.json'))['build']=="57" and 'content="57"' in rd('index.html') and 'game.js?v=57' in rd('index.html') and 'game.js?v=57' in rd('sw.js'),'build 57 in version.json, index.html and sw.js')
 try:
  with sync_playwright() as p:
   b=p.chromium.launch()

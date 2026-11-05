@@ -31,12 +31,12 @@ try:
       let n=0;const f=()=>{{for(const q of __sa.fish)q.off=true;if(++n<20)requestAnimationFrame(f);else res({{busy:__sa.busy,onWater:__sa.SURF>__sa.camY&&__sa.SURF<__sa.camY+innerHeight}})}};requestAnimationFrame(f)}})''')
   r=busy('__sa.SURF+innerHeight*.2');check(r['onWater'] and r['busy'] is True,f'waterline on screen, no creatures: busy (cheap effects) is on {r}')
   r=busy('__sa.SURF+(__sa.BED-__sa.SURF)*1.5');check((not r['onWater']) and r['busy'] is False,f'deep, no waterline, no creatures: busy is off {r}')
-  # 3 boat floor at the cap
-  r=pg.evaluate('''(()=>{__sa.startAs("white","endless");__sa.god=true;__sa.setLevel(9);const out={};for(const k of [2,3]){const s=__sa.surf[0];__sa.spawnSurf(s,true);s.k=k;out[k]=__sa.surfDrawK(s)*2*__sa.SURFERS[k].hw/__sa.shark.L}return out})()''')
+  # 3 boat floor at the cap, measured at the surface. b57 shrinks sailboats with depth, so a deep y (left over from the busy check) is not the floor.
+  r=pg.evaluate('''(()=>{__sa.startAs("white","endless");__sa.god=true;__sa.setLevel(9);__sa.depthMark=0;const s=__sa.shark;s.y=__sa.SURF;const out={};for(const k of [2,3]){const q=__sa.surf[0];__sa.spawnSurf(q,true);q.k=k;out[k]=__sa.surfDrawK(q)*2*__sa.SURFERS[k].hw/s.L}return out})()''')
   check(r['2']>=.55-1e-6,f'size 10: sail boat draws >= .55 x shark length ({r["2"]:.3f})')
   check(r['3']>=.85-1e-6,f'size 10: cargo ship draws >= .85 x shark length ({r["3"]:.3f})')
   # the floor does not bind at any reachable size in b54 (ratios above), so also check it directly with a 4x longer shark: it must hold the floor
-  r=pg.evaluate('''(()=>{const sh=__sa.shark,L0=sh.L,out={};sh.L=L0*4;for(const k of [2,3]){const s=__sa.surf[0];s.k=k;out[k]=__sa.surfDrawK(s)*2*__sa.SURFERS[k].hw/sh.L}sh.L=L0;return out})()''')
+  r=pg.evaluate('''(()=>{const sh=__sa.shark,L0=sh.L,out={};__sa.depthMark=0;sh.y=__sa.SURF;sh.L=L0*4;for(const k of [2,3]){const s=__sa.surf[0];s.k=k;out[k]=__sa.surfDrawK(s)*2*__sa.SURFERS[k].hw/sh.L}sh.L=L0;return out})()''')
   check(r['2']>=.55-1e-6 and r['3']>=.85-1e-6,f'boat floor holds when boats would otherwise draw small (sail {r["2"]:.3f}, cargo {r["3"]:.3f} x shark length)')
   check(not errs,f'no page errors {errs[:2]}')
   b.close()
