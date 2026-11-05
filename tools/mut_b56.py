@@ -10,7 +10,7 @@ M=[('body kills again (b55 rule)','game.js','&&mouthHit(f)){gameOver','&&d2<(L*.
    ('deep sharks back to b55','game.js','SHARK_P_DEEP:.38,','SHARK_P_DEEP:.45,'),
    ('your body no longer eats prey','game.js','if(ex*ex+ey*ey<rr*rr||onBody(f)){','if(ex*ex+ey*ey<rr*rr){'),
    ('sail boats back to HUD 8','game.js','SAIL_LVL:6','SAIL_LVL:7'),
-   ('build still 56','version.json','"57"','"56"')]
+   ('build still 56','version.json','"58"','"56"')]
 def run(root):
   e=dict(os.environ,SA_ROOT=root,SA_PORT56='8962');r=subprocess.run([PY,os.path.join(HERE,'tests','test_b56.py')],env=e,capture_output=True,text=True,timeout=300);return r.returncode,r.stdout.strip().splitlines()[-1:]
 bad=0;c,l=run(HERE);print('REAL tree:', 'PASS' if c==0 else 'FAIL',l);bad+=c!=0

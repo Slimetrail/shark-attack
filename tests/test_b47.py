@@ -10,7 +10,7 @@ def check(c,m):
   if c: passes+=1;print('PASS',m)
   else: fails.append(m);print('FAIL',m)
 html=open(os.path.join(ROOT,'index.html')).read();sw=open(os.path.join(ROOT,'sw.js')).read()
-check('"build":"57"' in open(os.path.join(ROOT,'version.json')).read() and 'content="57"' in html and 'game.js?v=57' in html and 'game.js?v=57' in sw,'build 57 in version.json, index.html and sw.js')
+check('"build":"58"' in open(os.path.join(ROOT,'version.json')).read() and 'content="58"' in html and 'game.js?v=58' in html and 'game.js?v=58' in sw,'build 58 in version.json, index.html and sw.js')
 check(not os.path.exists(os.path.join(ROOT,'art/title-art.webp')) and 'title-art' not in sw and 'title-art.webp' not in open(os.path.join(ROOT,'game.js')).read() and 'title-art' not in html,'title-art.webp removed: no file, not cached, not loaded')
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(.8)
 try:

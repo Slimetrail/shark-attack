@@ -11,8 +11,8 @@ def check(c,m):
   if c: passes+=1;print('PASS',m)
   else: fails.append(m);print('FAIL',m)
 def rd(p):return open(os.path.join(ROOT,p),encoding='utf8').read()
-check(json.load(open(os.path.join(ROOT,'version.json'))).get("build")=="57",'version.json build 57')
-ih=rd('index.html');check('game.js?v=57' in ih and 'content="57"' in ih and 'game.js?v=57' in rd('sw.js'),'index.html meta 53, game.js?v=57, sw.js shell game.js?v=57 (cache sharkattack-v54)')
+check(json.load(open(os.path.join(ROOT,'version.json'))).get("build")=="58",'version.json build 58')
+ih=rd('index.html');check('game.js?v=58' in ih and 'content="58"' in ih and 'game.js?v=58' in rd('sw.js'),'index.html meta build 58, game.js?v=58, sw.js shell game.js?v=58 (cache name is sharkattack-v + build)')
 check('A Slimetrail production' in ih and 'No ads, no tracking, works offline.' in ih,'credit line and "No ads, no tracking, works offline." kept')
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(.8)
 def J(pg,e):

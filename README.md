@@ -8,11 +8,27 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
 - **Surfers** can only be caught in the air. Kneeling surfers are worth 15 and standing surfers 20 (build 52).
 - **Landing on the beat:** if a landing comes within ±80 ms of the music beat, it gets nudged onto the beat for a +1 perfect bonus. The beat follows the gameplay track's eighth-note pulse, `BEAT.CHIPTUNE_BPM` = 80, so a beat every 0.75 s. `PLACEHOLDER_BPM` (100) is only used by the fallback loop.
 - **Fish:**
-  - Eat smaller fish to fill the growth meter. The shark grows in size steps (max 10) and gets a little faster each step.
+  - Eat smaller fish to fill the growth meter. The shark keeps growing (no size cap). Top speed stops rising at HUD size 10.
   - Nothing marks which fish are bigger than you (v9): judge size by eye. If a clearly bigger creature touches you, it's **Gulp!** and the round ends.
   - Fish the same size as you just bump you.
   - You're safe from fish only while you're in the air.
 - **Round:** 60 s (`ROUND_SECONDS`). **This length is UNCONFIRMED.** The round ends with "Time's up!" or "Gulp!". The score screen shows the final score, your best score (`localStorage.sharkAttack_best`), Play again and Home.
+
+## Build 58 (owner, Nov 5)
+- Version/build 58 (`version.json`, cache `sharkattack-v58`, `game.js?v=58`). Built on b57. Not deployed.
+- **No size cap.** The b53 stop at HUD size 10 (internal `MAX_LEVEL` 9, HUD text MAX) is reversed. `feed()` keeps leveling, the food bar keeps filling, and the HUD shows the real size (11, 12, 13…). `trueGrow` still clamps its exponent at 2000, and the food-bar exponent clamps at 1400, so the numbers stay finite. Top speed stays capped at the old HUD 10 (`SPEED_LVL_CAP` 9, 1.36× the start). Fish flee and dodge use that same cap, so they do not get faster without limit. Chase cap, `MAX_BIG`, and the spawn caps are unchanged.
+- **Prey follows HUD size, not how deep you have been.** HUD size is internal level + 1. Depth still sets the water colours and which craft spawn.
+  - HUD 7–9: sail boats are food.
+  - HUD 9–12: cargo ships are food.
+  - HUD 10+: sail boats are too small (not food, and they do not bump).
+  - HUD 12+: edible deep-dark fish spawn in the black zone, about 0.4–0.84× your bite, so there is always food.
+  - HUD 13+: cargo ships are too small (not food, no bump).
+  - HUD 12 overlaps on purpose: cargo is still food, and the deep fish are already there.
+  - Surfers stay food from HUD 5 at any depth.
+  - **Oil tankers** are food from HUD 10 until the same retirement as cargo (HUD 13). Before HUD 10 they are not food, even after a deep dive. They still *start spawning* at the sail-shrink depth, and they still spawn in the black zone.
+- **Depth illusion.** The shark stays the same size on screen. As it grows, `worldK` keeps shrinking, so fish already in the water get smaller, and new fish spawn at the new size. The depth metre has no floor (the coloured track still fills at the black edge, as in b57).
+- Kept: mouth-only bites, fewer chasers, b57 zone colours and the brightness fix, sail/cargo rewards (25 points / growth 3, and 40 / 4).
+- Tests: `tests/test_b58.py`. `tests/test_b57.py` still covers rewards, sail shrink, spawns, lighting, and mouth-only kills. Its size-cap check and the depth-edibility bites are updated because those rules changed.
 
 ## Build 57 (Jeremy via Eve, Nov 5)
 - Version/build 57 (version.json, cache `sharkattack-v57`, `game.js?v=57`). Built on b56 (mouth-only kill, fewer chasers). Not deployed.

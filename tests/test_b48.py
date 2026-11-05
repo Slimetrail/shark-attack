@@ -10,7 +10,7 @@ def check(c,m):
   if c: passes+=1;print('PASS',m)
   else: fails.append(m);print('FAIL',m)
 html=open(os.path.join(ROOT,'index.html')).read();sw=open(os.path.join(ROOT,'sw.js')).read();js=open(os.path.join(ROOT,'game.js')).read()
-check('"build":"57"' in open(os.path.join(ROOT,'version.json')).read() and 'content="57"' in html and 'game.js?v=57' in html and 'game.js?v=57' in sw,'build 57 in version.json, index.html and sw.js')
+check('"build":"58"' in open(os.path.join(ROOT,'version.json')).read() and 'content="58"' in html and 'game.js?v=58' in html and 'game.js?v=58' in sw,'build 58 in version.json, index.html and sw.js')
 check('floorSpr' not in js.replace('floorSpr=null','') and 'ventSpr' not in js.replace('ventSpr=null',''),'no floor sprite or vent glow is built or drawn')
 check('No ads, no tracking, works offline.' in html and 'Slimetrail Productions' not in html and 'jeremy' not in html.lower() and 'jeremy' not in sw.lower() and 'jeremy' not in open(os.path.join(ROOT,'manifest.webmanifest')).read().lower(),'credits: only the name A Slimetrail production, old Slimetrail Productions wording gone')
 srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(.8)

@@ -11,7 +11,7 @@ def check(c,m):
   global ok,bad
   print(('PASS ' if c else 'FAIL ')+m);ok+=bool(c);bad+=not c
 rd=lambda n:open(os.path.join(ROOT,n)).read()
-check(json.loads(rd('version.json'))['build']=="57" and 'content="57"' in rd('index.html') and 'game.js?v=57' in rd('index.html') and 'game.js?v=57' in rd('sw.js'),'build 57 in version.json, index.html and sw.js')
+check(json.loads(rd('version.json'))['build']=="58" and 'content="58"' in rd('index.html') and 'game.js?v=58' in rd('index.html') and 'game.js?v=58' in rd('sw.js'),'build 58 in version.json, index.html and sw.js')
 # one contact scene: eater (2x your bite, a shark) held in place for 1 s next to a still HUD 3 shark; real update loop, god mode OFF
 SCENE='''([pos,lvl])=>{const S=__sa;S.startAs("white","endless");S.god=false;S.setLevel(lvl);S.sim(2.2);/* past EAT.GRACE */S.clearFood();const s=S.shark,D=S.BED-S.SURF;s.y=S.SURF+D*1.2;s.x=S.camX+innerWidth/2;s.ang=0;s.spd=0;S.touch.on=false;S.touch.drive=0;for(let k=0;k<90;k++){s.spd=0;S.sim(1/60)}/* camera settles on you */S.clearFood();s.x=S.camX+innerWidth/2;
   const L=s.L,B=S.bite(),f=S.fish[0];S.setCreature(f,B*2,"shark");f.off=false;f.tiny=false;f.fade=0;f.rest=0;

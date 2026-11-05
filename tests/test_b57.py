@@ -14,7 +14,7 @@ def check(c,m):
   global ok,bad
   print(('PASS ' if c else 'FAIL ')+m);ok+=bool(c);bad+=not c
 rd=lambda n:open(os.path.join(ROOT,n)).read()
-check(json.loads(rd('version.json'))['build']=='57' and 'content="57"' in rd('index.html') and 'game.js?v=57' in rd('index.html') and 'game.js?v=57' in rd('sw.js') and 'PREFIX="sharkattack-v"' in rd('sw.js'),'[read] build 57 in version.json, index.html, sw.js (cache name is sharkattack-v + build)')
+check(json.loads(rd('version.json'))['build']=='58' and 'content="58"' in rd('index.html') and 'game.js?v=58' in rd('index.html') and 'game.js?v=58' in rd('sw.js') and 'PREFIX="sharkattack-v"' in rd('sw.js'),'[read] build 58 in version.json, index.html, sw.js (cache name is sharkattack-v + build)')
 try:
  with sync_playwright() as p:
   b=p.chromium.launch()
@@ -26,11 +26,13 @@ try:
   G=J('''()=>{const S=__sa.SURFERS,n=l=>__sa.need(l),fish=__sa.growOf({kind:"fish",s:__sa.bite()*.6});
     return {pts:S.map(s=>s.pts),grow:S.map(s=>s.grow),surfer:__sa.GROW.SURFER,fish,
       sailAt:S[2].grow/n(6),cargoAt:S[3].grow/n(8),surferAt:__sa.GROW.SURFER/n(4),
-      n6:n(6),n8:n(8),inf:__sa.allowedD(0)===Infinity&&__sa.allowedD(9)===Infinity,ml:__sa.MAX_LEVEL}}''')
+      n6:n(6),n8:n(8),inf:__sa.allowedD(0)===Infinity&&__sa.allowedD(40)===Infinity}}''')
   check(G['pts']==[15,20,25,40,55] and G['grow']==[2,2,3,4,5],f'[read] points 15/20/25/40/55 and growth 2/2/3/4/5 (sail was 40/5, cargo was 100/10) {G["pts"]} {G["grow"]}')
   check(G['sailAt']<0.35 and G['cargoAt']<0.35 and abs(G['sailAt']-G['surferAt'])<0.05,f'[read] at unlock, sail fills {G["sailAt"]:.0%} of the bar and cargo {G["cargoAt"]:.0%} (surfer-at-its-unlock is {G["surferAt"]:.0%}; old sail ~44%, old cargo ~56%)')
   check(G['grow'][2]>G['fish'] and G['grow'][2]<G['fish']*2 and G['grow'][3]>G['grow'][2],f'[read] sail growth {G["grow"][2]} is above one 0.6-bite fish ({G["fish"]:.2f}) and below two; cargo is the next step')
-  check(G['inf'] and G['ml']==9,f'[read] allowedD stays Infinity and the HUD size cap stays 10 (MAX_LEVEL {G["ml"]})')
+  check(G['inf'],f'[read] allowedD stays Infinity (no depth ceiling)')
+  cap=J('''()=>{__sa.setLevel(9);const n=__sa.need(9);__sa.feed(n*0.4);const mid=__sa.barFrac(),l0=__sa.shark.lvl;__sa.feed(n);return {mid,l0,l1:__sa.shark.lvl,lab:__sa.sizeLabel()}}''')
+  check(cap and cap['l0']==9 and cap['mid']>0.25 and cap['l1']==10 and cap['lab']=='SIZE 11' and 'MAX' not in cap['lab'],f'[tested] b58 removed the size-10 cap: at HUD 10 the bar still fills and the next size is real {cap}')
   # real bites: score matches the new numbers, and growth actually moves the meter
   r=J('''()=>{const out={};const bite=(k)=>{__sa.startAs("white","endless");__sa.god=true;__sa.setLevel(8);__sa.depthMark=0;const s=__sa.shark;s.air=false;s.ang=0;s.spd=0;s.y=__sa.SURF+s.L*.1;__sa.surf.forEach(q=>q.zip=999);
     const m0=s.meter;[...Array(8)].forEach(()=>{const [mx]=__sa.mouth();__sa.placeSurfer(0,mx,k);__sa.surf[0].vx=0;__sa.sim(1/30,()=>{s.air=false;s.ang=0;s.spd=0;s.y=__sa.SURF+s.L*.1;__sa.surf[0].x=__sa.mouth()[0];__sa.surf[0].vx=0})});
@@ -45,14 +47,14 @@ try:
   check(abs(Z['c']['sail']-Z['c']['surfer'])<1.5,f'[tested] at depth {Z["zs"]} a sailboat is the same length as a surfer ({Z["c"]["sail"]:.2f} vs {Z["c"]["surfer"]:.2f})')
   # rules stick when you come back to the surface (deepest depth reached)
   r=J('''()=>{const eat=(k,mark,air)=>{__sa.startAs("white","endless");__sa.god=true;__sa.setLevel(8);__sa.depthMark=mark;const s=__sa.shark;s.ang=0;s.spd=0;s.vx=0;s.vy=0;s.g=0;s.air=!!air;s.y=__sa.SURF+(air?-16:s.L*.1);__sa.surf.forEach(q=>q.zip=999);
-    const sc=__sa.score;for(let i=0;i<8;i++){__sa.sim(1/60,()=>{s.air=!!air;s.vx=0;s.vy=0;s.g=0;s.spd=0;s.ang=0;s.y=__sa.SURF+(air?-16:s.L*.1);const q=__sa.surf[0];q.zip=0;q.k=k;q.vx=0;q.x=__sa.mouth()[0]},1/60)}
-    return {sc:__sa.score-sc,can:__sa.canEatSurf({k:k}),mark:__sa.depthMark}};
+    const sc=__sa.score,can=__sa.canEatSurf({k:k});for(let i=0;i<8;i++){__sa.sim(1/60,()=>{s.air=!!air;s.vx=0;s.vy=0;s.g=0;s.spd=0;s.ang=0;s.y=__sa.SURF+(air?-16:s.L*.1);const q=__sa.surf[0];q.zip=0;q.k=k;q.vx=0;q.x=__sa.mouth()[0]},1/60)}
+    return {sc:__sa.score-sc,can,mark:__sa.depthMark}};
     const z=__sa.ZONE;return {surfShallow:eat(0,0,true),surfDeep:eat(0,z.SURF,true),sailDeep:eat(2,z.SURF,false),sailBlack:eat(2,z.CARGO+1,false),cargoMid:eat(3,z.SURF,false),cargoBlack:eat(3,z.CARGO,false),tank:eat(4,z.SURF,false),tankEarly:eat(4,0,false)}}''')
-  check(r['surfShallow']['sc']>0 and r['surfShallow']['can'] is True,f'[tested] before the transition a surfer is still edible {r["surfShallow"]}')
-  check(r['surfDeep']['sc']==0 and r['surfDeep']['can'] is False,f'[tested] after the transition a surfer is not edible, back at the surface {r["surfDeep"]}')
-  check(r['sailDeep']['sc']>0 and r['sailDeep']['can'] is True and r['sailBlack']['sc']>0,f'[tested] a sailboat stays edible at the transition and in the black zone (the surfer cutoff does not block it) {r["sailDeep"]} {r["sailBlack"]}')
-  check(r['cargoMid']['sc']>0 and r['cargoBlack']['sc']==0 and r['cargoBlack']['can'] is False,f'[tested] cargo is edible in the sail zone and not edible once the black depth is reached {r["cargoMid"]} {r["cargoBlack"]}')
-  check(r['tank']['sc']>0 and r['tankEarly']['sc']==0,f'[tested] an oil tanker is edible from the transition and not before it {r["tank"]} {r["tankEarly"]}')
+  check(r['surfShallow']['sc']>0 and r['surfShallow']['can'] is True,f'[tested] at HUD 9 a surfer is edible at the surface {r["surfShallow"]}')
+  check(r['surfDeep']['sc']>0 and r['surfDeep']['can'] is True,f'[tested] b58: a surfer is still edible after the old depth transition (size decides, this shark is HUD 9) {r["surfDeep"]}')
+  check(r['sailDeep']['sc']>0 and r['sailDeep']['can'] is True and r['sailBlack']['sc']>0,f'[tested] a sailboat is edible at the transition and in the black zone at HUD 9 {r["sailDeep"]} {r["sailBlack"]}')
+  check(r['cargoMid']['sc']>0 and r['cargoBlack']['sc']>0 and r['cargoBlack']['can'] is True,f'[tested] b58: cargo stays edible in the black zone at HUD 9 (size retires it later, not depth) {r["cargoMid"]} {r["cargoBlack"]}')
+  check(r['tank']['sc']==0 and r['tank']['can'] is False and r['tankEarly']['sc']==0,f'[tested] b58: an oil tanker is not food yet at HUD 9, deep or shallow (food from HUD 10) {r["tank"]} {r["tankEarly"]}')
   mix=J('''()=>{const count=mark=>{__sa.setLevel(8);__sa.depthMark=mark;__sa.shark.y=__sa.SURF+20;const c=[0,0,0,0,0];for(let i=0;i<500;i++){__sa.spawnSurf(__sa.surf[0],false);c[__sa.surf[0].k]++}return c};
     const z=__sa.ZONE;return {before:count(0),at:count(z.SURF),black:count(z.CARGO)}}''')
   check(mix['before'][4]==0 and mix['at'][4]>40 and mix['at'][2]>40,f'[tested] tankers and sailboats both spawn at the surfer cutoff, and tankers do not spawn before it {mix}')
