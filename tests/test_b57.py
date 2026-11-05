@@ -66,9 +66,9 @@ try:
   check(L['surfStop'] and L['cargoStop'] and L['fogSurf'] and L['fogEnd'] and L['ordered'] and L['meter']==L['meterAt'],f'[read] colour stops, fog and the depth meter use the edibility edges (light until {L["meter"]}, black at cargo) {L}')
   pix=J('''()=>new Promise(res=>{const c=document.getElementById("c"),g=c.getContext("2d"),k=c.width/innerWidth;
     const lum=()=>{const x=Math.round(innerWidth*.12*k),y=Math.round(innerHeight*.55*k),d=g.getImageData(x,y,1,1).data;return .2126*d[0]+.7152*d[1]+.0722*d[2]};
-    __sa.startAs("white","endless");__sa.god=true;__sa.setLevel(2);__sa.clearFood();__sa.depthMark=0;for(const f of __sa.fish)f.off=true;for(const s of __sa.surf)s.zip=999;
+    __sa.startAs("white","endless");__sa.god=true;__sa.setLevel(2);__sa.clearFood();__sa.depthMark=0;__sa.lightProbe=true;for(const f of __sa.fish){f.off=true;f.retry=0}for(const s of __sa.surf)s.zip=999;
     const depths=[.25,.9,1.5,2.2,2.8,3.4,4,4.8],out=[];
-    const step=i=>{if(i>=depths.length){res(out);return}const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*depths[i];s.spd=0;s.air=false;__sa.camY=Math.max(0,s.y-innerHeight*.55);
+    const step=i=>{if(i>=depths.length){__sa.lightProbe=false;res(out);return}const s=__sa.shark;s.y=__sa.SURF+(__sa.BED-__sa.SURF)*depths[i];s.spd=0;s.air=false;__sa.camY=Math.max(0,s.y-innerHeight*.55);for(const f of __sa.fish){f.off=true;f.retry=0}
       requestAnimationFrame(()=>requestAnimationFrame(()=>{out.push({d:depths[i],l:+lum().toFixed(1)});step(i+1)}))};
     step(0)})''')
   lums=[q['l'] for q in pix]

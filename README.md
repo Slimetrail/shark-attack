@@ -43,7 +43,7 @@ An offline PWA game, played in **landscape** (tuned on 915x412, 844x390 and 740x
   | depth-meter bands | 0 / 0.30 / 0.62 / 0.86 of the old bed | 0 / 1.6 / 2.8 / 3.8, meter full at depth 4 |
   | fog alphas | .14, .30 at ~0.32, .47 at ~0.76, .60 at ~1.08 | .12 at 0, .20 at 1.6, .34 at 2.8, .50 at 4.0 |
 
-  The stops step down in brightness (about 150, 140, 120, 105, 87, 61, 35, 18, 7 luma) with no jump bigger than the old mid-water steps. The late-game water lift is unchanged, so size 9–10 stays readable.
+  The stops step down in brightness (about 150, 140, 120, 105, 87, 61, 35, 18, 7 luma) with no jump bigger than the old mid-water steps. The late-game water lift is unchanged, so size 9–10 stays readable. Rock spires are not drawn in the light-blue zone (they used to be near-black from depth 0.62, which put a dark hole in water that is still bright). From depth 1.6 they fade in softly toward the black edge. Zone edges stayed 1.6 and 4.0.
 - Tests: `tests/test_b57.py`. b56 mouth-only kill is still checked in `tests/test_b56.py`.
 
 ## Build 56 (Jeremy t1637u, via Eve)
