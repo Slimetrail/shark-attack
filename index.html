@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#0b5f8a"><meta name="mobile-web-app-capable" content="yes">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="build" content="59"><title>Shark Attack</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="build" content="60"><title>Shark Attack</title><link rel="stylesheet" href="slimesplash/splash.css?v=1"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
 html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;font-family:system-ui,"Segoe UI",Roboto,sans-serif}
 #c{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
@@ -43,6 +43,7 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 #boost{position:fixed;left:calc(env(safe-area-inset-left) + 14px);bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:6;width:64px;height:64px;border-radius:50%;padding:0;border:3px solid #082a3d;box-shadow:0 4px 0 #082a3d;cursor:pointer;touch-action:none;color:#082a3d;font:900 12px system-ui,sans-serif;letter-spacing:.5px;background:conic-gradient(#ffcc33 var(--p,100%),#5d6b76 0);display:flex;align-items:center;justify-content:center}
 #boost span{display:flex;align-items:center;justify-content:center;width:50px;height:50px;border-radius:50%;background:#e8f7ff}#boost.cd{opacity:.6}#boost.on span{background:#ffcc33}
 </style></head><body>
+<script src="slimesplash/splash.js?v=1" data-base="slimesplash/" data-sound="1" data-keep-above="#updr,#upd"></script>
 <canvas id="c"></canvas>
 <div id="titleUi" class="ui hide"><button id="start" class="btn big">Start</button><div class="row"><button id="snd" class="btn sm">🔊 Sound on</button><button id="songs" class="btn sm">🎵 Songs on</button><button id="fx" class="btn sm">🔔 Effects on</button><button id="calm" class="btn sm">🌊 Shake on</button><button id="cred" class="btn sm">Credits</button></div><div class="row" id="row2"><button id="updb" class="btn sm hide">🔄 Check for update</button><button id="instb" class="btn sm">📲 Install app</button></div><div id="insth" class="hide"></div></div>
 <div id="overUi" class="ui hide"><div class="card"><h2 id="reason">Time's up!</h2><div>Your score</div><div id="final">0</div><p id="stats"></p><p id="bestTxt">Best: 0</p><button id="again" class="btn big">Play again</button><br><button id="home" class="btn sm">Home</button><p id="roundNote" style="font-size:12px;opacity:.75"></p></div></div>
@@ -58,5 +59,5 @@ html,body{margin:0;height:100%;background:#06324a;overflow:hidden;overscroll-beh
 <div id="note" class="hide"></div>
 <div id="upd" class="hide">Updated!</div>
 <div id="rot"><div>🦈🔄<br>Turn your phone sideways<br><small>Shark Attack plays in landscape</small></div></div>
-<script src="game.js?v=59"></script>
+<script src="game.js?v=60"></script>
 </body></html>

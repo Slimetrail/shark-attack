@@ -1,0 +1,7 @@
+/* SlimeTrail shared logo splash v1 (t2569u). Generalised from Secret Adventures splash.js / #isplash. */
+#slsplash{position:fixed;inset:0;z-index:2147483000;background:#000;overflow:hidden;touch-action:none;cursor:pointer;opacity:1;transition:opacity .45s ease;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#slsplash[hidden]{display:none!important}
+#slsplash.out{opacity:0;pointer-events:none}
+#slsplash img{position:absolute;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));top:calc(48px + env(safe-area-inset-top));bottom:calc(48px + env(safe-area-inset-bottom));width:calc(100% - max(8px,env(safe-area-inset-left)) - max(8px,env(safe-area-inset-right)));height:calc(100% - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom));object-fit:contain;display:block;pointer-events:none;margin:0;padding:0;border:0;max-width:none;max-height:none}
+#slsplash .slsplash-tap{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));text-align:center;color:#cfc3e8;font:600 15px system-ui,sans-serif;letter-spacing:.04em;opacity:.85;pointer-events:none;margin:0}
+#slsplash.shown .slsplash-tap{visibility:hidden}

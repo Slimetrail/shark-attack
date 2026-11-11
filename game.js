@@ -1092,6 +1092,8 @@ $("credBack").onclick=()=>{state="title";show("titleUi")};
 $("titleUi").addEventListener("click",e=>{if(!e.defaultPrevented&&e.target.closest&&e.target.closest("button"))releasePose()},true);
 window.addEventListener("resize",()=>resize());
 setSound(soundOn);resize();show("tap");startLoop();
+/* t2569u SlimeTrail logo splash: the splash tap is the real gesture (unlocks sound); when the logo fades, go straight on to the intro so one tap starts the game */
+if(window.SlimeSplash)SlimeSplash.whenDone(()=>{if(state==="tap"){tapArmed=true;tapGo()}});
 // build id + "Updated!" note (shown once, 2 s, on the first launch of a new build). Update checks are done by the service worker.
 const BUILD=(document.querySelector('meta[name="build"]')||{}).content||"",BUILD_KEY="sharkAttack_build";
 {const prev=LS.getItem(BUILD_KEY);if(BUILD&&prev&&prev!==BUILD){$("upd").classList.remove("hide");setTimeout(()=>$("upd").classList.add("hide"),2000)}if(BUILD)LS.setItem(BUILD_KEY,BUILD)}
